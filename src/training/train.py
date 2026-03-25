@@ -152,6 +152,8 @@ def train(config: dict, output_dir: Path):
     es_cfg = train_cfg["early_stopping"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
+
     print(f"\nStarting training for {train_cfg['epochs']} epochs...")
     print("-" * 70)
 
@@ -165,6 +167,11 @@ def train(config: dict, output_dir: Path):
 
         if epoch > scheduler_cfg["warmup_epochs"]:
             scheduler.step()
+
+        history["train_loss"].append(train_metrics["loss"])
+        history["val_loss"].append(val_metrics["loss"])
+        history["train_acc"].append(train_metrics["accuracy"])
+        history["val_acc"].append(val_metrics["accuracy"])
 
         elapsed = time.time() - t0
         print(
@@ -184,6 +191,7 @@ def train(config: dict, output_dir: Path):
                 "optimizer_state_dict": optimizer.state_dict(),
                 "val_accuracy": best_val_acc,
                 "config": config,
+                "history": history,
             }, output_dir / "best_model.pt")
         else:
             patience_counter += 1
@@ -206,6 +214,16 @@ def train(config: dict, output_dir: Path):
     print(f"Test Precision:  {test_metrics['precision']:.4f}")
     print(f"Test Recall:     {test_metrics['recall']:.4f}")
     print(f"\nConfusion Matrix:\n{test_metrics['confusion_matrix']}")
+
+    # Save final history (includes all epochs, not just up to best)
+    torch.save({
+        "epoch": checkpoint["epoch"],
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": checkpoint["optimizer_state_dict"],
+        "val_accuracy": checkpoint["val_accuracy"],
+        "config": config,
+        "history": history,
+    }, output_dir / "best_model.pt")
 
     return test_metrics
 
