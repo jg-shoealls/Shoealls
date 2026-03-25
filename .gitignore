@@ -6,3 +6,5 @@ build/
 outputs/
 *.pt
 .env
+data/
+.pytest_cache/
