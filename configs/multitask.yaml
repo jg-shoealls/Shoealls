@@ -1,0 +1,103 @@
+# Multi-task Configuration: Disease Classification + Fall Risk Prediction
+
+data:
+  sequence_length: 128
+  imu_channels: 6
+  pressure_grid_size: [16, 8]
+  skeleton_joints: 17
+  skeleton_dims: 3
+  num_classes: 4          # gait pattern classes
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+
+model:
+  imu_encoder:
+    conv_channels: [32, 64, 128]
+    kernel_size: 5
+    lstm_hidden: 128
+    lstm_layers: 2
+    dropout: 0.3
+
+  pressure_encoder:
+    conv_channels: [16, 32, 64]
+    kernel_size: 3
+    dropout: 0.3
+
+  skeleton_encoder:
+    gcn_channels: [64, 128]
+    temporal_kernel: 3
+    dropout: 0.3
+
+  fusion:
+    embed_dim: 128
+    num_heads: 4
+    ff_dim: 256
+    num_layers: 2
+    dropout: 0.2
+
+  classifier:
+    hidden_dims: [128, 64]
+    dropout: 0.3
+
+# ── Multi-task configuration ──────────────────────────────
+tasks:
+  active: [gait, disease, fall_risk, gait_phase]
+
+  disease:
+    num_diseases: 7
+    # 0: Normal, 1: Stroke, 2: Parkinson's, 3: Multiple Sclerosis,
+    # 4: Osteoarthritis, 5: Chronic Low Back Pain, 6: Peripheral Neuropathy
+    hidden_dims: [256, 128]
+    dropout: 0.4
+    class_names:
+      - 정상
+      - 뇌졸중
+      - 파킨슨병
+      - 다발성 경화증
+      - 골관절염
+      - 만성 요통
+      - 말초신경병증
+
+  fall_risk:
+    temporal_hidden: 64
+    num_temporal_layers: 1
+    dropout: 0.3
+
+  gait_phase:
+    num_phases: 8
+    # 0: Initial Contact, 1: Loading Response, 2: Mid Stance,
+    # 3: Terminal Stance, 4: Pre-Swing, 5: Initial Swing,
+    # 6: Mid Swing, 7: Terminal Swing
+    dropout: 0.3
+    phase_names:
+      - 초기 접지기
+      - 하중 반응기
+      - 중간 입각기
+      - 말기 입각기
+      - 전유각기
+      - 초기 유각기
+      - 중간 유각기
+      - 말기 유각기
+
+  loss:
+    use_uncertainty_weighting: true
+    fixed_weights:
+      gait: 1.0
+      disease: 1.0
+      fall_risk: 1.5
+      severity: 0.5
+      risk_score: 0.5
+      gait_phase: 0.8
+
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler:
+    type: cosine
+    warmup_epochs: 5
+  early_stopping:
+    patience: 15
+    min_delta: 0.001
