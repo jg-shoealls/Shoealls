@@ -12,6 +12,7 @@ from src.data.synthetic import generate_synthetic_dataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.training.train import train
 from src.utils.metrics import compute_metrics
+from src.validation.report import generate_report
 from src.validation.visualize import (
     plot_confusion_matrix,
     plot_confidence_distribution,
@@ -169,12 +170,33 @@ def main():
         figures_dir / "dashboard.png",
     )
 
+    # Step 6: Generate meeting report (Korean)
+    print("\n" + "=" * 60)
+    print("STEP 6: Generating Meeting Report (Korean)")
+    print("=" * 60)
+
+    report_dir = output_dir / "report"
+    model = MultimodalGaitNet(config)
+    generate_report(
+        history=history,
+        y_true=y_true,
+        y_pred=y_pred,
+        probs=probs,
+        class_names=class_names,
+        ablation_results=ablation_results,
+        model_params=model.get_num_trainable_params(),
+        save_dir=report_dir,
+    )
+
     # Print summary
     metrics = compute_metrics(y_true, y_pred)
     print("\n" + "=" * 60)
-    print("ALL DONE! Generated figures:")
+    print("ALL DONE! Generated files:")
     print("=" * 60)
     for f in sorted(figures_dir.glob("*.png")):
+        print(f"  {f}")
+    print()
+    for f in sorted(report_dir.glob("*.png")):
         print(f"  {f}")
     print(f"\nFinal Accuracy: {metrics['accuracy']:.4f} | F1: {metrics['f1_macro']:.4f}")
 
