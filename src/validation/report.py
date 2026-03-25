@@ -105,9 +105,10 @@ def generate_report(
 
 def _compute_all_metrics(y_true, y_pred, probs, class_names):
     """모든 지표를 한 번에 계산."""
-    cm = confusion_matrix(y_true, y_pred)
+    labels = list(range(len(class_names)))
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
     prec, rec, f1, support = precision_recall_fscore_support(
-        y_true, y_pred, average=None, zero_division=0,
+        y_true, y_pred, labels=labels, average=None, zero_division=0,
     )
     max_probs = probs.max(axis=1)
     correct = y_true == y_pred
@@ -202,7 +203,9 @@ def _page1_summary(history, metrics, class_names, model_params, save_dir):
     # ── 혼동 행렬 ──
     ax = fig.add_subplot(gs[0, 3])
     cm = metrics["cm"]
-    cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+    row_sums = cm.sum(axis=1, keepdims=True)
+    cm_norm = np.divide(cm.astype(float), row_sums, where=row_sums > 0,
+                        out=np.zeros_like(cm, dtype=float))
     im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1, aspect="auto")
 
     kr_names = [_kr(n) for n in class_names]
