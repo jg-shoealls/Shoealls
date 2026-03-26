@@ -7,6 +7,8 @@
 import numpy as np
 from dataclasses import dataclass, field
 
+from .common import compute_derived_features
+
 
 @dataclass
 class BiomarkerResult:
@@ -237,42 +239,5 @@ class GaitBiomarkerExtractor:
         )
 
     def _compute_derived_features(self, features: dict):
-        """파생 바이오마커 계산."""
-        # 보행 속도 추정 (보행률과 보폭에서)
-        if "cadence" in features and "gait_speed" not in features:
-            # 대략적 추정: speed ≈ cadence/60 * stride_length
-            # stride_length ≈ 0.7~0.8m (평균), cadence in steps/min
-            cadence = features["cadence"]
-            stride_len = 0.75  # 기본값
-            features["gait_speed"] = cadence / 60.0 * stride_len / 2.0
-
-        # 좌우 압력 비대칭
-        if "ml_index" in features and "pressure_asymmetry" not in features:
-            features["pressure_asymmetry"] = abs(features["ml_index"])
-
-        # 좌우 흔들림 변동성 (cop_sway에서 파생)
-        if "cop_sway" in features and "ml_variability" not in features:
-            features["ml_variability"] = features["cop_sway"] * 1.5
-
-        # 가속도 변동성
-        if "acceleration_rms" in features and "acceleration_variability" not in features:
-            features["acceleration_variability"] = features.get("acceleration_rms", 1.0) * 0.2
-
-        # 체간 흔들림 (가속도 기반 추정)
-        if "acceleration_rms" in features and "trunk_sway" not in features:
-            features["trunk_sway"] = features["acceleration_rms"] * 1.2
-
-        # 뒤꿈치/앞발 하중 비율 (zone features에서 계산)
-        heel_zones = ["zone_heel_medial_mean", "zone_heel_lateral_mean"]
-        fore_zones = ["zone_forefoot_medial_mean", "zone_forefoot_lateral_mean", "zone_toes_mean"]
-        mid_zones = ["zone_midfoot_medial_mean", "zone_midfoot_lateral_mean"]
-
-        heel_sum = sum(features.get(z, 0) for z in heel_zones)
-        fore_sum = sum(features.get(z, 0) for z in fore_zones)
-        mid_sum = sum(features.get(z, 0) for z in mid_zones)
-        total = heel_sum + fore_sum + mid_sum + 1e-8
-
-        if "heel_pressure_ratio" not in features:
-            features["heel_pressure_ratio"] = heel_sum / total
-        if "forefoot_pressure_ratio" not in features:
-            features["forefoot_pressure_ratio"] = fore_sum / total
+        """파생 바이오마커 계산. common.compute_derived_features 위임."""
+        compute_derived_features(features)

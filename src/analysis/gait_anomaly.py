@@ -16,6 +16,9 @@
 import numpy as np
 from dataclasses import dataclass, field
 
+from .common import severity_label, get_feature_korean, compute_derived_features
+from .report_formatter import header, section, marker_line, risk_line, HEADER_DIVIDER
+
 
 @dataclass
 class AnomalyPattern:
@@ -277,30 +280,7 @@ class GaitAnomalyDetector:
             features.setdefault("cadence_low", features["cadence"])
             features.setdefault("cadence_high", features["cadence"])
 
-        # 압력 비율 계산 (zone features에서)
-        heel_zones = ["zone_heel_medial_mean", "zone_heel_lateral_mean"]
-        fore_zones = ["zone_forefoot_medial_mean", "zone_forefoot_lateral_mean", "zone_toes_mean"]
-        mid_zones = ["zone_midfoot_medial_mean", "zone_midfoot_lateral_mean"]
-
-        heel_sum = sum(features.get(z, 0) for z in heel_zones)
-        fore_sum = sum(features.get(z, 0) for z in fore_zones)
-        mid_sum = sum(features.get(z, 0) for z in mid_zones)
-        total = heel_sum + fore_sum + mid_sum + 1e-8
-
-        features.setdefault("heel_pressure_ratio", heel_sum / total)
-        features.setdefault("forefoot_pressure_ratio", fore_sum / total)
-
-        # 좌우 압력 비대칭
-        if "ml_index" in features and "pressure_asymmetry" not in features:
-            features["pressure_asymmetry"] = abs(features["ml_index"])
-
-        # 좌우 흔들림 변동성
-        if "cop_sway" in features and "ml_variability" not in features:
-            features["ml_variability"] = features["cop_sway"] * 1.5
-
-        # 체간 흔들림
-        if "acceleration_rms" in features and "trunk_sway" not in features:
-            features["trunk_sway"] = features["acceleration_rms"] * 1.2
+        compute_derived_features(features)
 
     def _evaluate_pattern(
         self,
@@ -395,38 +375,13 @@ class GaitAnomalyDetector:
         # 위험도 순 정렬
         return dict(sorted(result.items(), key=lambda x: -x[1]))
 
-    def _severity_label(self, score: float) -> str:
-        """심각도 라벨."""
-        if score >= 0.75:
-            return "위험"
-        elif score >= 0.50:
-            return "경고"
-        elif score >= 0.25:
-            return "주의"
-        elif score > 0.0:
-            return "경미"
-        else:
-            return "정상"
+    @staticmethod
+    def _severity_label(score: float) -> str:
+        return severity_label(score)
 
-    def _feat_korean(self, feat_name: str) -> str:
-        """특성 이름 한국어 변환."""
-        mapping = {
-            "gait_speed": "보행 속도",
-            "cadence": "보행률",
-            "cadence_low": "보행률(저)",
-            "cadence_high": "보행률(고)",
-            "stride_regularity": "보폭 규칙성",
-            "step_symmetry": "좌우 대칭성",
-            "cop_sway": "체중심 흔들림",
-            "ml_variability": "좌우 변동성",
-            "heel_pressure_ratio": "뒤꿈치 하중",
-            "forefoot_pressure_ratio": "앞발 하중",
-            "arch_index": "아치 지수",
-            "pressure_asymmetry": "압력 비대칭",
-            "acceleration_rms": "가속도 크기",
-            "trunk_sway": "체간 흔들림",
-        }
-        return mapping.get(feat_name, feat_name)
+    @staticmethod
+    def _feat_korean(feat_name: str) -> str:
+        return get_feature_korean(feat_name)
 
     def _generate_report(
         self,
@@ -438,9 +393,7 @@ class GaitAnomalyDetector:
     ) -> str:
         """한국어 종합 보고서 생성."""
         lines = [
-            "=" * 65,
-            "  비정상 보행 패턴 감지 및 부상 위험 예측 보고서",
-            "=" * 65,
+            header("비정상 보행 패턴 감지 및 부상 위험 예측 보고서"),
             "",
         ]
 
@@ -450,8 +403,7 @@ class GaitAnomalyDetector:
         lines.append("")
 
         # 전체 패턴 상태
-        lines.append("─" * 65)
-        lines.append("  [보행 패턴 검사 결과]")
+        lines.append(section("보행 패턴 검사 결과"))
         lines.append("")
 
         # 카테고리별 정리
@@ -466,23 +418,12 @@ class GaitAnomalyDetector:
                 continue
             lines.append(f"  [{cat_name} 패턴]")
             for p in cat_patterns:
-                if p.severity > 0:
-                    bar_len = int(p.severity * 15)
-                    bar = "█" * bar_len + "░" * (15 - bar_len)
-                    marker = "▲"
-                else:
-                    bar = "░" * 15
-                    marker = "○"
-                lines.append(
-                    f"  {marker} {p.korean_name:16s} [{bar}] "
-                    f"{p.severity:.0%} ({p.severity_label})"
-                )
+                lines.append(marker_line(p.korean_name, p.severity))
             lines.append("")
 
         # 상세 이상 패턴
         if abnormal:
-            lines.append("─" * 65)
-            lines.append("  [감지된 이상 패턴 상세]")
+            lines.append(section("감지된 이상 패턴 상세"))
 
             for p in abnormal[:5]:
                 lines.append("")
@@ -502,8 +443,7 @@ class GaitAnomalyDetector:
         # 부상 위험 종합
         if injury_risks:
             lines.append("")
-            lines.append("─" * 65)
-            lines.append("  [부상 위험 종합 평가]")
+            lines.append(section("부상 위험 종합 평가"))
             lines.append("")
 
             for i, (injury_name, risk_score) in enumerate(injury_risks.items()):
@@ -513,18 +453,13 @@ class GaitAnomalyDetector:
                 cat = self.injury_cats.get(injury_name, {})
                 timeline = cat.get("timeline", "")
                 body_part = cat.get("body_part", "")
-                bar_len = int(risk_score * 15)
-                bar = "█" * bar_len + "░" * (15 - bar_len)
-                label = self._severity_label(risk_score)
-                lines.append(
-                    f"  {injury_name:16s} [{bar}] {risk_score:.0%} "
-                    f"({label}) [{timeline}/{body_part}]"
-                )
+                lines.append(risk_line(
+                    injury_name, risk_score, extra=f"[{timeline}/{body_part}]"
+                ))
 
         # 권고사항
         lines.append("")
-        lines.append("─" * 65)
-        lines.append("  [권고사항]")
+        lines.append(section("권고사항"))
         lines.append("")
 
         if not abnormal:
@@ -550,5 +485,5 @@ class GaitAnomalyDetector:
                 lines.extend(corrections)
 
         lines.append("")
-        lines.append("=" * 65)
+        lines.append(HEADER_DIVIDER)
         return "\n".join(lines)

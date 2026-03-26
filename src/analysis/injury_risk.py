@@ -4,6 +4,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from .foot_zones import FootZoneAnalyzer, FootAnalysisResult, REGION_GROUPS
+from .common import severity_label_4level, linear_risk_score
 
 
 @dataclass
@@ -136,22 +137,13 @@ class InjuryRiskEngine:
             ])) / 2.0,
         }
 
-    def _score(self, value: float, low_risk: float, high_risk: float) -> float:
-        """Linear risk scoring between thresholds, clamped to 0-1."""
-        if high_risk > low_risk:
-            return float(np.clip((value - low_risk) / (high_risk - low_risk + 1e-8), 0, 1))
-        else:
-            return float(np.clip((low_risk - value) / (low_risk - high_risk + 1e-8), 0, 1))
+    @staticmethod
+    def _score(value: float, low_risk: float, high_risk: float) -> float:
+        return linear_risk_score(value, low_risk, high_risk)
 
-    def _severity_label(self, score: float) -> str:
-        if score < 0.25:
-            return "정상"
-        elif score < 0.5:
-            return "주의"
-        elif score < 0.75:
-            return "경고"
-        else:
-            return "위험"
+    @staticmethod
+    def _severity_label(score: float) -> str:
+        return severity_label_4level(score)
 
     def _assess_plantar_fasciitis(self, m: dict) -> InjuryRisk:
         """Plantar fasciitis: high heel impact + reduced arch support."""

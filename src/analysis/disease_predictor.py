@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .biomarkers import GaitBiomarkerExtractor, BiomarkerProfile, BIOMARKER_DEFINITIONS
+from .common import get_feature_korean, severity_label
+from .report_formatter import header, section, risk_bar, HEADER_DIVIDER, overall_summary_line
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -471,22 +473,7 @@ class DiseaseRiskPredictor:
         bio_def = BIOMARKER_DEFINITIONS.get(feature_name)
         if bio_def:
             return bio_def["korean_name"]
-        mapping = {
-            "gait_speed": "보행 속도",
-            "cadence": "보행률",
-            "stride_regularity": "보폭 규칙성",
-            "step_symmetry": "좌우 대칭성",
-            "cop_sway": "체중심 흔들림",
-            "ml_variability": "좌우 변동성",
-            "heel_pressure_ratio": "뒤꿈치 하중",
-            "forefoot_pressure_ratio": "앞발 하중",
-            "arch_index": "아치 지수",
-            "pressure_asymmetry": "좌우 압력 비대칭",
-            "acceleration_rms": "가속도 크기",
-            "acceleration_variability": "가속도 변동성",
-            "trunk_sway": "체간 흔들림",
-        }
-        return mapping.get(feature_name, feature_name)
+        return get_feature_korean(feature_name)
 
     def _generate_summary(
         self,
@@ -497,34 +484,19 @@ class DiseaseRiskPredictor:
     ) -> str:
         """한국어 종합 보고서 생성."""
         lines = [
-            "=" * 65,
-            "  보행 데이터 기반 질환 위험 스크리닝 보고서",
-            "=" * 65,
+            header("보행 데이터 기반 질환 위험 스크리닝 보고서"),
             "",
         ]
 
         # 건강 점수
-        if health_score >= 85:
-            grade = "양호"
-            color_desc = "양호한 보행 패턴입니다."
-        elif health_score >= 70:
-            grade = "보통"
-            color_desc = "일부 항목에서 주의가 필요합니다."
-        elif health_score >= 50:
-            grade = "주의"
-            color_desc = "여러 항목에서 이상 소견이 있습니다."
-        else:
-            grade = "경고"
-            color_desc = "전문가 상담이 필요합니다."
-
+        grade, color_desc = overall_summary_line(health_score)
         lines.append(f"  보행 건강 점수: {health_score:.0f}/100 ({grade})")
         lines.append(f"  {color_desc}")
         lines.append(f"  바이오마커: {bio_profile.total_count}개 측정, {bio_profile.abnormal_count}개 이상")
         lines.append("")
 
         # 바이오마커 요약
-        lines.append("─" * 65)
-        lines.append("  [바이오마커 측정 결과]")
+        lines.append(section("바이오마커 측정 결과"))
         lines.append("")
         for bio in bio_profile.biomarkers:
             status = "이상" if bio.is_abnormal else "정상"
@@ -536,13 +508,11 @@ class DiseaseRiskPredictor:
         lines.append("")
 
         # 질환별 위험도
-        lines.append("─" * 65)
-        lines.append("  [질환별 위험도 평가]")
+        lines.append(section("질환별 위험도 평가"))
         lines.append("")
 
         for result in results:
-            bar_len = int(result.risk_score * 20)
-            bar = "█" * bar_len + "░" * (20 - bar_len)
+            bar = risk_bar(result.risk_score, 20)
             lines.append(
                 f"  {result.korean_name:14s} [{bar}] {result.risk_score:.0%} "
                 f"({result.severity}) 신뢰도:{result.confidence:.0%}"
@@ -551,8 +521,7 @@ class DiseaseRiskPredictor:
         # 상세 소견
         if top_risks:
             lines.append("")
-            lines.append("─" * 65)
-            lines.append("  [주요 위험 항목 상세]")
+            lines.append(section("주요 위험 항목 상세"))
 
             for risk in top_risks[:3]:
                 lines.append("")
@@ -570,8 +539,7 @@ class DiseaseRiskPredictor:
 
         # 권고사항
         lines.append("")
-        lines.append("─" * 65)
-        lines.append("  [권고사항]")
+        lines.append(section("권고사항"))
         lines.append("")
 
         if not top_risks:
@@ -585,5 +553,5 @@ class DiseaseRiskPredictor:
             lines.append(f"  ※ 권장 진료과: {', '.join(referrals)}")
 
         lines.append("")
-        lines.append("=" * 65)
+        lines.append(HEADER_DIVIDER)
         return "\n".join(lines)
