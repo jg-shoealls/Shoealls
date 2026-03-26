@@ -8,6 +8,8 @@ from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
 from .biomarkers import GaitBiomarkerExtractor, BiomarkerProfile, BiomarkerResult
 from .disease_predictor import DiseaseRiskPredictor, DiseaseScreeningReport
 from .disease_classifier import GaitDiseaseClassifier, ClassificationResult
+from .gait_anomaly import GaitAnomalyDetector, GaitAnomalyReport, AnomalyPattern
+from .injury_predictor import InjuryRiskPredictor, InjuryPrediction, ComprehensiveInjuryReport
 
 __all__ = [
     "FootZoneAnalyzer",
@@ -30,4 +32,10 @@ __all__ = [
     "DiseaseScreeningReport",
     "GaitDiseaseClassifier",
     "ClassificationResult",
+    "GaitAnomalyDetector",
+    "GaitAnomalyReport",
+    "AnomalyPattern",
+    "InjuryRiskPredictor",
+    "InjuryPrediction",
+    "ComprehensiveInjuryReport",
 ]
