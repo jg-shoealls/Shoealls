@@ -1,4 +1,8 @@
-"""보행 기반 질환 예측 및 진단 데모."""
+"""보행 기반 질환 예측 및 진단 데모.
+
+14개 질환 위험 예측 (규칙 기반) + 11개 질환 ML 분류.
+카테고리: 신경계, 뇌혈관계, 근골격계, 대사/기타
+"""
 
 import sys
 import os
@@ -12,11 +16,12 @@ from src.analysis.disease_classifier import GaitDiseaseClassifier, FEATURE_NAMES
 
 def main():
     print("=" * 70)
-    print("  보행 데이터 기반 질환 위험 예측 및 조기 진단 데모")
+    print("  슈올즈 AI — 보행 데이터 기반 질환 위험 예측 및 조기 진단 데모")
+    print("  (신경계·뇌혈관계·근골격계 14개 질환)")
     print("=" * 70)
 
     # === 1. ML 분류기 학습 ===
-    print("\n[1단계] ML 분류기 학습 (7개 질환 패턴)")
+    print("\n[1단계] ML 분류기 학습 (11개 질환 패턴)")
     print("-" * 50)
     clf = GaitDiseaseClassifier(n_estimators=100)
     metrics = clf.train()
@@ -72,6 +77,44 @@ def main():
             "zone_forefoot_medial_mean": 0.32, "zone_forefoot_lateral_mean": 0.35,
             "zone_toes_mean": 0.12, "zone_midfoot_medial_mean": 0.10,
             "zone_midfoot_lateral_mean": 0.12,
+        },
+        # ── 뇌혈관계 질환 ──
+        "뇌출혈 후유증 (55세 남성)": {
+            "gait_speed": 0.45, "cadence": 78, "stride_regularity": 0.42,
+            "step_symmetry": 0.48, "cop_sway": 0.095, "ml_index": 0.20,
+            "arch_index": 0.27, "acceleration_rms": 0.95,
+            "zone_heel_medial_mean": 0.15, "zone_heel_lateral_mean": 0.35,
+            "zone_forefoot_medial_mean": 0.45, "zone_forefoot_lateral_mean": 0.28,
+            "zone_toes_mean": 0.08, "zone_midfoot_medial_mean": 0.07,
+            "zone_midfoot_lateral_mean": 0.14,
+        },
+        "뇌경색 의심 (68세 남성)": {
+            "gait_speed": 0.72, "cadence": 92, "stride_regularity": 0.58,
+            "step_symmetry": 0.70, "cop_sway": 0.07, "ml_index": 0.13,
+            "arch_index": 0.26, "acceleration_rms": 1.1,
+            "zone_heel_medial_mean": 0.22, "zone_heel_lateral_mean": 0.28,
+            "zone_forefoot_medial_mean": 0.38, "zone_forefoot_lateral_mean": 0.32,
+            "zone_toes_mean": 0.12, "zone_midfoot_medial_mean": 0.09,
+            "zone_midfoot_lateral_mean": 0.11,
+        },
+        # ── 근골격계 질환 ──
+        "디스크(요추) 의심 (42세 남성)": {
+            "gait_speed": 0.80, "cadence": 98, "stride_regularity": 0.62,
+            "step_symmetry": 0.75, "cop_sway": 0.06, "ml_index": 0.10,
+            "arch_index": 0.25, "acceleration_rms": 0.85,
+            "zone_heel_medial_mean": 0.14, "zone_heel_lateral_mean": 0.12,
+            "zone_forefoot_medial_mean": 0.42, "zone_forefoot_lateral_mean": 0.38,
+            "zone_toes_mean": 0.15, "zone_midfoot_medial_mean": 0.10,
+            "zone_midfoot_lateral_mean": 0.10,
+        },
+        "류마티스 관절염 의심 (52세 여성)": {
+            "gait_speed": 0.78, "cadence": 96, "stride_regularity": 0.68,
+            "step_symmetry": 0.80, "cop_sway": 0.065, "ml_index": 0.08,
+            "arch_index": 0.38, "acceleration_rms": 1.15,
+            "zone_heel_medial_mean": 0.20, "zone_heel_lateral_mean": 0.18,
+            "zone_forefoot_medial_mean": 0.48, "zone_forefoot_lateral_mean": 0.40,
+            "zone_toes_mean": 0.18, "zone_midfoot_medial_mean": 0.12,
+            "zone_midfoot_lateral_mean": 0.10,
         },
     }
 

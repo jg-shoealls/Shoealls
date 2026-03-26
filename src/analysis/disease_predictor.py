@@ -1,9 +1,15 @@
 """보행 데이터 기반 질환 위험 예측 및 조기 진단 엔진.
 
-10가지 질환에 대해:
+14가지 질환에 대해:
   1. 바이오마커 기반 위험도 평가 (규칙 기반)
   2. ML 기반 분류기 (Random Forest + 앙상블)
   3. 종합 진단 보고서 생성
+
+질환 카테고리:
+  - 신경계 질환: 파킨슨병, 치매(알츠하이머), 다발성경화증, 소뇌실조증
+  - 뇌혈관계 질환: 뇌졸중(편마비), 뇌출혈, 뇌경색
+  - 근골격계 질환: 골관절염, 류마티스 관절염, 추간판 탈출증(디스크), 척추관협착증
+  - 기타: 당뇨 신경병증, 말초동맥질환, 전정기관 장애
 """
 
 import numpy as np
@@ -130,21 +136,25 @@ DISEASE_DEFINITIONS = {
         "referral": "정형외과 / 류마티스내과",
     },
     "dementia": {
-        "korean_name": "치매 (인지장애)",
-        "description": "인지기능 저하에 동반되는 보행 장애",
+        "korean_name": "치매 (알츠하이머)",
+        "description": "알츠하이머 등 인지기능 저하에 동반되는 보행 장애. 보행 변화가 인지 저하보다 수년 앞서 나타날 수 있음",
         "gait_features": {
             "gait_speed": {"direction": "low", "weight": 1.0, "threshold": 0.8},
             "stride_regularity": {"direction": "low", "weight": 0.9, "threshold": 0.60},
             "cadence": {"direction": "low", "weight": 0.6, "threshold": 95},
-            "acceleration_variability": {"direction": "high", "weight": 0.7, "threshold": 0.30},
+            "acceleration_variability": {"direction": "high", "weight": 0.8, "threshold": 0.28},
+            "trunk_sway": {"direction": "high", "weight": 0.6, "threshold": 2.8},
+            "cop_sway": {"direction": "high", "weight": 0.5, "threshold": 0.06},
         },
         "key_signs": [
-            "보행 속도 점진적 감소 (연간 5% 이상)",
+            "보행 속도 점진적 감소 (연간 5% 이상 → 알츠하이머 전조)",
             "이중 과제 시 보행 악화 (dual-task deficit)",
-            "보폭 변동성 증가",
-            "방향 전환 시 불안정",
+            "보폭 변동성 증가 (stride-to-stride variability)",
+            "방향 전환 시 불안정 (회전 시 추가 걸음 필요)",
+            "보행 리듬 규칙성 저하 (자동화 기능 감퇴)",
+            "보행 중 멈춤 빈도 증가",
         ],
-        "severity_thresholds": (0.25, 0.50, 0.75),
+        "severity_thresholds": (0.20, 0.45, 0.70),
         "referral": "신경과 / 정신건강의학과",
     },
     "peripheral_artery": {
@@ -200,6 +210,92 @@ DISEASE_DEFINITIONS = {
         ],
         "severity_thresholds": (0.20, 0.45, 0.70),
         "referral": "이비인후과 / 신경과",
+    },
+    # ── 뇌혈관계 질환 (신규) ──────────────────────────────────────────
+    "cerebral_hemorrhage": {
+        "korean_name": "뇌출혈",
+        "description": "뇌혈관 파열로 인한 출혈성 손상. 급성기 이후 편마비·실조 등 후유증 보행 특성",
+        "gait_features": {
+            "step_symmetry": {"direction": "low", "weight": 1.0, "threshold": 0.70},
+            "pressure_asymmetry": {"direction": "high", "weight": 0.9, "threshold": 0.15},
+            "ml_variability": {"direction": "high", "weight": 0.8, "threshold": 0.12},
+            "gait_speed": {"direction": "low", "weight": 0.8, "threshold": 0.7},
+            "trunk_sway": {"direction": "high", "weight": 0.7, "threshold": 3.0},
+            "stride_regularity": {"direction": "low", "weight": 0.6, "threshold": 0.55},
+        },
+        "key_signs": [
+            "급성 발현 후 편마비 보행 (hemiparetic gait)",
+            "환측 하지 경직(spasticity)으로 회선 보행",
+            "심한 좌우 비대칭 및 체중 편향",
+            "균형 감각 저하로 넓은 기저면",
+            "보행 속도 현저히 저하",
+        ],
+        "severity_thresholds": (0.20, 0.45, 0.70),
+        "referral": "신경외과 / 재활의학과",
+    },
+    "cerebral_infarction": {
+        "korean_name": "뇌경색",
+        "description": "뇌혈관 폐색으로 인한 허혈성 손상. 뇌졸중의 80%를 차지하며 점진적 보행 변화 특징",
+        "gait_features": {
+            "step_symmetry": {"direction": "low", "weight": 0.9, "threshold": 0.75},
+            "gait_speed": {"direction": "low", "weight": 0.9, "threshold": 0.8},
+            "pressure_asymmetry": {"direction": "high", "weight": 0.8, "threshold": 0.12},
+            "stride_regularity": {"direction": "low", "weight": 0.7, "threshold": 0.60},
+            "cop_sway": {"direction": "high", "weight": 0.6, "threshold": 0.07},
+            "heel_pressure_ratio": {"direction": "low", "weight": 0.5, "threshold": 0.25},
+        },
+        "key_signs": [
+            "점진적 편측 약화 (progressive hemiparesis)",
+            "환측 족하수(foot drop)로 인한 계단식 보행",
+            "보행 중 미세 비대칭 패턴 (일과성 허혈 전조)",
+            "환측 뒤꿈치 착지 회피",
+            "보행 속도 점진적 감소",
+        ],
+        "severity_thresholds": (0.20, 0.45, 0.70),
+        "referral": "신경과 / 재활의학과",
+    },
+    # ── 근골격계 질환 (신규) ──────────────────────────────────────────
+    "disc_herniation": {
+        "korean_name": "추간판 탈출증 (디스크)",
+        "description": "요추/경추 디스크 돌출로 인한 신경근 압박, 방산통에 의한 보행 변화",
+        "gait_features": {
+            "step_symmetry": {"direction": "low", "weight": 0.9, "threshold": 0.80},
+            "trunk_sway": {"direction": "high", "weight": 0.8, "threshold": 2.8},
+            "gait_speed": {"direction": "low", "weight": 0.7, "threshold": 0.9},
+            "heel_pressure_ratio": {"direction": "low", "weight": 0.7, "threshold": 0.25},
+            "pressure_asymmetry": {"direction": "high", "weight": 0.6, "threshold": 0.10},
+            "acceleration_rms": {"direction": "low", "weight": 0.5, "threshold": 1.0},
+        },
+        "key_signs": [
+            "통증 회피 보행 (antalgic gait) — 이환측 지지기 단축",
+            "체간 측방 기울임 (lateral trunk shift)",
+            "뒤꿈치 착지 회피 (하지 방사통 시)",
+            "보행 시작 시 경직 및 서행",
+            "하지 근력 약화 시 족하수(foot drop) 발생",
+        ],
+        "severity_thresholds": (0.20, 0.45, 0.70),
+        "referral": "정형외과 / 신경외과",
+    },
+    "rheumatoid_arthritis": {
+        "korean_name": "류마티스 관절염",
+        "description": "자가면역 관절 염증으로 인한 다관절 통증 및 변형, 양측성 보행 변화",
+        "gait_features": {
+            "gait_speed": {"direction": "low", "weight": 0.8, "threshold": 0.85},
+            "step_symmetry": {"direction": "low", "weight": 0.7, "threshold": 0.82},
+            "forefoot_pressure_ratio": {"direction": "high", "weight": 0.8, "threshold": 0.55},
+            "arch_index": {"direction": "high", "weight": 0.7, "threshold": 0.35},
+            "cop_sway": {"direction": "high", "weight": 0.6, "threshold": 0.06},
+            "pressure_asymmetry": {"direction": "high", "weight": 0.5, "threshold": 0.10},
+        },
+        "key_signs": [
+            "조조강직(morning stiffness)으로 보행 시작 어려움",
+            "전족부 통증 → 앞발 하중 회피 또는 집중 교대",
+            "족부 변형(외반무지, 망치족지)으로 비정상 압력 분포",
+            "다관절 침범 시 양측성 보행 속도 저하",
+            "아치 저하(편평족) 진행",
+        ],
+        "severity_thresholds": (0.20, 0.45, 0.70),
+        "referral": "류마티스내과 / 정형외과",
     },
 }
 

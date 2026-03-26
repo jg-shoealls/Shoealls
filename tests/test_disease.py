@@ -47,6 +47,32 @@ def make_stroke_features():
     }
 
 
+def make_hemorrhage_features():
+    """뇌출혈 후유증 특징적 보행 특성."""
+    return {
+        "gait_speed": 0.45, "cadence": 80, "stride_regularity": 0.45,
+        "step_symmetry": 0.50, "cop_sway": 0.09, "ml_index": 0.20,
+        "arch_index": 0.27, "acceleration_rms": 1.0,
+        "zone_heel_medial_mean": 0.18, "zone_heel_lateral_mean": 0.32,
+        "zone_forefoot_medial_mean": 0.42, "zone_forefoot_lateral_mean": 0.30,
+        "zone_toes_mean": 0.10,
+        "zone_midfoot_medial_mean": 0.08, "zone_midfoot_lateral_mean": 0.12,
+    }
+
+
+def make_disc_features():
+    """추간판 탈출증(디스크) 특징적 보행 특성."""
+    return {
+        "gait_speed": 0.70, "cadence": 95, "stride_regularity": 0.60,
+        "step_symmetry": 0.68, "cop_sway": 0.065, "ml_index": 0.12,
+        "arch_index": 0.26, "acceleration_rms": 0.75,
+        "zone_heel_medial_mean": 0.10, "zone_heel_lateral_mean": 0.08,
+        "zone_forefoot_medial_mean": 0.45, "zone_forefoot_lateral_mean": 0.38,
+        "zone_toes_mean": 0.18,
+        "zone_midfoot_medial_mean": 0.10, "zone_midfoot_lateral_mean": 0.10,
+    }
+
+
 class TestBiomarkerExtractor:
     def test_extract_biomarkers(self):
         extractor = GaitBiomarkerExtractor()
@@ -144,13 +170,30 @@ class TestDiseaseRiskPredictor:
         assert "바이오마커" in report.summary_kr
         assert "질환별 위험도" in report.summary_kr
 
-    def test_all_10_diseases(self):
+    def test_predict_hemorrhage(self):
+        predictor = DiseaseRiskPredictor()
+        features = make_hemorrhage_features()
+        report = predictor.predict(features)
+
+        hemorrhage_risk = next(r for r in report.results if r.disease_id == "cerebral_hemorrhage")
+        assert hemorrhage_risk.risk_score > 0.1
+        assert len(hemorrhage_risk.matched_signs) > 0
+
+    def test_predict_disc(self):
+        predictor = DiseaseRiskPredictor()
+        features = make_disc_features()
+        report = predictor.predict(features)
+
+        disc_risk = next(r for r in report.results if r.disease_id == "disc_herniation")
+        assert disc_risk.risk_score > 0.1
+
+    def test_all_14_diseases(self):
         predictor = DiseaseRiskPredictor()
         features = make_normal_features()
         report = predictor.predict(features)
 
         disease_ids = {r.disease_id for r in report.results}
-        assert len(disease_ids) == 10
+        assert len(disease_ids) == 14
 
     def test_referral_info(self):
         predictor = DiseaseRiskPredictor()
@@ -167,9 +210,9 @@ class TestDiseaseClassifier:
         clf = GaitDiseaseClassifier()
         X, y = clf.generate_training_data(n_per_class=50)
 
-        assert X.shape == (50 * 7, len(FEATURE_NAMES))
-        assert y.shape == (50 * 7,)
-        assert len(set(y)) == 7
+        assert X.shape == (50 * 11, len(FEATURE_NAMES))
+        assert y.shape == (50 * 11,)
+        assert len(set(y)) == 11
 
     def test_train(self):
         clf = GaitDiseaseClassifier(n_estimators=20)
