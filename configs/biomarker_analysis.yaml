@@ -1,0 +1,443 @@
+# 질환 특이적 보행 바이오마커 분석 설정
+# Disease-Specific Gait Biomarker Analysis Configuration
+
+data:
+  sequence_length: 128
+  imu_channels: 6
+  pressure_grid: [16, 8]
+  skeleton_joints: 17
+
+biomarkers:
+  # Base biomarkers (from existing system)
+  base_count: 13
+  base_features:
+    - gait_speed
+    - cadence
+    - stride_regularity
+    - step_symmetry
+    - cop_sway
+    - ml_variability
+    - heel_pressure_ratio
+    - forefoot_pressure_ratio
+    - arch_index
+    - pressure_asymmetry
+    - acceleration_rms
+    - acceleration_variability
+    - trunk_sway
+
+  # Disease-specific biomarkers
+  neurological:
+    parkinsons:
+      korean_name: "파킨슨병"
+      markers:
+        - name: festination_index
+          korean: "가속보행 지수"
+          normal_range: [0.0, 0.15]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.85
+          specificity: 0.78
+        - name: tremor_power_ratio
+          korean: "진전 파워 비율"
+          normal_range: [0.0, 0.05]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.90
+          specificity: 0.82
+        - name: fog_score
+          korean: "보행동결 점수"
+          normal_range: [0.0, 1.0]
+          unit: "index"
+          primary_sensor: imu
+          sensitivity: 0.88
+          specificity: 0.75
+        - name: arm_swing_asymmetry
+          korean: "팔 흔들림 비대칭"
+          normal_range: [0.85, 1.0]
+          unit: "ratio"
+          primary_sensor: skeleton
+          sensitivity: 0.82
+          specificity: 0.70
+        - name: stride_time_variability
+          korean: "보폭 시간 변동성"
+          normal_range: [0.0, 0.03]
+          unit: "CV"
+          primary_sensor: imu
+          sensitivity: 0.80
+          specificity: 0.72
+
+    dementia:
+      korean_name: "치매 (알츠하이머)"
+      markers:
+        - name: dual_task_cost
+          korean: "이중과제 비용"
+          normal_range: [0.0, 0.10]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.78
+          specificity: 0.72
+        - name: path_deviation_index
+          korean: "경로 이탈 지수"
+          normal_range: [0.0, 0.05]
+          unit: "m"
+          primary_sensor: skeleton
+          sensitivity: 0.75
+          specificity: 0.68
+        - name: executive_gait_score
+          korean: "실행기능 보행점수"
+          normal_range: [0.7, 1.0]
+          unit: "score"
+          primary_sensor: fusion
+          sensitivity: 0.80
+          specificity: 0.74
+        - name: turning_hesitation
+          korean: "회전 주저"
+          normal_range: [0.0, 0.15]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.72
+          specificity: 0.65
+        - name: stride_time_fractal
+          korean: "보폭시간 프랙탈 차원"
+          normal_range: [0.6, 0.8]
+          unit: "DFA"
+          primary_sensor: imu
+          sensitivity: 0.76
+          specificity: 0.70
+
+    cerebellar_ataxia:
+      korean_name: "소뇌 실조증"
+      markers:
+        - name: lateral_instability_index
+          korean: "측면 불안정성 지수"
+          normal_range: [0.0, 0.02]
+          unit: "m"
+          primary_sensor: pressure
+          sensitivity: 0.92
+          specificity: 0.85
+        - name: romberg_ratio
+          korean: "롬베르그 비율"
+          normal_range: [1.0, 1.5]
+          unit: "ratio"
+          primary_sensor: pressure
+          sensitivity: 0.88
+          specificity: 0.80
+        - name: tandem_gait_score
+          korean: "일직선 보행 점수"
+          normal_range: [0.0, 0.03]
+          unit: "m"
+          primary_sensor: skeleton
+          sensitivity: 0.90
+          specificity: 0.82
+        - name: dysmetria_index
+          korean: "측정이상 지수"
+          normal_range: [0.0, 0.05]
+          unit: "ratio"
+          primary_sensor: skeleton
+          sensitivity: 0.85
+          specificity: 0.78
+        - name: rebound_phenomenon
+          korean: "반동 현상"
+          normal_range: [0.0, 0.10]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.78
+          specificity: 0.72
+
+    multiple_sclerosis:
+      korean_name: "다발성 경화증"
+      markers:
+        - name: fatigue_decay_rate
+          korean: "피로 감퇴율"
+          normal_range: [0.0, 0.02]
+          unit: "per_min"
+          primary_sensor: imu
+          sensitivity: 0.85
+          specificity: 0.78
+        - name: foot_drop_angle
+          korean: "족하수 각도"
+          normal_range: [10.0, 25.0]
+          unit: "degrees"
+          primary_sensor: skeleton
+          sensitivity: 0.88
+          specificity: 0.82
+        - name: spasticity_index
+          korean: "경직 지수"
+          normal_range: [0.0, 0.15]
+          unit: "index"
+          primary_sensor: imu
+          sensitivity: 0.82
+          specificity: 0.75
+        - name: heat_sensitivity_index
+          korean: "열 민감성 지수"
+          normal_range: [0.0, 0.05]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.70
+          specificity: 0.65
+        - name: walking_endurance
+          korean: "보행 지구력"
+          normal_range: [0.8, 1.0]
+          unit: "normalized"
+          primary_sensor: imu
+          sensitivity: 0.80
+          specificity: 0.72
+
+    stroke:
+      korean_name: "뇌졸중"
+      markers:
+        - name: circumduction_angle
+          korean: "원회전 각도"
+          normal_range: [0.0, 5.0]
+          unit: "degrees"
+          primary_sensor: skeleton
+          sensitivity: 0.90
+          specificity: 0.85
+        - name: weight_bearing_asymmetry
+          korean: "체중부하 비대칭"
+          normal_range: [0.90, 1.0]
+          unit: "ratio"
+          primary_sensor: pressure
+          sensitivity: 0.92
+          specificity: 0.88
+        - name: temporal_asymmetry_ratio
+          korean: "시간적 비대칭 비율"
+          normal_range: [0.90, 1.0]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.88
+          specificity: 0.82
+        - name: propulsion_asymmetry
+          korean: "추진력 비대칭"
+          normal_range: [0.85, 1.0]
+          unit: "ratio"
+          primary_sensor: pressure
+          sensitivity: 0.85
+          specificity: 0.80
+
+    cerebrovascular:
+      korean_name: "뇌혈관 질환"
+      markers:
+        - name: hemiparesis_severity
+          korean: "편마비 심각도"
+          normal_range: [0.0, 0.10]
+          unit: "index"
+          primary_sensor: fusion
+          sensitivity: 0.90
+          specificity: 0.85
+        - name: compensation_pattern
+          korean: "보상 패턴"
+          normal_range: [0.0, 0.15]
+          unit: "index"
+          primary_sensor: skeleton
+          sensitivity: 0.82
+          specificity: 0.75
+
+  musculoskeletal:
+    osteoarthritis:
+      korean_name: "골관절염"
+      markers:
+        - name: joint_loading_asymmetry
+          korean: "관절 하중 비대칭"
+          normal_range: [0.90, 1.0]
+          unit: "ratio"
+          primary_sensor: pressure
+          sensitivity: 0.88
+          specificity: 0.80
+        - name: antalgic_score
+          korean: "통증성 보행 점수"
+          normal_range: [0.0, 0.10]
+          unit: "index"
+          primary_sensor: pressure
+          sensitivity: 0.85
+          specificity: 0.78
+        - name: stance_phase_ratio
+          korean: "입각기 비율"
+          normal_range: [0.95, 1.0]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.80
+          specificity: 0.72
+        - name: stiffness_index
+          korean: "강직 지수"
+          normal_range: [0.0, 0.15]
+          unit: "index"
+          primary_sensor: skeleton
+          sensitivity: 0.78
+          specificity: 0.70
+        - name: loading_rate
+          korean: "하중 부하율"
+          normal_range: [0.5, 1.5]
+          unit: "BW/s"
+          primary_sensor: pressure
+          sensitivity: 0.82
+          specificity: 0.75
+
+    rheumatoid_arthritis:
+      korean_name: "류마티스 관절염"
+      markers:
+        - name: forefoot_avoidance_index
+          korean: "전족부 회피 지수"
+          normal_range: [0.0, 0.10]
+          unit: "index"
+          primary_sensor: pressure
+          sensitivity: 0.85
+          specificity: 0.78
+        - name: arch_collapse_rate
+          korean: "아치 붕괴율"
+          normal_range: [0.0, 0.02]
+          unit: "per_month"
+          primary_sensor: pressure
+          sensitivity: 0.80
+          specificity: 0.72
+        - name: inflammation_index
+          korean: "염증 지수"
+          normal_range: [0.0, 0.10]
+          unit: "index"
+          primary_sensor: imu
+          sensitivity: 0.75
+          specificity: 0.68
+        - name: mtp_pressure_shift
+          korean: "중족지 압력 이동"
+          normal_range: [0.0, 0.15]
+          unit: "ratio"
+          primary_sensor: pressure
+          sensitivity: 0.82
+          specificity: 0.75
+
+    disc_herniation:
+      korean_name: "추간판 탈출증"
+      markers:
+        - name: trunk_lateral_shift
+          korean: "체간 측면 이동"
+          normal_range: [0.0, 2.0]
+          unit: "degrees"
+          primary_sensor: skeleton
+          sensitivity: 0.88
+          specificity: 0.82
+        - name: flexion_avoidance_angle
+          korean: "굴곡 회피 각도"
+          normal_range: [0.0, 5.0]
+          unit: "degrees"
+          primary_sensor: skeleton
+          sensitivity: 0.82
+          specificity: 0.75
+        - name: trendelenburg_sign
+          korean: "트렌델렌버그 징후"
+          normal_range: [0.0, 5.0]
+          unit: "degrees"
+          primary_sensor: skeleton
+          sensitivity: 0.85
+          specificity: 0.80
+        - name: radiculopathy_pattern
+          korean: "신경근병증 패턴"
+          normal_range: [0.0, 0.10]
+          unit: "index"
+          primary_sensor: fusion
+          sensitivity: 0.80
+          specificity: 0.72
+        - name: pain_avoidance_cadence
+          korean: "통증회피 보행수"
+          normal_range: [0.0, 0.10]
+          unit: "ratio"
+          primary_sensor: imu
+          sensitivity: 0.78
+          specificity: 0.70
+
+    spinal_stenosis:
+      korean_name: "척추관 협착증"
+      markers:
+        - name: flexion_preference_index
+          korean: "전방 굴곡 선호 지수"
+          normal_range: [0.0, 10.0]
+          unit: "degrees"
+          primary_sensor: skeleton
+          sensitivity: 0.90
+          specificity: 0.85
+        - name: neurogenic_claudication
+          korean: "신경인성 파행"
+          normal_range: [500.0, 10000.0]
+          unit: "m"
+          primary_sensor: imu
+          sensitivity: 0.88
+          specificity: 0.82
+        - name: shopping_cart_sign
+          korean: "쇼핑카트 징후"
+          normal_range: [0.0, 0.05]
+          unit: "index"
+          primary_sensor: skeleton
+          sensitivity: 0.85
+          specificity: 0.80
+        - name: walking_distance_decline
+          korean: "보행거리 감퇴"
+          normal_range: [0.0, 0.03]
+          unit: "per_100m"
+          primary_sensor: imu
+          sensitivity: 0.82
+          specificity: 0.75
+        - name: recovery_time
+          korean: "회복 시간"
+          normal_range: [0.0, 30.0]
+          unit: "seconds"
+          primary_sensor: imu
+          sensitivity: 0.80
+          specificity: 0.72
+
+model:
+  # Encoder settings (shared with main model)
+  embed_dim: 128
+
+  # Biomarker extraction
+  num_biomarkers: 59
+  biomarker_attention_heads: 4
+
+  # Disease panels
+  num_diseases: 10
+  panel_hidden_dim: 64
+
+  # Multi-scale temporal
+  temporal_scales: [3, 7, 15, 31]
+
+  # Training
+  dropout: 0.3
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+
+  # Loss weights
+  loss_weights:
+    disease_classification: 1.0
+    biomarker_regression: 0.5
+    routing_regularization: 0.1
+    consistency: 0.3
+
+  # Confidence calibration
+  calibration:
+    enabled: true
+    initial_temperature: 1.5
+
+analysis:
+  # Severity thresholds
+  severity_levels:
+    normal: 0.2
+    mild: 0.4
+    moderate: 0.6
+    severe: 0.8
+
+  # Differential diagnosis
+  differential:
+    min_score: 0.15
+    max_alternatives: 3
+
+  # Sensor quality requirements
+  sensor_quality:
+    min_imu_samples: 64
+    min_pressure_frames: 32
+    min_skeleton_frames: 32
+    quality_threshold: 0.6
+
+  # Report settings
+  report:
+    language: "ko"
+    include_sensor_contribution: true
+    include_differential: true
+    max_biomarkers_displayed: 10
