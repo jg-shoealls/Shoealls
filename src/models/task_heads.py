@@ -67,3 +67,66 @@ class DiseaseClassificationHead(nn.Module):
             "disease_logits": disease_logits,
             "severity": severity_score
         }
+
+
+class FallRiskPredictionHead(nn.Module):
+    """낙상 위험도 예측 헤드: 전역 + 시계열 GRU 기반 이중 분기."""
+
+    def __init__(self, embed_dim: int = 128, temporal_hidden: int = 64,
+                 temporal_layers: int = 1, dropout: float = 0.3):
+        super().__init__()
+        self.global_branch = nn.Sequential(
+            nn.Linear(embed_dim, temporal_hidden),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+        )
+        self.temporal_branch = nn.GRU(
+            input_size=embed_dim, hidden_size=temporal_hidden,
+            num_layers=temporal_layers, batch_first=True,
+        )
+        combined_dim = temporal_hidden * 2
+        self.risk_classifier = nn.Sequential(
+            nn.Linear(combined_dim, 32), nn.ReLU(inplace=True),
+            nn.Dropout(dropout), nn.Linear(32, 2),
+        )
+        self.risk_score = nn.Sequential(
+            nn.Linear(combined_dim, 32), nn.ReLU(inplace=True),
+            nn.Linear(32, 1), nn.Sigmoid(),
+        )
+        self.time_to_fall = nn.Sequential(
+            nn.Linear(combined_dim, 32), nn.ReLU(inplace=True),
+            nn.Linear(32, 1), nn.Softplus(),
+        )
+
+    def forward(self, fused: torch.Tensor, temporal: torch.Tensor) -> dict:
+        g = self.global_branch(fused)
+        _, h = self.temporal_branch(temporal)
+        t = h[-1]
+        combined = torch.cat([g, t], dim=-1)
+        return {
+            "risk_logits": self.risk_classifier(combined),
+            "risk_score": self.risk_score(combined),
+            "time_to_fall": self.time_to_fall(combined),
+        }
+
+
+class GaitPhaseDetectionHead(nn.Module):
+    """보행 위상 분류 헤드: 프레임 단위 8-phase 분류."""
+
+    def __init__(self, embed_dim: int = 128, num_phases: int = 8,
+                 dropout: float = 0.3):
+        super().__init__()
+        mid_dim = embed_dim // 2
+        self.conv_refine = nn.Sequential(
+            nn.Conv1d(embed_dim, embed_dim, kernel_size=5, padding=2),
+            nn.BatchNorm1d(embed_dim), nn.ReLU(inplace=True), nn.Dropout(dropout),
+            nn.Conv1d(embed_dim, mid_dim, kernel_size=3, padding=1),
+            nn.BatchNorm1d(mid_dim), nn.ReLU(inplace=True),
+        )
+        self.classifier = nn.Conv1d(mid_dim, num_phases, kernel_size=1)
+
+    def forward(self, temporal: torch.Tensor) -> dict:
+        x = temporal.permute(0, 2, 1)  # (B, D, T)
+        x = self.conv_refine(x)
+        phase_logits = self.classifier(x)  # (B, num_phases, T)
+        return {"phase_logits": phase_logits}

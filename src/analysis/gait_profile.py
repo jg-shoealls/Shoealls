@@ -1,10 +1,12 @@
 """Personal gait profile learner: builds and tracks individual baselines."""
+from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
+from .config import DEVIATION_THRESHOLDS
+from .common import get_feature_korean
 
 
 @dataclass
@@ -40,20 +42,19 @@ class PersonalGaitProfiler:
     Maintains a running baseline from past sessions and flags deviations.
     """
 
-    # Z-score thresholds for alerts
-    MILD_THRESHOLD = 1.5
-    MODERATE_THRESHOLD = 2.0
-    SEVERE_THRESHOLD = 3.0
+    MILD_THRESHOLD = DEVIATION_THRESHOLDS["mild"]
+    MODERATE_THRESHOLD = DEVIATION_THRESHOLDS["moderate"]
+    SEVERE_THRESHOLD = DEVIATION_THRESHOLDS["severe"]
 
     def __init__(self, grid_h: int = 16, grid_w: int = 8):
         self.foot_analyzer = FootZoneAnalyzer(grid_h, grid_w)
-        self.baseline: Optional[GaitBaseline] = None
+        self.baseline: GaitBaseline | None = None
         self._session_history: list[dict] = []
 
     def extract_session_features(
         self,
         pressure_seq: np.ndarray,
-        imu_seq: Optional[np.ndarray] = None,
+        imu_seq: np.ndarray | None = None,
     ) -> dict[str, float]:
         """Extract gait features from a single session.
 
@@ -214,15 +215,18 @@ class PersonalGaitProfiler:
         alerts = []
 
         # Check scalar metrics
+        _baseline_map = {
+            "ml_index": self.baseline.ml_index,
+            "ap_index": self.baseline.ap_index,
+            "arch_index": self.baseline.arch_index,
+            "cop_sway": self.baseline.cop_sway,
+            "cadence": self.baseline.cadence,
+            "stride_regularity": self.baseline.stride_regularity,
+            "step_symmetry": self.baseline.step_symmetry,
+            "acceleration_rms": self.baseline.acceleration_rms,
+        }
         scalar_metrics = {
-            "ml_index": ("내외측 체중 분포", self.baseline.ml_index),
-            "ap_index": ("전후방 체중 분포", self.baseline.ap_index),
-            "arch_index": ("아치 지수", self.baseline.arch_index),
-            "cop_sway": ("체중심 흔들림", self.baseline.cop_sway),
-            "cadence": ("보행 속도(분당 걸음)", self.baseline.cadence),
-            "stride_regularity": ("보폭 규칙성", self.baseline.stride_regularity),
-            "step_symmetry": ("좌우 대칭성", self.baseline.step_symmetry),
-            "acceleration_rms": ("가속도 크기", self.baseline.acceleration_rms),
+            k: (get_feature_korean(k), v) for k, v in _baseline_map.items()
         }
 
         for metric, (korean_name, (mean, std)) in scalar_metrics.items():

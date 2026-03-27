@@ -4,6 +4,8 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import Optional
 
+from .config import TREND_THRESHOLD as _DEFAULT_TREND_THRESHOLD
+
 
 @dataclass
 class TrendPoint:
@@ -32,7 +34,7 @@ class LongitudinalTrendTracker:
     improvement, worsening, or stability.
     """
 
-    TREND_THRESHOLD = 0.05  # minimum slope magnitude for significant trend
+    TREND_THRESHOLD = _DEFAULT_TREND_THRESHOLD
 
     METRIC_LABELS = {
         "ml_index": ("내외측 체중 분포", "lower_better"),

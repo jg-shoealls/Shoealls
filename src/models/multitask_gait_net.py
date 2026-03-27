@@ -133,7 +133,7 @@ class MultitaskGaitNet(nn.Module):
         self.fall_risk_head = FallRiskPredictionHead(
             embed_dim=embed_dim,
             temporal_hidden=fall_cfg.get("temporal_hidden", 64),
-            num_temporal_layers=fall_cfg.get("num_temporal_layers", 1),
+            temporal_layers=fall_cfg.get("num_temporal_layers", 1),
             dropout=fall_cfg.get("dropout", 0.3),
         )
 

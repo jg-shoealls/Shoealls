@@ -21,6 +21,7 @@ from .gait_profile import PersonalGaitProfiler, DeviationReport
 from .injury_risk import InjuryRiskEngine, InjuryRiskReport
 from .feedback import CorrektiveFeedbackGenerator, PersonalizedFeedback
 from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
+from .common import get_feature_korean
 
 # ── 한글 폰트 설정 ────────────────────────────────────────────────────
 _FONT_PATH = "/usr/share/fonts/truetype/nanum/NanumSquareB.ttf"
@@ -339,17 +340,7 @@ def plot_gait_profile_deviation(
 
     z_scores = [deviation_report.deviations[m] for m in metrics]
 
-    METRIC_KR = {
-        "ml_index": "내외측 분포",
-        "ap_index": "전후방 분포",
-        "arch_index": "아치 지수",
-        "cop_sway": "COP 흔들림",
-        "cadence": "보행 속도",
-        "stride_regularity": "보폭 규칙성",
-        "step_symmetry": "좌우 대칭",
-        "acceleration_rms": "가속도 크기",
-    }
-    metric_labels = [METRIC_KR.get(m, m) for m in metrics]
+    metric_labels = [get_feature_korean(m) for m in metrics]
 
     # ── Z-score 바 차트 ──
     ax = axes[0]
@@ -391,7 +382,7 @@ def plot_gait_profile_deviation(
     for m in metrics:
         if m in session_features and m in baseline_means:
             plot_metrics.append(m)
-            plot_labels.append(METRIC_KR.get(m, m))
+            plot_labels.append(_EXTRA_KR.get(m, get_feature_korean(m)))
             current_vals.append(session_features[m])
             baseline_vals.append(baseline_means[m])
 
@@ -454,14 +445,7 @@ def plot_trend_dashboard(
                            left=0.06, right=0.94, top=0.90, bottom=0.06,
                            hspace=0.4, wspace=0.3)
 
-    METRIC_KR = {
-        "cop_sway": "체중심 흔들림",
-        "stride_regularity": "보폭 규칙성",
-        "step_symmetry": "좌우 대칭성",
-        "ml_index": "내외측 분포",
-        "injury_risk": "부상 위험도",
-        "overall_deviation": "개인 기준 편차",
-    }
+    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
 
     for idx, metric in enumerate(available):
         row = idx // ncols

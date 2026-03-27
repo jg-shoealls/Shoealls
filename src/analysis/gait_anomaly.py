@@ -375,13 +375,8 @@ class GaitAnomalyDetector:
         # 위험도 순 정렬
         return dict(sorted(result.items(), key=lambda x: -x[1]))
 
-    @staticmethod
-    def _severity_label(score: float) -> str:
-        return severity_label(score)
-
-    @staticmethod
-    def _feat_korean(feat_name: str) -> str:
-        return get_feature_korean(feat_name)
+    _severity_label = staticmethod(severity_label)
+    _feat_korean = staticmethod(get_feature_korean)
 
     def _generate_report(
         self,

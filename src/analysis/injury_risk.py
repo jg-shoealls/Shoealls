@@ -27,16 +27,15 @@ class InjuryRiskReport:
     summary_kr: str         # Korean summary
 
 
+from .config import INJURY_NORMAL_RANGES
+
 # Normal reference ranges (from biomechanics literature)
 NORMAL_RANGES = {
-    "heel_pressure_ratio": (0.25, 0.40),    # heel should bear 25-40% of total
-    "forefoot_pressure_ratio": (0.35, 0.55), # forefoot 35-55%
-    "midfoot_pressure_ratio": (0.05, 0.20),  # midfoot 5-20%
-    "ml_index": (-0.15, 0.15),               # mediolateral balance
-    "arch_index": (0.15, 0.35),              # normal arch
-    "peak_heel_pressure": (0, 3.0),          # relative scale
+    **INJURY_NORMAL_RANGES,
+    "midfoot_pressure_ratio": (0.05, 0.20),
+    "ml_index": (-0.15, 0.15),
+    "peak_heel_pressure": (0, 3.0),
     "peak_forefoot_pressure": (0, 2.5),
-    "cop_sway": (0, 0.08),
 }
 
 
@@ -137,13 +136,8 @@ class InjuryRiskEngine:
             ])) / 2.0,
         }
 
-    @staticmethod
-    def _score(value: float, low_risk: float, high_risk: float) -> float:
-        return linear_risk_score(value, low_risk, high_risk)
-
-    @staticmethod
-    def _severity_label(score: float) -> str:
-        return severity_label_4level(score)
+    _score = staticmethod(linear_risk_score)
+    _severity_label = staticmethod(severity_label_4level)
 
     def _assess_plantar_fasciitis(self, m: dict) -> InjuryRisk:
         """Plantar fasciitis: high heel impact + reduced arch support."""
