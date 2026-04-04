@@ -205,7 +205,10 @@ def train(config: dict, output_dir: Path):
     print("Final Test Evaluation")
     print("=" * 70)
 
-    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=False)
+    best_model_path = output_dir / "best_model.pt"
+    if not best_model_path.exists():
+        raise FileNotFoundError(f"Best model checkpoint not found: {best_model_path}")
+    checkpoint = torch.load(best_model_path, weights_only=True)
     model.load_state_dict(checkpoint["model_state_dict"])
     test_metrics = evaluate(model, test_loader, criterion, device)
 
