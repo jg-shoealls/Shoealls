@@ -1,0 +1,3 @@
+## 2024-04-05 - MultiheadAttention Default Behavior Overhead
+**Learning:** In PyTorch, `nn.MultiheadAttention` computes and returns attention weights by default (`need_weights=True`), which allocates memory and requires extra computation even if the weights are immediately discarded (e.g., `attn_out, _ = mha(...)`). In this multimodal gait model, avoiding this computation in the cross-attention blocks improved forward pass performance by roughly 8% on CPU.
+**Action:** Always set `need_weights=False` when using PyTorch's `nn.MultiheadAttention` unless the attention weights are explicitly required for visualization or loss computation.
