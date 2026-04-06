@@ -1,0 +1,3 @@
+## 2024-05-18 - PyTorch MultiheadAttention Optimization
+**Learning:** In PyTorch, calling `nn.MultiheadAttention` with `need_weights=False` avoids allocating memory for the attention weights and allows using highly-optimized attention backends (e.g. FlashAttention). I learned that in this codebase, the returned attention weights from `self.self_attention` in `fusion.py`, `self.cross_attn` in `fusion.py`, and `self.cross_verify` in `reasoning_engine.py` were unused.
+**Action:** Always verify if attention weights are used. If not, pass `need_weights=False` to `nn.MultiheadAttention` to optimize performance.
