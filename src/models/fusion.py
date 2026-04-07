@@ -40,13 +40,19 @@ class CrossModalAttentionFusion(nn.Module):
         )
         self.norm = nn.LayerNorm(embed_dim)
 
-    def forward(self, modality_features: list[torch.Tensor]) -> torch.Tensor:
+    def forward(
+        self,
+        modality_features: list[torch.Tensor],
+        return_attn_weights: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, dict]:
         """
         Args:
             modality_features: List of tensors, each (B, T_i, D).
+            return_attn_weights: If True, also return cross-attention weight maps.
 
         Returns:
             Fused representation of shape (B, D).
+            If return_attn_weights: also returns dict with attention weight info.
         """
         # Add modality embeddings
         enriched = []
@@ -56,24 +62,45 @@ class CrossModalAttentionFusion(nn.Module):
             enriched.append(feat + mod_emb.expand(feat.size(0), feat.size(1), -1))
 
         # Cross-modal attention: each modality attends to concatenation of others
+        all_attn_weights = []  # layer -> modality -> (B, heads, T_q, T_ctx)
         for layer in self.cross_attention_layers:
             updated = []
+            layer_weights = []
             for i in range(self.num_modalities):
                 # Concatenate all other modalities as context
                 context_parts = [enriched[j] for j in range(self.num_modalities) if j != i]
                 context = torch.cat(context_parts, dim=1)
-                updated.append(layer(enriched[i], context))
+                if return_attn_weights:
+                    out, weights = layer(enriched[i], context, return_attn_weights=True)
+                    updated.append(out)
+                    layer_weights.append(weights)
+                else:
+                    updated.append(layer(enriched[i], context))
             enriched = updated
+            if return_attn_weights:
+                all_attn_weights.append(layer_weights)
 
         # Concatenate all modality representations
         combined = torch.cat(enriched, dim=1)  # (B, sum(T_i), D)
 
         # Self-attention over combined
-        attn_out, _ = self.self_attention(combined, combined, combined)
+        attn_out, self_attn_w = self.self_attention(
+            combined, combined, combined,
+            need_weights=return_attn_weights,
+            average_attn_weights=False,
+        )
         combined = self.norm(combined + attn_out)
 
         # Global average pooling
-        return combined.mean(dim=1)  # (B, D)
+        fused = combined.mean(dim=1)  # (B, D)
+
+        if return_attn_weights:
+            attn_info = {
+                "cross_attn_weights": all_attn_weights,
+                "self_attn_weights": self_attn_w,
+            }
+            return fused, attn_info
+        return fused
 
 
 class CrossAttentionBlock(nn.Module):
@@ -100,11 +127,24 @@ class CrossAttentionBlock(nn.Module):
             nn.Dropout(dropout),
         )
 
-    def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        query: torch.Tensor,
+        context: torch.Tensor,
+        return_attn_weights: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         # Cross-attention: query attends to context
-        attn_out, _ = self.cross_attn(query, context, context)
+        attn_out, attn_weights = self.cross_attn(
+            query, context, context,
+            need_weights=return_attn_weights,
+            average_attn_weights=False,
+        )
         query = self.norm1(query + attn_out)
 
         # Feed-forward
         ff_out = self.ffn(query)
-        return self.norm2(query + ff_out)
+        out = self.norm2(query + ff_out)
+
+        if return_attn_weights:
+            return out, attn_weights  # attn_weights: (B, num_heads, T_q, T_ctx)
+        return out

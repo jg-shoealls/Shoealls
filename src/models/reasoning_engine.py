@@ -134,7 +134,8 @@ class CrossModalEvidenceCollector(nn.Module):
 
         # 교차 검증: 각 모달리티가 다른 모달리티를 참조
         cross_out, cross_attn_weights = self.cross_verify(
-            summaries, summaries, summaries
+            summaries, summaries, summaries,
+            need_weights=True, average_attn_weights=False,
         )
         cross_out = self.norm(summaries + cross_out)  # (B, 3, D)
 
@@ -167,6 +168,7 @@ class CrossModalEvidenceCollector(nn.Module):
             "modality_weights": modality_weights,
             "cross_support": cross_support_score,
             "evidence_strength": strength.squeeze(-1),
+            "cross_attn_weights": cross_attn_weights,  # (B, num_heads, 3, 3)
         }
 
 
@@ -492,6 +494,12 @@ class GaitReasoningEngine(nn.Module):
             "anomaly_results": anomaly_results,
             "evidence": evidence,
             "diagnosis": diagnosis,
+            # 인코더 특징 (XAI 시각화용)
+            "encoder_features": {
+                "imu": imu_feat,
+                "pressure": pressure_feat,
+                "skeleton": skeleton_feat,
+            },
         }
 
     def explain(self, result: dict, sample_idx: int = 0) -> str:
