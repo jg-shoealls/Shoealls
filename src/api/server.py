@@ -4,6 +4,7 @@ Endpoints:
     POST /predict      — Sensor data -> gait anomaly classification
     POST /disease-risk — Gait features -> disease risk screening (14 diseases)
     POST /feedback     — Gait features -> personalized corrective feedback
+    POST /parkinsons   — Parkinson's disease-focused gait analysis
     GET  /health       — Server health check
 """
 
@@ -15,6 +16,7 @@ from src.analysis.gait_anomaly import GaitAnomalyDetector
 from src.analysis.disease_predictor import DiseaseRiskPredictor
 from src.analysis.injury_risk import InjuryRiskEngine
 from src.analysis.feedback import CorrektiveFeedbackGenerator
+from src.analysis.parkinsons_analyzer import ParkinsonsAnalyzer
 
 from .schemas import (
     PredictRequest,
@@ -28,6 +30,10 @@ from .schemas import (
     FeedbackResponse,
     FeedbackItemResponse,
     InjuryRiskItemResponse,
+    ParkinsonsRequest,
+    ParkinsonsResponse,
+    SubPatternResponse,
+    SubPatternIndicatorResponse,
 )
 
 app = FastAPI(
@@ -42,6 +48,7 @@ anomaly_detector = GaitAnomalyDetector()
 disease_predictor = DiseaseRiskPredictor()
 injury_engine = InjuryRiskEngine(grid_h=16, grid_w=8)
 feedback_generator = CorrektiveFeedbackGenerator()
+parkinsons_analyzer = ParkinsonsAnalyzer()
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -223,6 +230,45 @@ def feedback(request: FeedbackRequest):
         encouragement=fb.encouragement,
         feedback_items=feedback_items,
         injury_risks=injury_risks,
+    )
+
+
+@app.post("/parkinsons", response_model=ParkinsonsResponse)
+def parkinsons(request: ParkinsonsRequest):
+    """Parkinson's disease-focused gait analysis.
+
+    Detects 5 Parkinson's-specific gait sub-patterns (shuffling, freezing,
+    festination, postural instability, bradykinesia), estimates Hoehn & Yahr
+    stage, and provides targeted clinical recommendations.
+    """
+    features, _ = _extract_features(request)
+
+    report = parkinsons_analyzer.analyze(features)
+
+    def _convert_sub_pattern(r):
+        return SubPatternResponse(
+            pattern_id=r.pattern_id,
+            korean_name=r.korean_name,
+            score=round(r.score, 4),
+            detected=r.detected,
+            description=r.description,
+            clinical_meaning=r.clinical_meaning,
+            indicator_details=[
+                SubPatternIndicatorResponse(**d) for d in r.indicator_details
+            ],
+        )
+
+    return ParkinsonsResponse(
+        risk_score=report.risk_score,
+        risk_label=report.risk_label,
+        hoehn_yahr_stage=report.hoehn_yahr_stage,
+        hoehn_yahr_label=report.hoehn_yahr_label,
+        hoehn_yahr_description=report.hoehn_yahr_description,
+        sub_patterns=[_convert_sub_pattern(r) for r in report.sub_patterns],
+        detected_patterns=[_convert_sub_pattern(r) for r in report.detected_patterns],
+        key_findings=report.key_findings,
+        recommendations=report.recommendations,
+        confidence=report.confidence,
     )
 
 

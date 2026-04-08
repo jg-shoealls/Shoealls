@@ -123,3 +123,45 @@ class FeedbackResponse(BaseModel):
     encouragement: str
     feedback_items: list[FeedbackItemResponse]
     injury_risks: list[InjuryRiskItemResponse]
+
+
+# ── Parkinson's-specific schemas ─────────────────────────────────────
+
+class ParkinsonsRequest(BaseModel):
+    """Request for /parkinsons endpoint."""
+    sensor_data: SensorData | None = None
+    features: GaitFeatures | None = None
+
+
+class SubPatternIndicatorResponse(BaseModel):
+    indicator: str
+    status: str
+    score: float
+    value: float | None = None
+    normal_threshold: float | None = None
+    severe_threshold: float | None = None
+    direction: str | None = None
+
+
+class SubPatternResponse(BaseModel):
+    pattern_id: str
+    korean_name: str
+    score: float
+    detected: bool
+    description: str
+    clinical_meaning: str
+    indicator_details: list[SubPatternIndicatorResponse]
+
+
+class ParkinsonsResponse(BaseModel):
+    """Response from /parkinsons endpoint."""
+    risk_score: float = Field(..., description="Overall Parkinson's risk 0-1")
+    risk_label: str = Field(..., description="Risk grade in Korean")
+    hoehn_yahr_stage: int = Field(..., ge=0, le=5, description="Hoehn & Yahr stage 0-5")
+    hoehn_yahr_label: str
+    hoehn_yahr_description: str
+    sub_patterns: list[SubPatternResponse]
+    detected_patterns: list[SubPatternResponse]
+    key_findings: list[str]
+    recommendations: list[str]
+    confidence: float = Field(..., ge=0, le=1)
