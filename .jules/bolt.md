@@ -1,0 +1,3 @@
+## 2025-02-20 - PyTorch MultiheadAttention Memory and Speed Bottleneck
+**Learning:** By default, PyTorch's `nn.MultiheadAttention` computes and returns attention weights. Not only does this unnecessarily allocate memory and increase compute when weights are unused, but in modern PyTorch (2.0+), it forces a fallback to standard attention math, preventing the use of highly-optimized fused kernels like FlashAttention which natively do not return attention weights.
+**Action:** When calling `nn.MultiheadAttention` where attention weights aren't used downstream (i.e. we only need `attn_output`), always pass `need_weights=False` to unlock memory savings and FlashAttention backend execution.
