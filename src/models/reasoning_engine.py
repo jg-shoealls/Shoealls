@@ -133,8 +133,10 @@ class CrossModalEvidenceCollector(nn.Module):
         summaries = torch.stack([f.mean(dim=1) for f in modality_features], dim=1)  # (B, 3, D)
 
         # 교차 검증: 각 모달리티가 다른 모달리티를 참조
-        cross_out, cross_attn_weights = self.cross_verify(
-            summaries, summaries, summaries
+        # 성능 최적화: 어텐션 가중치가 불필요하므로 need_weights=False 설정하여
+        # 불필요한 계산과 메모리 할당을 방지하고 FlashAttention 등 최적화된 백엔드 사용을 유도.
+        cross_out, _ = self.cross_verify(
+            summaries, summaries, summaries, need_weights=False
         )
         cross_out = self.norm(summaries + cross_out)  # (B, 3, D)
 
