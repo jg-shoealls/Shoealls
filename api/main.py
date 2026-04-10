@@ -28,6 +28,7 @@ from .schemas import (
     AnalyzeResponse,
 )
 from .service import get_service
+from .examples import generate_sample_sensor_data, GAIT_PROFILES
 
 
 @asynccontextmanager
@@ -56,6 +57,43 @@ app = FastAPI(
 def health_check():
     """서버 상태 확인."""
     return {"status": "ok", "service": "shoealls-gait-api", "version": "0.1.0"}
+
+
+# ── Sample Data ────────────────────────────────────────────────────────
+
+_GAIT_CLASS_MAP = {"normal": 0, "antalgic": 1, "ataxic": 2, "parkinsonian": 3}
+
+@app.get(
+    "/api/v1/sample",
+    tags=["System"],
+    summary="샘플 입력 데이터 생성",
+    description=(
+        "API 테스트용 합성 데이터를 반환합니다.\n\n"
+        "반환된 `sensor_data`와 `features`를 그대로 `/api/v1/analyze`에 붙여넣으세요.\n\n"
+        "**gait_profile**: `normal` | `parkinsons` | `stroke` | `fall_risk`"
+    ),
+)
+def get_sample(gait_profile: str = "normal"):
+    """테스트용 합성 센서 데이터 + 보행 특성 반환."""
+    if gait_profile not in GAIT_PROFILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"gait_profile must be one of: {list(GAIT_PROFILES.keys())}",
+        )
+    gait_class = _GAIT_CLASS_MAP.get(gait_profile, 0)
+    sensor_data = generate_sample_sensor_data(gait_class=gait_class)
+    return {
+        "gait_profile": gait_profile,
+        "sensor_data": sensor_data,
+        "features": GAIT_PROFILES[gait_profile],
+        "usage": {
+            "classify":     "POST /api/v1/classify     — sensor_data 사용",
+            "disease_risk": "POST /api/v1/disease-risk — features 사용",
+            "injury_risk":  "POST /api/v1/injury-risk  — features 사용",
+            "reasoning":    "POST /api/v1/reasoning    — sensor_data 사용",
+            "analyze":      "POST /api/v1/analyze      — sensor_data + features 모두 사용",
+        },
+    }
 
 
 # ── Gait Classification ────────────────────────────────────────────────
