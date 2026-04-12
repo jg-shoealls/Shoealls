@@ -1,0 +1,3 @@
+## 2024-04-12 - PyTorch MultiheadAttention weights omission regression
+**Learning:** Adding `need_weights=False` to `nn.MultiheadAttention` makes PyTorch return `None` as the second element instead of a tensor. If the variable assigned to the second return value (e.g. `cross_attn_weights` in `reasoning_engine.py`) is used anywhere else, this will cause a `TypeError` regression.
+**Action:** Always check if the second return value of `MultiheadAttention` is being assigned to `_` before blindly applying `need_weights=False`. If it is assigned to a named variable, trace its usage to ensure it is actually discarded before optimizing, and change the variable name to `_` to prevent future regressions.
