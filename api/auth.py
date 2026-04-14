@@ -14,7 +14,8 @@ import time
 import hashlib
 from typing import Optional
 
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader, APIKeyQuery
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -55,11 +56,13 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
         )
 
         if not key or key not in _ALLOWED_KEYS:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=401,
-                detail={
-                    "error": "Unauthorized",
-                    "message": "유효한 API 키가 필요합니다. X-API-Key 헤더 또는 ?api_key 쿼리 파라미터를 사용하세요.",
+                content={
+                    "detail": {
+                        "error": "Unauthorized",
+                        "message": "유효한 API 키가 필요합니다. X-API-Key 헤더 또는 ?api_key 쿼리 파라미터를 사용하세요.",
+                    }
                 },
                 headers={"WWW-Authenticate": "ApiKey"},
             )
