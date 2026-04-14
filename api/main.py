@@ -29,14 +29,21 @@ from .schemas import (
 )
 from .service import get_service
 from .examples import generate_sample_sensor_data, GAIT_PROFILES
+from .auth import APIKeyMiddleware, AUTH_ENABLED
+from .logging_config import setup_logging, RequestLoggingMiddleware
+
+logger = setup_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: warm up sklearn models on synthetic data
+    logger.info("startup: warming up ML models...")
     svc = get_service()
     svc.warmup()
+    auth_status = f"enabled ({len(__import__('os').getenv('API_KEYS','').split(','))} keys)" if AUTH_ENABLED else "disabled (demo mode)"
+    logger.info(f"startup complete — auth={auth_status}")
     yield
+    logger.info("shutdown")
 
 
 app = FastAPI(
@@ -44,11 +51,16 @@ app = FastAPI(
     description=(
         "멀티모달 보행 AI 분석 REST API\n\n"
         "**센서 입력**: IMU (6ch) + 족저압 (16×8) + 스켈레톤 (17 joints × 3D)\n\n"
-        "**분석 기능**: 보행 패턴 분류 / 질환 위험도 / 부상 위험 / Chain-of-Reasoning"
+        "**분석 기능**: 보행 패턴 분류 / 질환 위험도 / 부상 위험 / Chain-of-Reasoning\n\n"
+        "**인증**: `X-API-Key` 헤더 (API_KEYS 환경변수 미설정 시 인증 비활성화)"
     ),
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# 미들웨어 등록 순서 중요: 로깅 → 인증 (안쪽부터 실행)
+app.add_middleware(APIKeyMiddleware)
+app.add_middleware(RequestLoggingMiddleware, logger=logger)
 
 
 # ── Health ─────────────────────────────────────────────────────────────
