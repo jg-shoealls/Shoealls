@@ -15,13 +15,19 @@ const PROFILE_KR: Record<Profile, string> = {
   fall_risk: "낙상 위험",
 };
 
-// ── 색상 팔레트 ──────────────────────────────────────────────────────
 const C = {
   blue:   "#3B82F6",
   green:  "#10B981",
   amber:  "#F59E0B",
   red:    "#EF4444",
   purple: "#AF65FA",
+};
+
+const CLASS_KR: Record<string, string> = {
+  normal:       "정상 보행",
+  antalgic:     "절뚝거림",
+  ataxic:       "운동실조",
+  parkinsonian: "파킨슨",
 };
 
 export default function Dashboard() {
@@ -46,7 +52,7 @@ export default function Dashboard() {
     }
   }, [profile]);
 
-  const cls = result?.classification;
+  const cls = result?.classify;
   const dis = result?.disease_risk;
   const inj = result?.injury_risk;
   const rsn = result?.reasoning;
@@ -55,25 +61,20 @@ export default function Dashboard() {
     <div className="flex h-screen bg-bg overflow-hidden">
       <Sidebar active={0} />
 
-      {/* ── 메인 ── */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* 탑바 */}
         <header className="bg-surface border-b border-border px-8 py-4 flex items-center justify-between shrink-0">
           <h1 className="text-textPri font-semibold text-xl">보행 분석 대시보드</h1>
           <div className="flex items-center gap-3">
-            {/* 프로파일 선택 */}
             <select
               value={profile}
               onChange={(e) => setProfile(e.target.value as Profile)}
               className="bg-card border border-border text-textSec text-[13px] rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue"
             >
               {PROFILES.map((p) => (
-                <option key={p} value={p}>
-                  {PROFILE_KR[p]}
-                </option>
+                <option key={p} value={p}>{PROFILE_KR[p]}</option>
               ))}
             </select>
-
             {cls?.is_demo_mode !== false && (
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium text-amber bg-amber/20">
                 데모 모드
@@ -82,7 +83,6 @@ export default function Dashboard() {
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium text-blue bg-blue/20">
               v0.1.0 MVP
             </span>
-
             <button
               onClick={runAnalysis}
               disabled={loading}
@@ -95,7 +95,6 @@ export default function Dashboard() {
 
         {/* 스크롤 영역 */}
         <div className="flex-1 overflow-y-auto p-8 space-y-6">
-          {/* 오류 */}
           {error && (
             <div className="bg-red/10 border border-red/30 text-red rounded-xl px-5 py-4 text-[14px]">
               오류: {error}
@@ -125,7 +124,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* 결과 없음 안내 */}
+          {/* 초기 안내 */}
           {!result && !loading && (
             <div className="bg-card rounded-2xl p-12 text-center">
               <div className="text-textMuted text-[14px]">
@@ -147,35 +146,24 @@ export default function Dashboard() {
             <>
               <h2 className="text-textSec text-[14px] font-semibold">분석 결과</h2>
               <div className="grid grid-cols-2 gap-5">
+
                 {/* ── 보행 패턴 분류 ── */}
-                <ResultCard
-                  title="보행 패턴 분류"
-                  badge="보행 분류"
-                  accentColor={C.blue}
-                  isDemo={cls?.is_demo_mode}
-                >
+                <ResultCard title="보행 패턴 분류" badge="보행 분류" accentColor={C.blue} isDemo={cls?.is_demo_mode}>
                   <div className="flex items-start gap-5">
-                    {/* 원형 수치 */}
                     <div className="w-28 h-28 shrink-0 rounded-full bg-surface flex flex-col items-center justify-center border-2 border-blue/40">
-                      <span className="text-blue text-[11px] font-medium">{cls?.prediction_kr}</span>
+                      <span className="text-blue text-[11px] font-medium text-center px-1">{cls?.prediction_kr}</span>
                       <span className="text-textPri font-bold text-xl">
                         {cls ? (cls.confidence * 100).toFixed(1) + "%" : "--"}
                       </span>
                     </div>
-                    {/* 확률 바 */}
                     <div className="flex-1 space-y-3">
-                      {cls &&
-                        Object.entries(cls.class_probabilities)
-                          .sort((a, b) => b[1] - a[1])
-                          .map(([name, prob]) => (
-                            <ProgressBar
-                              key={name}
-                              pct={prob}
-                              color={C.blue}
-                              label={name}
-                              valueLabel={(prob * 100).toFixed(1) + "%"}
-                            />
-                          ))}
+                      {cls && Object.entries(cls.class_probabilities)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([name, prob]) => (
+                          <ProgressBar key={name} pct={prob} color={C.blue}
+                            label={CLASS_KR[name] ?? name}
+                            valueLabel={(prob * 100).toFixed(1) + "%"} />
+                        ))}
                     </div>
                   </div>
                 </ResultCard>
@@ -185,27 +173,18 @@ export default function Dashboard() {
                   {dis && (
                     <>
                       <div className="text-green text-[13px] font-semibold mb-3">
-                        ML 예측: {dis.ml_prediction_kr}{" "}
-                        {(dis.ml_confidence * 100).toFixed(1)}%
+                        ML 예측: {dis.ml_prediction_kr}  {(dis.ml_confidence * 100).toFixed(1)}%
                       </div>
                       <div className="space-y-3">
                         {dis.ml_top3.map((d) => (
-                          <ProgressBar
-                            key={d.disease}
-                            pct={d.probability}
-                            color={
-                              d.probability > 0.5 ? C.red
-                              : d.probability > 0.2 ? C.amber
-                              : C.green
-                            }
-                            label={d.disease_kr}
-                            valueLabel={(d.probability * 100).toFixed(1) + "%"}
-                          />
+                          <ProgressBar key={d.name_kr} pct={d.probability}
+                            color={d.probability > 0.5 ? C.red : d.probability > 0.2 ? C.amber : C.green}
+                            label={d.name_kr} valueLabel={(d.probability * 100).toFixed(1) + "%"} />
                         ))}
                       </div>
-                      {dis.anomaly_biomarkers.length > 0 && (
+                      {dis.abnormal_biomarkers && dis.abnormal_biomarkers.length > 0 && (
                         <div className="mt-3 text-textMuted text-[11px]">
-                          이상 감지: {dis.anomaly_biomarkers.slice(0, 3).join(" / ")}
+                          이상 감지: {dis.abnormal_biomarkers.slice(0, 3).join(" / ")}
                         </div>
                       )}
                     </>
@@ -216,34 +195,23 @@ export default function Dashboard() {
                 <ResultCard title="부상 위험 예측" badge="부상 예측" accentColor={C.amber}>
                   {inj && (
                     <div className="flex gap-5">
-                      {/* 종합 점수 */}
                       <div className="shrink-0">
                         <div className="text-amber font-bold text-4xl">
-                          {(inj.overall_risk_score * 100).toFixed(1)}%
+                          {(inj.combined_risk_score * 100).toFixed(1)}%
                         </div>
                         <div className="text-textSec text-[11px] mt-1">종합 위험도</div>
-                        <span
-                          className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                          style={{
-                            color: inj.risk_level === "HIGH" ? C.red : C.amber,
-                            background: `${inj.risk_level === "HIGH" ? C.red : C.amber}28`,
-                          }}
-                        >
-                          {inj.risk_level_kr}
+                        <span className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+                          style={{ color: C.red, background: `${C.red}28` }}>
+                          {inj.combined_risk_grade}
                         </span>
                       </div>
-                      {/* 부상 바 */}
                       <div className="flex-1 space-y-3">
-                        {inj.top_injuries.slice(0, 3).map((injury) => (
-                          <ProgressBar
-                            key={injury.injury}
-                            pct={injury.probability}
+                        {inj.top3.slice(0, 3).map((injury) => (
+                          <ProgressBar key={injury.name_kr} pct={injury.probability}
                             color={injury.probability > 0.4 ? C.red : C.amber}
-                            label={injury.injury_kr}
-                            valueLabel={(injury.probability * 100).toFixed(1) + "%"}
-                          />
+                            label={injury.name_kr} valueLabel={(injury.probability * 100).toFixed(1) + "%"} />
                         ))}
-                        <div className="text-textMuted text-[11px] mt-1">{inj.injury_timeline}</div>
+                        <div className="text-textMuted text-[11px] mt-1">{inj.timeline}</div>
                       </div>
                     </div>
                   )}
@@ -257,33 +225,28 @@ export default function Dashboard() {
                         {rsn.reasoning_trace.map((step, i) => (
                           <div key={step.step} className="flex items-start gap-3">
                             <div className="flex flex-col items-center mt-1">
-                              <div
-                                className="w-2 h-2 rounded-full"
-                                style={{ background: i === rsn.reasoning_trace.length - 1 ? C.purple : "#32425B" }}
-                              />
+                              <div className="w-2 h-2 rounded-full"
+                                style={{ background: i === rsn.reasoning_trace.length - 1 ? C.purple : "#32425B" }} />
                               {i < rsn.reasoning_trace.length - 1 && (
                                 <div className="w-0.5 h-5 bg-border mt-0.5" />
                               )}
                             </div>
                             <div className="flex-1 flex justify-between text-[12px]">
                               <span className="text-textMuted">{step.label}</span>
-                              <span
-                                className="font-semibold"
-                                style={{ color: i === rsn.reasoning_trace.length - 1 ? C.purple : "#94A3B8" }}
-                              >
+                              <span className="font-semibold"
+                                style={{ color: i === rsn.reasoning_trace.length - 1 ? C.purple : "#94A3B8" }}>
                                 {step.prediction_kr}
                               </span>
                               <span className="text-textSec">
-                                {(step.confidence * 100).toFixed(1)}%
+                                {(step.probability * 100).toFixed(1)}%
                               </span>
                             </div>
                           </div>
                         ))}
                       </div>
                       <div className="text-textMuted text-[11px]">
-                        불확실성: {(rsn.uncertainty * 100).toFixed(1)}% &nbsp;·&nbsp; 근거 강도:{" "}
-                        {(rsn.evidence_strength * 100).toFixed(1)}%
-                        {cls?.is_demo_mode && " · 데모 모드"}
+                        불확실성: {(rsn.uncertainty * 100).toFixed(1)}% · 근거 강도: {(rsn.evidence_strength * 100).toFixed(1)}%
+                        {rsn.is_demo_mode && " · 데모 모드"}
                       </div>
                     </>
                   )}
@@ -295,7 +258,10 @@ export default function Dashboard() {
 
         {/* 하단 바 */}
         <footer className="bg-surface border-t border-border px-8 py-2.5 text-textMuted text-[11px] flex justify-between shrink-0">
-          <span>Shoealls Gait Analysis API · POST /api/v1/analyze · {cls?.is_demo_mode ? "데모 모드" : "모델 로드됨"}</span>
+          <span>
+            Shoealls Gait Analysis API · POST /api/v1/analyze ·{" "}
+            {cls?.is_demo_mode ? "데모 모드" : "모델 로드됨"}
+          </span>
           <span>© 2026 Shoealls</span>
         </footer>
       </main>

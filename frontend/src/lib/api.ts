@@ -33,17 +33,19 @@ export interface DiseaseRiskResponse {
   ml_prediction: string;
   ml_prediction_kr: string;
   ml_confidence: number;
-  ml_top3: { disease: string; disease_kr: string; probability: number }[];
-  anomaly_biomarkers: string[];
+  ml_top3: { name_kr: string; probability: number }[];
+  abnormal_biomarkers: string[];
 }
 
 export interface InjuryRiskResponse {
-  overall_risk_score: number;
-  risk_level: string;
-  risk_level_kr: string;
-  top_injuries: { injury: string; injury_kr: string; probability: number }[];
-  injury_timeline: string;
-  prevention_advice: string[];
+  predicted_injury: string;
+  predicted_injury_kr: string;
+  confidence: number;
+  top3: { name_kr: string; probability: number }[];
+  combined_risk_score: number;
+  combined_risk_grade: string;
+  timeline: string;
+  priority_actions: string[];
 }
 
 export interface ReasoningStep {
@@ -51,22 +53,23 @@ export interface ReasoningStep {
   label: string;
   prediction: string;
   prediction_kr: string;
-  confidence: number;
+  probability: number;
 }
 
 export interface ReasoningResponse {
   final_prediction: string;
   final_prediction_kr: string;
-  final_confidence: number;
+  confidence: number;
   reasoning_trace: ReasoningStep[];
   anomaly_findings: Record<string, string[]>;
   uncertainty: number;
   evidence_strength: number;
   report_kr: string;
+  is_demo_mode: boolean;
 }
 
 export interface AnalyzeResponse {
-  classification: ClassifyResponse;
+  classify: ClassifyResponse;
   disease_risk: DiseaseRiskResponse;
   injury_risk: InjuryRiskResponse;
   reasoning: ReasoningResponse;
