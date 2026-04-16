@@ -18,14 +18,15 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 
-from .common import get_feature_korean, severity_label
+from .common import get_feature_korean
+from .config import DEVIATION_THRESHOLDS
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -376,11 +377,10 @@ class ChangePointDetector:
         reference_date: Optional[datetime] = None,
     ) -> list[ChangeSignal]:
         """최근 세션 데이터에서 변화 신호를 감지합니다."""
-        if not baseline.stats or reference_date is None:
-            reference_date = reference_date or datetime.now()
-
         if not baseline.stats:
             return []
+        if reference_date is None:
+            reference_date = datetime.now()
 
         recent_cutoff = reference_date - timedelta(days=self.RECENT_WINDOW_DAYS)
         compare_cutoff = reference_date - timedelta(days=self.COMPARISON_WINDOW_DAYS)
@@ -451,7 +451,7 @@ class ChangePointDetector:
             cusum_neg = max(0, cusum_neg - normalized - self.CUSUM_K)
             max_cusum = max(max_cusum, cusum_pos, cusum_neg)
 
-        # 3. Sliding Window 비교: 최근 14일 vs 이전 90일
+        # 3. Sliding Window 비교
         if compare_values:
             compare_arr = np.array(compare_values, dtype=float)
             sliding_shift = (recent_arr.mean() - compare_arr.mean()) / (std + 1e-8)
@@ -464,19 +464,20 @@ class ChangePointDetector:
         ewma_deviation = (current_val - ewma_mean) / (ewma_std + 1e-8)
 
         # 종합 변화 점수 (0~1): 여러 지표의 가중 평균
+        severe_sigma = DEVIATION_THRESHOLDS["severe"]
         abs_z = abs(z_score)
         abs_sliding = abs(sliding_shift)
         cusum_norm = min(max_cusum / self.CUSUM_H, 1.0)
         abs_ewma = abs(ewma_deviation)
 
         aggregate = (
-            0.35 * min(abs_z / 3.0, 1.0) +
+            0.35 * min(abs_z / severe_sigma, 1.0) +
             0.25 * min(abs_sliding / 2.5, 1.0) +
             0.25 * cusum_norm +
-            0.15 * min(abs_ewma / 3.0, 1.0)
+            0.15 * min(abs_ewma / severe_sigma, 1.0)
         )
 
-        # 유의미한 변화만 반환 (z-score 1.0 이상 or CUSUM 절반 이상)
+        # 유의미한 변화만 반환 (약한 신호는 노이즈로 필터링)
         if abs_z < 1.0 and cusum_norm < 0.3 and abs_sliding < 1.0:
             return None
 

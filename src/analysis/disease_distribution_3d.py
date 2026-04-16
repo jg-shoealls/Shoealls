@@ -121,34 +121,9 @@ def generate_disease_samples(
     return clusters
 
 
-def _compute_clinical_axes(samples: np.ndarray) -> np.ndarray:
-    """13개 보행 특성 → 3개 임상 축 점수로 변환.
-
-    각 축은 관련 특성의 가중 평균으로 계산합니다.
-    안정성 축은 값이 높을수록 불안정하므로 역전합니다.
-
-    Args:
-        samples: (n, 13) 보행 특성 배열.
-
-    Returns:
-        (n, 3) 임상 축 점수 [이동성, 안정성, 대칭성].
-    """
-    feature_idx = {name: i for i, name in enumerate(FEATURE_NAMES)}
-    result = np.zeros((samples.shape[0], 3))
-
-    for ax_i, (ax_name, ax_def) in enumerate(CLINICAL_AXES.items()):
-        for feat, weight in zip(ax_def["features"], ax_def["weights"]):
-            idx = feature_idx[feat]
-            col = samples[:, idx]
-            # 정규화: 전체 데이터 범위로 0-1 스케일링
-            col_min, col_max = col.min(), col.max()
-            if col_max - col_min > 1e-8:
-                normalized = (col - col_min) / (col_max - col_min)
-            else:
-                normalized = np.zeros_like(col)
-            result[:, ax_i] += weight * normalized
-
-    return result
+_FEATURE_IDX = {name: i for i, name in enumerate(FEATURE_NAMES)}
+# 안정성 축은 값이 높을수록 불안정하므로 점수를 반전한다
+_STABILITY_AXIS_INDEX = 1
 
 
 def _normalize_clinical_axes(clusters: list[DiseaseCluster]) -> dict:
@@ -158,10 +133,33 @@ def _normalize_clinical_axes(clusters: list[DiseaseCluster]) -> dict:
         dict: feature별 (min, max) 튜플.
     """
     all_samples = np.vstack([c.samples for c in clusters])
-    stats = {}
-    for i, name in enumerate(FEATURE_NAMES):
-        stats[name] = (all_samples[:, i].min(), all_samples[:, i].max())
-    return stats
+    return {
+        name: (all_samples[:, i].min(), all_samples[:, i].max())
+        for i, name in enumerate(FEATURE_NAMES)
+    }
+
+
+def _project_to_clinical_axes(
+    samples: np.ndarray,
+    stats: dict,
+) -> np.ndarray:
+    """(n, 13) 샘플을 (n, 3) 임상 축 점수로 투영 (전역 정규화)."""
+    n = samples.shape[0] if samples.ndim == 2 else 1
+    arr = samples.reshape(n, -1)
+    scores = np.zeros((n, 3))
+    for ax_i, ax_def in enumerate(CLINICAL_AXES.values()):
+        for feat, weight in zip(ax_def["features"], ax_def["weights"]):
+            idx = _FEATURE_IDX[feat]
+            col = arr[:, idx]
+            fmin, fmax = stats[feat]
+            if fmax - fmin > 1e-8:
+                normalized = (col - fmin) / (fmax - fmin)
+            else:
+                normalized = np.zeros_like(col)
+            if ax_i == _STABILITY_AXIS_INDEX:
+                normalized = 1.0 - normalized
+            scores[:, ax_i] += weight * normalized
+    return scores
 
 
 def compute_clinical_scores(
@@ -173,30 +171,28 @@ def compute_clinical_scores(
         [(cluster, scores_3d), ...] 리스트. scores_3d는 (n, 3).
     """
     stats = _normalize_clinical_axes(clusters)
-    feature_idx = {name: i for i, name in enumerate(FEATURE_NAMES)}
+    return [(c, _project_to_clinical_axes(c.samples, stats)) for c in clusters]
 
-    results = []
-    for cluster in clusters:
-        scores = np.zeros((cluster.samples.shape[0], 3))
-        for ax_i, (ax_name, ax_def) in enumerate(CLINICAL_AXES.items()):
-            for feat, weight in zip(ax_def["features"], ax_def["weights"]):
-                idx = feature_idx[feat]
-                col = cluster.samples[:, idx]
-                fmin, fmax = stats[feat]
-                if fmax - fmin > 1e-8:
-                    normalized = (col - fmin) / (fmax - fmin)
-                else:
-                    normalized = np.zeros_like(col)
 
-                # 안정성: 높을수록 불안정 → 반전하여 높을수록 안정
-                if ax_name == "안정성 (Stability)":
-                    normalized = 1.0 - normalized
+def _fit_pca_3d(clusters: list[DiseaseCluster]) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """클러스터를 표준화하고 SVD 기반 3D PCA를 적합합니다.
 
-                scores[:, ax_i] += weight * normalized
+    Returns:
+        (mean, std, components(3×F), explained_ratio(3,))
+    """
+    all_samples = np.vstack([c.samples for c in clusters])
+    mean = all_samples.mean(axis=0)
+    std = all_samples.std(axis=0) + 1e-8
+    _, S, Vt = np.linalg.svd((all_samples - mean) / std, full_matrices=False)
+    components = Vt[:3]
+    explained = (S[:3] ** 2) / (S ** 2).sum()
+    return mean, std, components, explained
 
-        results.append((cluster, scores))
 
-    return results
+def _project_to_pca(samples: np.ndarray, mean: np.ndarray, std: np.ndarray, components: np.ndarray) -> np.ndarray:
+    """샘플을 표준화 후 PCA 공간으로 투영."""
+    arr = np.atleast_2d(samples)
+    return ((arr - mean) / std) @ components.T
 
 
 def compute_pca_3d(
@@ -207,31 +203,11 @@ def compute_pca_3d(
     Returns:
         ([(cluster, coords_3d), ...], components, explained_variance_ratio)
     """
-    all_samples = np.vstack([c.samples for c in clusters])
-
-    # 표준화
-    mean = all_samples.mean(axis=0)
-    std = all_samples.std(axis=0) + 1e-8
-    standardized = (all_samples - mean) / std
-
-    # SVD 기반 PCA
-    U, S, Vt = np.linalg.svd(standardized, full_matrices=False)
-    components = Vt[:3]  # (3, 13)
-    total_var = (S ** 2).sum()
-    explained = (S[:3] ** 2) / total_var
-
-    # 전체 데이터를 3D로 투영
-    all_3d = standardized @ components.T  # (N, 3)
-
-    # 클러스터별로 분할
-    results = []
-    offset = 0
-    for cluster in clusters:
-        n = cluster.samples.shape[0]
-        coords = all_3d[offset:offset + n]
-        results.append((cluster, coords))
-        offset += n
-
+    mean, std, components, explained = _fit_pca_3d(clusters)
+    results = [
+        (c, _project_to_pca(c.samples, mean, std, components))
+        for c in clusters
+    ]
     return results, components, explained
 
 
@@ -569,26 +545,12 @@ def plot_patient_in_disease_space(
     patient_vec = np.array([[patient_features.get(f, 0.0) for f in FEATURE_NAMES]])
 
     if mode == "pca":
-        # PCA 변환에 환자 포함
-        all_samples = np.vstack([c.samples for c in clusters])
-        mean = all_samples.mean(axis=0)
-        std = all_samples.std(axis=0) + 1e-8
-        standardized = (all_samples - mean) / std
-        U, S, Vt = np.linalg.svd(standardized, full_matrices=False)
-        components = Vt[:3]
-        explained = (S[:3] ** 2) / (S ** 2).sum()
-
-        # 질환 클러스터 투영
-        all_3d = standardized @ components.T
-        data = []
-        offset = 0
-        for cluster in clusters:
-            n = cluster.samples.shape[0]
-            data.append((cluster, all_3d[offset:offset + n]))
-            offset += n
-
-        # 환자 투영
-        patient_3d = ((patient_vec - mean) / std) @ components.T
+        mean, std, components, explained = _fit_pca_3d(clusters)
+        data = [
+            (c, _project_to_pca(c.samples, mean, std, components))
+            for c in clusters
+        ]
+        patient_3d = _project_to_pca(patient_vec, mean, std, components)
 
         xlabel = f"PC1 ({explained[0]*100:.1f}%)"
         ylabel = f"PC2 ({explained[1]*100:.1f}%)"
@@ -597,21 +559,7 @@ def plot_patient_in_disease_space(
     else:
         data = compute_clinical_scores(clusters)
         stats = _normalize_clinical_axes(clusters)
-        feature_idx = {name: i for i, name in enumerate(FEATURE_NAMES)}
-
-        # 환자 임상 축 점수 계산
-        patient_3d = np.zeros((1, 3))
-        for ax_i, (ax_name, ax_def) in enumerate(CLINICAL_AXES.items()):
-            for feat, weight in zip(ax_def["features"], ax_def["weights"]):
-                val = patient_features.get(feat, 0.0)
-                fmin, fmax = stats[feat]
-                if fmax - fmin > 1e-8:
-                    normalized = (val - fmin) / (fmax - fmin)
-                else:
-                    normalized = 0.0
-                if ax_name == "안정성 (Stability)":
-                    normalized = 1.0 - normalized
-                patient_3d[0, ax_i] += weight * normalized
+        patient_3d = _project_to_clinical_axes(patient_vec, stats)
 
         xlabel = "이동성 (Mobility)"
         ylabel = "안정성 (Stability)"
