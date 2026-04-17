@@ -299,7 +299,7 @@ def _verify_api_compat(config: dict, ckpt_path: Path):
 
         svc = GaitMLService()
         sensor = SensorData(**generate_sample_sensor_data())
-        result = svc.classify(sensor, checkpoint_path=str(ckpt_path))
+        result = svc.classify(sensor, ckpt=str(ckpt_path))
         print(f"  보행 분류 OK: {result.prediction_kr} ({result.confidence:.1%})")
         assert not result.is_demo_mode, "체크포인트 로드 실패"
         print("  API 호환성 검증 통과!")
