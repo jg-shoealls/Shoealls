@@ -1,0 +1,3 @@
+## 2024-05-24 - PyTorch MultiheadAttention Optimization Edge Case
+**Learning:** When optimizing PyTorch's `nn.MultiheadAttention` by setting `need_weights=False` to save memory and enable optimized backends like FlashAttention, this optimization must NOT be applied if the returned attention weights are explicitly unpacked into a named variable (e.g., `cross_attn_weights`). Unpacking `None` can cause hidden regressions or break expected downstream usage.
+**Action:** Always check the assignment and usage of the return values of `MultiheadAttention` before applying the `need_weights=False` optimization.
