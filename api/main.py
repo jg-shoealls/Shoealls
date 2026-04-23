@@ -12,8 +12,9 @@ Run:
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 from .schemas import (
     ClassifyRequest,
@@ -58,7 +59,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# 미들웨어 등록 순서 중요: 로깅 → 인증 (안쪽부터 실행)
+# FastAPI 미들웨어는 역순 실행: 마지막 add_middleware가 가장 먼저 실행됨
+# 실제 실행 순서: RequestLoggingMiddleware → APIKeyMiddleware
 app.add_middleware(APIKeyMiddleware)
 app.add_middleware(RequestLoggingMiddleware, logger=logger)
 
@@ -125,8 +127,11 @@ def classify_gait(req: ClassifyRequest):
     try:
         svc = get_service()
         return svc.classify(req.sensor_data, req.checkpoint_path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("classify_gait error")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ── Disease Risk ───────────────────────────────────────────────────────
@@ -149,8 +154,11 @@ def predict_disease_risk(req: DiseaseRiskRequest):
     try:
         svc = get_service()
         return svc.disease_risk(req.features)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("predict_disease_risk error")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ── Injury Risk ────────────────────────────────────────────────────────
@@ -171,8 +179,11 @@ def predict_injury_risk(req: InjuryRiskRequest):
     try:
         svc = get_service()
         return svc.injury_risk(req.features)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("predict_injury_risk error")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ── Chain-of-Reasoning ────────────────────────────────────────────────
@@ -195,8 +206,11 @@ def reasoning_analysis(req: ReasoningRequest):
     try:
         svc = get_service()
         return svc.reasoning(req.sensor_data, req.checkpoint_path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("reasoning_analysis error")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ── Full Analysis ─────────────────────────────────────────────────────
@@ -215,5 +229,8 @@ def full_analysis(req: AnalyzeRequest):
     try:
         svc = get_service()
         return svc.analyze(req.sensor_data, req.features, req.checkpoint_path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("full_analysis error")
+        raise HTTPException(status_code=500, detail="Internal server error")

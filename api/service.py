@@ -127,7 +127,7 @@ class GaitMLService:
             model = MultimodalGaitNet(self._config).to(self._device)
             demo = True
             if ckpt and Path(ckpt).exists():
-                state = torch.load(ckpt, map_location=self._device, weights_only=False)
+                state = torch.load(ckpt, map_location=self._device, weights_only=True)
                 model.load_state_dict(state["model_state_dict"])
                 demo = False
             model.eval()

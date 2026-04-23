@@ -46,6 +46,7 @@ export interface InjuryRiskResponse {
   combined_risk_grade: string;
   timeline: string;
   priority_actions: string[];
+  body_risk_map: Record<string, number>;
 }
 
 export interface ReasoningStep {
@@ -62,6 +63,7 @@ export interface ReasoningResponse {
   confidence: number;
   reasoning_trace: ReasoningStep[];
   anomaly_findings: Record<string, string[]>;
+  modality_weights: Record<string, number>;
   uncertainty: number;
   evidence_strength: number;
   report_kr: string;

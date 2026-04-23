@@ -26,7 +26,7 @@
 from __future__ import annotations
 
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 SAMPLE_RATE  = 128      # Hz
 _FEATURE_NAMES = [
@@ -35,6 +35,21 @@ _FEATURE_NAMES = [
     "arch_index", "pressure_asymmetry", "acceleration_rms", "acceleration_variability",
     "trunk_sway",
 ]
+
+# disease_classifier.py FEATURE_NAMES와 순서 일치 여부를 임포트 시 검증
+def _validate_feature_order() -> None:
+    try:
+        from src.analysis.disease_classifier import FEATURE_NAMES as _DC_NAMES
+        if _FEATURE_NAMES != list(_DC_NAMES):
+            raise RuntimeError(
+                f"Feature order mismatch between feature_extractor and disease_classifier!\n"
+                f"  extractor : {_FEATURE_NAMES}\n"
+                f"  classifier: {list(_DC_NAMES)}"
+            )
+    except ImportError:
+        pass  # 분석 모듈 없이 센서 레이어만 사용하는 경우
+
+_validate_feature_order()
 
 
 @dataclass

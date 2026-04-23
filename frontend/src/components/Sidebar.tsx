@@ -51,7 +51,7 @@ export default function Sidebar() {
           <span className="w-2 h-2 rounded-full bg-green inline-block" />
           <span className="text-green text-[12px] font-semibold">API 서버 정상</span>
         </div>
-        <div className="text-textMuted text-[10px]">localhost:8000 · v0.1.0</div>
+        <div className="text-textMuted text-[10px]">{process.env.NEXT_PUBLIC_API_URL || "localhost:8000"} · v0.1.0</div>
       </div>
     </aside>
   );
