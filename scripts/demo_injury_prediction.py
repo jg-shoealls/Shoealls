@@ -27,7 +27,7 @@ def main():
     # 특성 중요도 Top 5
     sorted_feats = sorted(metrics.feature_importance.items(), key=lambda x: -x[1])
     print("\n  [특성 중요도 Top 5]")
-    from src.analysis.injury_predictor import FEATURE_KOREAN
+    from src.analysis.common import FEATURE_KOREAN
     for rank, (feat, imp) in enumerate(sorted_feats[:5], 1):
         kr = FEATURE_KOREAN.get(feat, feat)
         print(f"  {rank}. {kr:14s} {imp:.3f}")
