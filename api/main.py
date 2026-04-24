@@ -36,6 +36,17 @@ from .logging_config import setup_logging, RequestLoggingMiddleware
 logger = setup_logging()
 
 
+def _svc_call(fn, handler: str):
+    """서비스 호출을 공통 예외 처리로 감싼다."""
+    try:
+        return fn()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception(f"{handler} error")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("startup: warming up ML models...")
@@ -124,14 +135,8 @@ def get_sample(gait_profile: str = "normal"):
     ),
 )
 def classify_gait(req: ClassifyRequest):
-    try:
-        svc = get_service()
-        return svc.classify(req.sensor_data, req.checkpoint_path)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.exception("classify_gait error")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    svc = get_service()
+    return _svc_call(lambda: svc.classify(req.sensor_data, req.checkpoint_path), "classify_gait")
 
 
 # ── Disease Risk ───────────────────────────────────────────────────────
@@ -151,14 +156,8 @@ def classify_gait(req: ClassifyRequest):
     ),
 )
 def predict_disease_risk(req: DiseaseRiskRequest):
-    try:
-        svc = get_service()
-        return svc.disease_risk(req.features)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.exception("predict_disease_risk error")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    svc = get_service()
+    return _svc_call(lambda: svc.disease_risk(req.features), "predict_disease_risk")
 
 
 # ── Injury Risk ────────────────────────────────────────────────────────
@@ -176,14 +175,8 @@ def predict_disease_risk(req: DiseaseRiskRequest):
     ),
 )
 def predict_injury_risk(req: InjuryRiskRequest):
-    try:
-        svc = get_service()
-        return svc.injury_risk(req.features)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.exception("predict_injury_risk error")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    svc = get_service()
+    return _svc_call(lambda: svc.injury_risk(req.features), "predict_injury_risk")
 
 
 # ── Chain-of-Reasoning ────────────────────────────────────────────────
@@ -203,14 +196,8 @@ def predict_injury_risk(req: InjuryRiskRequest):
     ),
 )
 def reasoning_analysis(req: ReasoningRequest):
-    try:
-        svc = get_service()
-        return svc.reasoning(req.sensor_data, req.checkpoint_path)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.exception("reasoning_analysis error")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    svc = get_service()
+    return _svc_call(lambda: svc.reasoning(req.sensor_data, req.checkpoint_path), "reasoning_analysis")
 
 
 # ── Full Analysis ─────────────────────────────────────────────────────
@@ -226,11 +213,5 @@ def reasoning_analysis(req: ReasoningRequest):
     ),
 )
 def full_analysis(req: AnalyzeRequest):
-    try:
-        svc = get_service()
-        return svc.analyze(req.sensor_data, req.features, req.checkpoint_path)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.exception("full_analysis error")
-        raise HTTPException(status_code=500, detail="Internal server error")
+    svc = get_service()
+    return _svc_call(lambda: svc.analyze(req.sensor_data, req.features, req.checkpoint_path), "full_analysis")

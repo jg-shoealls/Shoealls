@@ -9,11 +9,9 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
-from torch.utils.data import DataLoader
 
-from src.data.dataset import MultimodalGaitDataset
-from src.data.synthetic import generate_synthetic_dataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
+from src.training.evaluation import run_ablation, run_evaluation
 from src.training.train import train
 from src.utils.metrics import compute_metrics
 from src.validation.report import generate_report
@@ -41,97 +39,6 @@ from src.analysis import (
     CorrektiveFeedbackGenerator,
     LongitudinalTrendTracker,
 )
-
-
-def run_ablation(config: dict, device: torch.device) -> dict:
-    """모달리티 제거 실험 (Ablation Study)."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=True)
-    model = MultimodalGaitNet(config).to(device)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-
-    data_cfg = config["data"]
-    dataset_dict = generate_synthetic_dataset(
-        num_samples_per_class=30, num_classes=data_cfg["num_classes"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"], seed=99,
-    )
-    dataset = MultimodalGaitDataset(
-        dataset_dict, sequence_length=data_cfg["sequence_length"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"],
-    )
-    loader = DataLoader(dataset, batch_size=32)
-
-    strategies = {
-        "IMU only": {"pressure": True, "skeleton": True},
-        "Pressure only": {"imu": True, "skeleton": True},
-        "Skeleton only": {"imu": True, "pressure": True},
-        "IMU + Pressure": {"skeleton": True},
-        "IMU + Skeleton": {"pressure": True},
-        "Pressure + Skeleton": {"imu": True},
-        "All (Fusion)": {},
-    }
-
-    results = {}
-    for name, mask in strategies.items():
-        all_preds, all_labels = [], []
-        with torch.no_grad():
-            for batch in loader:
-                batch = {k: v.to(device) for k, v in batch.items()}
-                labels = batch.pop("label")
-                for key in mask:
-                    batch[key] = torch.zeros_like(batch[key])
-                logits = model(batch)
-                all_preds.append(logits.argmax(dim=1).cpu().numpy())
-                all_labels.append(labels.cpu().numpy())
-
-        all_preds = np.concatenate(all_preds)
-        all_labels = np.concatenate(all_labels)
-        acc = (all_preds == all_labels).mean()
-        results[name] = acc
-        print(f"  {name:25s}: {acc:.4f}")
-
-    return results
-
-
-def run_evaluation(config: dict, device: torch.device):
-    """전체 평가: 예측 + 확률."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=True)
-    model = MultimodalGaitNet(config).to(device)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-
-    data_cfg = config["data"]
-    dataset_dict = generate_synthetic_dataset(
-        num_samples_per_class=30, num_classes=data_cfg["num_classes"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"], seed=99,
-    )
-    dataset = MultimodalGaitDataset(
-        dataset_dict, sequence_length=data_cfg["sequence_length"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"],
-    )
-    loader = DataLoader(dataset, batch_size=32)
-
-    all_preds, all_labels, all_probs = [], [], []
-    with torch.no_grad():
-        for batch in loader:
-            batch = {k: v.to(device) for k, v in batch.items()}
-            labels = batch.pop("label")
-            logits = model(batch)
-            probs = torch.softmax(logits, dim=1)
-            all_preds.append(logits.argmax(dim=1).cpu().numpy())
-            all_labels.append(labels.cpu().numpy())
-            all_probs.append(probs.cpu().numpy())
-
-    return (
-        np.concatenate(all_labels),
-        np.concatenate(all_preds),
-        np.concatenate(all_probs),
-        dataset_dict["class_names"],
-    )
 
 
 def generate_gait_pattern(rng, pattern="normal", T=128, H=16, W=8):
