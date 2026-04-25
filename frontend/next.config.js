@@ -2,11 +2,10 @@
 const nextConfig = {
   // API 프록시: 개발 시 CORS 없이 FastAPI 호출
   async rewrites() {
+    const dest = process.env.API_URL ?? "http://localhost:8000";
     return [
-      {
-        source: "/api/:path*",
-        destination: `${process.env.API_URL ?? "http://localhost:8000"}/api/:path*`,
-      },
+      { source: "/health",       destination: `${dest}/health` },
+      { source: "/api/:path*",   destination: `${dest}/api/:path*` },
     ];
   },
 };
