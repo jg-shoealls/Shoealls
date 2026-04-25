@@ -5,6 +5,8 @@
 
 import numpy as np
 
+EPSILON = 1e-8  # 수치 안정성 — 0 나눗셈 방지
+
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 심각도 스코어링
@@ -27,21 +29,6 @@ def severity_label(score: float) -> str:
         return "정상"
 
 
-def severity_label_4level(score: float) -> str:
-    """0~1 위험 점수를 4단계 라벨로 변환 (기존 injury_risk 호환).
-
-    Returns: "정상" | "주의" | "경고" | "위험"
-    """
-    if score >= 0.75:
-        return "위험"
-    elif score >= 0.50:
-        return "경고"
-    elif score >= 0.25:
-        return "주의"
-    else:
-        return "정상"
-
-
 def linear_risk_score(
     value: float,
     low_risk: float,
@@ -54,11 +41,11 @@ def linear_risk_score(
     """
     if high_risk > low_risk:
         return float(np.clip(
-            (value - low_risk) / (high_risk - low_risk + 1e-8), 0, 1
+            (value - low_risk) / (high_risk - low_risk + EPSILON), 0, 1
         ))
     else:
         return float(np.clip(
-            (low_risk - value) / (low_risk - high_risk + 1e-8), 0, 1
+            (low_risk - value) / (low_risk - high_risk + EPSILON), 0, 1
         ))
 
 

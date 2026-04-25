@@ -4,7 +4,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from .foot_zones import FootZoneAnalyzer, FootAnalysisResult, REGION_GROUPS
-from .common import severity_label_4level, linear_risk_score
+from .common import severity_label, linear_risk_score
 
 
 @dataclass
@@ -137,7 +137,7 @@ class InjuryRiskEngine:
         }
 
     _score = staticmethod(linear_risk_score)
-    _severity_label = staticmethod(severity_label_4level)
+    _severity_label = staticmethod(severity_label)
 
     def _assess_plantar_fasciitis(self, m: dict) -> InjuryRisk:
         """Plantar fasciitis: high heel impact + reduced arch support."""

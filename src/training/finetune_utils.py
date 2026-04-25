@@ -11,6 +11,7 @@
 from __future__ import annotations
 import logging
 from typing import Optional
+import torch
 import torch.nn as nn
 
 logger = logging.getLogger(__name__)
@@ -256,4 +257,3 @@ def make_layerwise_optimizer(
     ], weight_decay=weight_decay)
 
 
-import torch  # 하단 import (순환 방지)

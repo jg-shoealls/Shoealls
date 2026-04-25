@@ -39,10 +39,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.data.dataset import MultimodalGaitDataset
 from src.training.train import train_one_epoch, evaluate
+from src.constants import GAIT_CLASS_NAMES
 
 # ── 상수 ────────────────────────────────────────────────────────────────────────
 
-GAIT_CLASS_NAMES = ["normal", "antalgic", "ataxic", "parkinsonian"]
 CONFIG_PATH = Path("configs/default.yaml")
 
 
@@ -233,7 +233,7 @@ def print_class_report(after: dict, num_classes: int):
     print("\n[클래스별 예측 분포]")
     preds = after.get("per_class_acc", {})
     for i in range(num_classes):
-        name = GAIT_CLASS_NAMES[i] if i < len(GAIT_CLASS_NAMES) else str(i)
+        name = GAIT_CLASS_NAMES[i][0] if i in GAIT_CLASS_NAMES else str(i)
         acc  = preds.get(i, 0.0)
         print(f"  {name:<16} {_bar(acc)} {acc*100:5.1f}%")
 

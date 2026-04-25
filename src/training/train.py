@@ -1,6 +1,7 @@
 """Training pipeline for multimodal gait classification."""
 
 import argparse
+import json
 import time
 from pathlib import Path
 
@@ -272,7 +273,6 @@ def main():
                          resume=args.resume)
 
     # 학습 결과 JSON 저장
-    import json
     result = {
         "test_accuracy": round(test_metrics["accuracy"], 4),
         "test_f1_macro": round(test_metrics["f1_macro"], 4),

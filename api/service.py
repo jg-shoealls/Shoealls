@@ -12,7 +12,9 @@ from src.models.reasoning_engine import GaitReasoningEngine
 from src.analysis.disease_predictor import DiseaseRiskPredictor
 from src.analysis.disease_classifier import GaitDiseaseClassifier
 from src.analysis.injury_predictor import InjuryRiskPredictor
+from src.analysis.common import compute_derived_features
 from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
+from src.constants import GAIT_CLASS_NAMES
 
 from .schemas import (
     SensorData, GaitFeatures,
@@ -21,13 +23,6 @@ from .schemas import (
 )
 
 _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"
-
-GAIT_CLASS_NAMES = {
-    0: ("normal", "정상 보행"),
-    1: ("antalgic", "절뚝거림"),
-    2: ("ataxic", "운동실조"),
-    3: ("parkinsonian", "파킨슨"),
-}
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
@@ -79,23 +74,7 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
 
 def _features_to_dict(features: GaitFeatures) -> dict:
     d = features.model_dump()
-    # Fill optional biomarkers with derived defaults
-    if d.get("ml_variability") is None:
-        d["ml_variability"] = d["ml_index"] * 0.5
-    if d.get("heel_pressure_ratio") is None:
-        d["heel_pressure_ratio"] = (
-            d["zone_heel_medial_mean"] + d["zone_heel_lateral_mean"]
-        )
-    if d.get("forefoot_pressure_ratio") is None:
-        d["forefoot_pressure_ratio"] = (
-            d["zone_forefoot_medial_mean"] + d["zone_forefoot_lateral_mean"]
-        )
-    if d.get("pressure_asymmetry") is None:
-        d["pressure_asymmetry"] = abs(
-            d["zone_heel_medial_mean"] - d["zone_heel_lateral_mean"]
-        )
-    if d.get("trunk_sway") is None:
-        d["trunk_sway"] = d["cop_sway"] * 1.2
+    compute_derived_features(d)  # common.py 단일 소스로 파생 특성 채우기
     return d
 
 
