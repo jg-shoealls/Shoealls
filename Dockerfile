@@ -3,9 +3,9 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# 시스템 의존성
+# 시스템 의존성 (transformers 빌드에 필요)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ && \
+    gcc g++ curl && \
     rm -rf /var/lib/apt/lists/*
 
 # Python 의존성 캐시 레이어
@@ -16,6 +16,10 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 FROM python:3.11-slim
 
 WORKDIR /app
+
+# curl: HEALTHCHECK에서 사용
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
 
 # 빌드 결과물 복사
 COPY --from=builder /install /usr/local
@@ -40,7 +44,7 @@ ENV PYTHONPATH=/app \
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
 CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers ${WORKERS}"]

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+.eggs/
+
+# 개발/테스트 파일 (프로덕션 이미지 불필요)
+tests/
+scripts/
+docs/
+firmware/
+frontend/
+outputs/
+run_*.py
+*.ipynb
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# 기타
+*.log
+*.tmp
+*.png
+*.pdf
+node_modules/
