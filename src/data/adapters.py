@@ -333,9 +333,9 @@ class NumpyDataAdapter:
                 )
 
         # Convert from (N, T, ...) arrays to list of individual arrays
-        imu_list = [data["imu"][i] for i in range(len(data["imu"]))]
-        pressure_list = [data["pressure"][i] for i in range(len(data["pressure"]))]
-        skeleton_list = [data["skeleton"][i] for i in range(len(data["skeleton"]))]
+        imu_list = list(data["imu"])
+        pressure_list = list(data["pressure"])
+        skeleton_list = list(data["skeleton"])
 
         print(f"Loaded {len(imu_list)} samples from {self.npz_path}")
         print(f"  IMU shape per sample: {imu_list[0].shape}")

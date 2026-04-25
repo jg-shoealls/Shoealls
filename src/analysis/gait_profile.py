@@ -105,35 +105,32 @@ class PersonalGaitProfiler:
 
         return features
 
+    @staticmethod
+    def _autocorr(accel_mag: np.ndarray) -> np.ndarray:
+        """정규화된 자동상관 계수 반환 (lag=0 이후)."""
+        centered = accel_mag - accel_mag.mean()
+        ac = np.correlate(centered, centered, mode="full")[len(centered) - 1:]
+        return ac / (ac[0] + 1e-8)
+
     def _compute_step_symmetry(self, accel_mag: np.ndarray) -> float:
         """Symmetry from autocorrelation: ratio of first two peaks."""
         if len(accel_mag) < 20:
             return 1.0
-        ac = np.correlate(accel_mag - accel_mag.mean(), accel_mag - accel_mag.mean(), mode="full")
-        ac = ac[len(ac) // 2:]
-        ac = ac / (ac[0] + 1e-8)
-
-        # Find first two peaks after lag 0
-        peaks = []
-        for i in range(2, len(ac) - 1):
-            if ac[i] > ac[i - 1] and ac[i] > ac[i + 1] and ac[i] > 0.1:
-                peaks.append((i, ac[i]))
-            if len(peaks) >= 2:
-                break
-
+        ac = self._autocorr(accel_mag)
+        # 연속 피크 2개 탐색 (lag ≥ 2, threshold > 0.1)
+        peaks = [(i, ac[i]) for i in range(2, len(ac) - 1)
+                 if ac[i] > ac[i - 1] and ac[i] > ac[i + 1] and ac[i] > 0.1][:2]
         if len(peaks) < 2:
             return 1.0
-        return float(min(peaks[0][1], peaks[1][1]) / (max(peaks[0][1], peaks[1][1]) + 1e-8))
+        v0, v1 = peaks[0][1], peaks[1][1]
+        return float(min(v0, v1) / (max(v0, v1) + 1e-8))
 
     def _estimate_cadence(self, accel_mag: np.ndarray, sample_rate: int = 128) -> float:
         """Estimate steps per minute from acceleration magnitude."""
         if len(accel_mag) < sample_rate:
             return 0.0
-        # Simple peak counting
-        mean_val = accel_mag.mean()
-        above = accel_mag > mean_val
-        crossings = np.diff(above.astype(int))
-        num_steps = np.sum(crossings == 1)
+        above = accel_mag > accel_mag.mean()
+        num_steps = int(np.sum(np.diff(above.astype(np.int8)) == 1))
         duration_sec = len(accel_mag) / sample_rate
         return float(num_steps / duration_sec * 60) if duration_sec > 0 else 0.0
 
@@ -141,16 +138,13 @@ class PersonalGaitProfiler:
         """Stride regularity from autocorrelation peak height."""
         if len(accel_mag) < 20:
             return 1.0
-        ac = np.correlate(accel_mag - accel_mag.mean(), accel_mag - accel_mag.mean(), mode="full")
-        ac = ac[len(ac) // 2:]
-        ac = ac / (ac[0] + 1e-8)
-
-        # Find the dominant autocorrelation peak (stride period)
-        best_peak = 0.0
-        for i in range(5, len(ac) - 1):
-            if ac[i] > ac[i - 1] and ac[i] > ac[i + 1]:
-                best_peak = max(best_peak, ac[i])
-        return float(min(best_peak, 1.0))
+        ac = self._autocorr(accel_mag)
+        # lag ≥ 5 에서 전체 최대 피크
+        inner = ac[5:-1]
+        if len(inner) == 0:
+            return 0.0
+        local_max = inner[(inner > np.roll(inner, 1)) & (inner > np.roll(inner, -1))]
+        return float(min(local_max.max(), 1.0)) if len(local_max) > 0 else 0.0
 
     def update_baseline(self, session_features: dict[str, float]):
         """Update the running baseline with new session features.

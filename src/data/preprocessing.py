@@ -5,56 +5,42 @@ import numpy as np
 
 # ── 내부 헬퍼 ─────────────────────────────────────────────────────────────────
 
+def _interp_col(col: np.ndarray) -> None:
+    """NaN을 선형 보간으로 채운다 (in-place)."""
+    nan_mask = np.isnan(col)
+    if not nan_mask.any():
+        return
+    ok_idx = np.where(~nan_mask)[0]
+    if len(ok_idx) == 0:
+        col[:] = 0.0
+    else:
+        col[:] = np.interp(np.arange(len(col)), ok_idx, col[ok_idx])
+
+
 def _sanitize(data: np.ndarray) -> np.ndarray:
     """NaN → 선형 보간, Inf → 유한 최댓값으로 클리핑."""
-    data = data.copy().astype(np.float32)
+    data = data.astype(np.float32)  # copy=True (default), 중복 copy() 제거
 
-    # ± Inf: 유한 값 범위의 ±3σ 또는 ±1e4 내로 클리핑
+    # ± Inf 클리핑
     if not np.isfinite(data).all():
         finite_vals = data[np.isfinite(data)]
-        if len(finite_vals) > 0:
-            clip_val = float(np.abs(finite_vals).max()) * 2 + 1e-6
-            clip_val = min(clip_val, 1e4)   # 센서 값이 1e4 초과하는 경우 없다고 가정
-        else:
-            clip_val = 1e4
+        clip_val = (float(np.abs(finite_vals).max()) * 2 + 1e-6) if len(finite_vals) > 0 else 1e4
+        clip_val = min(clip_val, 1e4)
         data = np.clip(np.nan_to_num(data, nan=np.nan, posinf=clip_val, neginf=-clip_val),
                        -clip_val, clip_val)
 
-    # NaN → 선형 보간 (시간 축 = axis 0)
+    # NaN → 선형 보간 (채널/열 단위, 시간 축 = axis 0)
     if np.isnan(data).any():
-        for ch in range(data.shape[-1] if data.ndim >= 2 else 1):
-            if data.ndim == 1:
-                col = data
-            elif data.ndim == 2:
-                col = data[:, ch]
-            else:
-                # (T, ...) 형태를 (T, -1)로 flatten해서 보간
-                flat = data.reshape(len(data), -1)
-                for c in range(flat.shape[1]):
-                    col = flat[:, c]
-                    nan_idx = np.where(np.isnan(col))[0]
-                    if len(nan_idx) == 0:
-                        continue
-                    ok_idx = np.where(~np.isnan(col))[0]
-                    if len(ok_idx) == 0:
-                        flat[:, c] = 0.0
-                    else:
-                        flat[:, c] = np.interp(np.arange(len(col)), ok_idx, col[ok_idx])
-                data = flat.reshape(data.shape)
-                return data
-
-            nan_idx = np.where(np.isnan(col))[0]
-            if len(nan_idx) == 0:
-                continue
-            ok_idx = np.where(~np.isnan(col))[0]
-            if len(ok_idx) == 0:
-                col[:] = 0.0
-            else:
-                interp = np.interp(np.arange(len(col)), ok_idx, col[ok_idx])
-                if data.ndim == 1:
-                    data[:] = interp
-                else:
-                    data[:, ch] = interp
+        if data.ndim == 1:
+            _interp_col(data)
+        elif data.ndim == 2:
+            for ch in range(data.shape[1]):
+                _interp_col(data[:, ch])
+        else:
+            flat = data.reshape(len(data), -1)
+            for c in range(flat.shape[1]):
+                _interp_col(flat[:, c])
+            data = flat.reshape(data.shape)
 
     return data
 

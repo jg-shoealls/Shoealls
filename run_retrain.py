@@ -257,7 +257,7 @@ def verify_api_compat(checkpoint_path: Path, config: dict) -> bool:
         ckpt  = torch.load(checkpoint_path, map_location=device, weights_only=False)
         model.load_state_dict(ckpt["model_state_dict"])
         print(f"  ✓ 체크포인트 로드 성공: {checkpoint_path}")
-    except Exception as e:
+    except (FileNotFoundError, KeyError, RuntimeError, torch.serialization.pickle.UnpicklingError) as e:
         print(f"  ✗ 체크포인트 로드 실패: {e}")
         return False
 
