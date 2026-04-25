@@ -86,7 +86,12 @@ def health_check():
 
 # ── Sample Data ────────────────────────────────────────────────────────
 
-_GAIT_CLASS_MAP = {"normal": 0, "antalgic": 1, "ataxic": 2, "parkinsonian": 3}
+_GAIT_CLASS_MAP = {
+    "normal": 0,
+    "antalgic": 1, "stroke": 1,        # 절뚝거림/비대칭 패턴
+    "ataxic": 2,   "fall_risk": 2,     # 운동실조/불안정 패턴
+    "parkinsonian": 3, "parkinsons": 3, # 파킨슨 패턴
+}
 
 @app.get(
     "/api/v1/sample",

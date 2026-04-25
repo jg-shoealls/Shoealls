@@ -92,7 +92,7 @@ def generate_sample_sensor_data(
     n_joints: int = 17,
     seed: int = 42,
 ) -> dict:
-    """합성 센서 데이터 생성.
+    """학습 데이터 생성기와 동일한 패턴으로 합성 센서 데이터 생성.
 
     Args:
         gait_class: 0=정상, 1=절뚝거림, 2=운동실조, 3=파킨슨
@@ -104,44 +104,26 @@ def generate_sample_sensor_data(
     Returns:
         {"imu": [...], "pressure": [...], "skeleton": [...]}
     """
+    from src.data.synthetic import (
+        generate_synthetic_imu,
+        generate_synthetic_pressure,
+        generate_synthetic_skeleton,
+    )
+
     rng = np.random.default_rng(seed + gait_class)
-    t = np.linspace(0, seq_len / 30.0, seq_len)
 
-    freq_map = {0: 1.8, 1: 1.2, 2: 1.5, 3: 1.0}
-    noise_map = {0: 0.1, 1: 0.2, 2: 0.4, 3: 0.15}
-    amp_map = {0: 1.0, 1: 1.0, 2: 1.0, 3: 0.5}
+    # IMU: (seq_len, 6)
+    imu_arr = generate_synthetic_imu(seq_len, gait_class, rng)
 
-    freq = freq_map.get(gait_class, 1.8)
-    noise = noise_map.get(gait_class, 0.1)
-    amp = amp_map.get(gait_class, 1.0)
+    # Pressure: (seq_len, H, W) → API는 단일 프레임 (H, W) 평균 사용
+    pressure_seq = generate_synthetic_pressure(seq_len, gait_class, (grid_h, grid_w), rng)
+    pressure = pressure_seq.mean(axis=0)  # (H, W)
 
-    # IMU: [seq_len, 6]
-    imu = []
-    for ch in range(6):
-        base = amp * np.sin(2 * np.pi * freq * t + ch * np.pi / 6)
-        if gait_class == 3:  # 파킨슨: 떨림
-            base += 0.2 * np.sin(2 * np.pi * 5.0 * t)
-        elif gait_class == 2:  # 운동실조: 불규칙
-            base += 0.3 * rng.standard_normal(seq_len)
-        base += noise * rng.standard_normal(seq_len)
-        imu.append(base.tolist())
-    imu_arr = list(map(list, zip(*imu)))  # [seq_len, 6]
+    # Skeleton: (seq_len, n_joints, 3)
+    skeleton_arr = generate_synthetic_skeleton(seq_len, gait_class, n_joints, rng)
 
-    # Pressure: [grid_h, grid_w] — 정규화된 족저압 분포
-    pressure = rng.random((grid_h, grid_w)) * 0.5 + 0.1
-    if gait_class == 1:  # 절뚝거림: 비대칭
-        pressure[:, :grid_w // 2] *= 0.5
-    pressure = pressure.tolist()
-
-    # Skeleton: [seq_len, n_joints, 3]
-    skeleton = []
-    for frame in range(seq_len):
-        joints = []
-        for j in range(n_joints):
-            x = float(np.sin(2 * np.pi * freq * t[frame]) * 0.1 + j * 0.05)
-            y = float(j * 0.1 + noise * rng.standard_normal())
-            z = float(np.cos(2 * np.pi * freq * t[frame]) * 0.05)
-            joints.append([x, y, z])
-        skeleton.append(joints)
-
-    return {"imu": imu_arr, "pressure": pressure, "skeleton": skeleton}
+    return {
+        "imu":      imu_arr.tolist(),           # [[float*6] * seq_len]
+        "pressure": pressure.tolist(),           # [[float*W] * H]
+        "skeleton": skeleton_arr.tolist(),       # [[[float*3] * n_joints] * seq_len]
+    }
