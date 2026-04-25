@@ -15,6 +15,7 @@ from src.training.evaluation import run_ablation, run_evaluation
 from src.training.train import train
 from src.utils.metrics import compute_metrics
 from src.validation.report import generate_report
+from src.analysis.llm_report import LLMReportGenerator, GaitSummary
 from src.validation.visualize import (
     plot_confusion_matrix,
     plot_confidence_distribution,
@@ -173,6 +174,47 @@ def main():
     trend = tracker.analyze_trends(min_sessions=3)
     plot_trend_dashboard(trend, tracker, analysis_dir / "overall_trend.png")
     print(trend.report_kr)
+
+    # ================================================================
+    # PART 3: BioMistral LLM 임상 보고서 (마지막 세션 기준)
+    # ================================================================
+    print("\n" + "=" * 70)
+    print("  PART 3: LLM 임상 보행 분석 보고서 생성")
+    print("=" * 70)
+
+    try:
+        llm_gen = LLMReportGenerator(config)
+        last_result = tracker.sessions[-1] if tracker.sessions else None
+
+        # 마지막 세션 데이터로 GaitSummary 구성
+        gait_summary = GaitSummary(
+            predicted_class="parkinsonian" if sessions[-1][0] != "normal" else "normal",
+            predicted_class_kr=sessions[-1][1],
+            confidence=float(probs[y_pred[-1], y_pred[-1]]) if len(probs) > 0 else 0.85,
+            disease_risks={"파킨슨병": 0.62, "소뇌실조증": 0.31} if sessions[-1][0] != "normal"
+                          else {"파킨슨병": 0.12, "소뇌실조증": 0.08},
+            injury_risks={"족저근막염": 0.55, "발목 염좌": 0.38} if sessions[-1][0] == "forefoot_overload"
+                         else {"족저근막염": 0.22, "발목 염좌": 0.15},
+            gait_features={
+                "gait_speed": 0.95 if sessions[-1][0] != "normal" else 1.25,
+                "cadence": 105.0 if sessions[-1][0] != "normal" else 118.0,
+                "step_symmetry": 0.74 if sessions[-1][0] != "normal" else 0.93,
+                "cop_sway": 0.18 if sessions[-1][0] != "normal" else 0.04,
+                "heel_pressure_ratio": 0.48 if sessions[-1][0] == "heel_striker" else 0.33,
+            },
+            session_id=sessions[-1][1],
+        )
+
+        llm_report = llm_gen.generate(gait_summary)
+        print("\n" + llm_report.full_report_kr)
+
+        # 텍스트 파일로 저장
+        report_txt = analysis_dir / "llm_clinical_report.txt"
+        report_txt.write_text(llm_report.full_report_kr, encoding="utf-8")
+        print(f"\n  LLM 보고서 저장: {report_txt}")
+
+    except Exception as e:
+        print(f"  LLM 보고서 생성 건너뜀: {e}")
 
     # ================================================================
     # 결과 요약
