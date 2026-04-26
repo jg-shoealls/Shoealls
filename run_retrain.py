@@ -415,7 +415,7 @@ def main():
     print(f"\n[학습 시작] {args.epochs} 에포크")
     print("-" * 60)
 
-    best_val_acc   = before_metrics["accuracy"]
+    best_val_acc   = -1.0  # 첫 에포크에서 반드시 체크포인트 저장
     patience_count = 0
     history        = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
     best_ckpt_path = output_dir / "best_model.pt"
