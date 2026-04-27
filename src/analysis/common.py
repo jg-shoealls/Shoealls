@@ -112,29 +112,32 @@ def compute_derived_features(features: dict[str, float]) -> None:
     """공통 파생 특성을 in-place로 계산.
 
     압력 비율, 비대칭 지수, 좌우 변동성, 체간 흔들림, 보행 속도 추정.
+    Pydantic model_dump() 결과의 None 값도 올바르게 채운다.
     """
+    def _missing(key: str) -> bool:
+        return features.get(key) is None
+
     # 압력 비율
-    ratios = compute_pressure_ratios(features)
-    for key, val in ratios.items():
-        features.setdefault(key, val)
+    for key, val in compute_pressure_ratios(features).items():
+        if _missing(key):
+            features[key] = val
 
     # 좌우 압력 비대칭
-    if "ml_index" in features and "pressure_asymmetry" not in features:
+    if not _missing("ml_index") and _missing("pressure_asymmetry"):
         features["pressure_asymmetry"] = abs(features["ml_index"])
 
     # 좌우 흔들림 변동성
-    if "cop_sway" in features and "ml_variability" not in features:
+    if not _missing("cop_sway") and _missing("ml_variability"):
         features["ml_variability"] = features["cop_sway"] * 1.5
 
     # 가속도 변동성
-    if "acceleration_rms" in features and "acceleration_variability" not in features:
-        features["acceleration_variability"] = features.get("acceleration_rms", 1.0) * 0.2
+    if not _missing("acceleration_rms") and _missing("acceleration_variability"):
+        features["acceleration_variability"] = features["acceleration_rms"] * 0.2
 
     # 체간 흔들림 (가속도 기반 추정)
-    if "acceleration_rms" in features and "trunk_sway" not in features:
+    if not _missing("acceleration_rms") and _missing("trunk_sway"):
         features["trunk_sway"] = features["acceleration_rms"] * 1.2
 
     # 보행 속도 추정 (보행률에서)
-    if "cadence" in features and "gait_speed" not in features:
-        cadence = features["cadence"]
-        features["gait_speed"] = cadence / 60.0 * 0.75 / 2.0
+    if not _missing("cadence") and _missing("gait_speed"):
+        features["gait_speed"] = features["cadence"] / 60.0 * 0.75 / 2.0

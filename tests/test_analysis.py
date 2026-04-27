@@ -156,7 +156,7 @@ class TestInjuryRiskEngine:
 
         for risk in report.risks:
             assert 0 <= risk.risk_score <= 1
-            assert risk.severity in ("정상", "주의", "경고", "위험")
+            assert risk.severity in ("정상", "경미", "주의", "경고", "위험")
             assert len(risk.contributing_factors) > 0
             assert isinstance(risk.recommendation, str)
 
