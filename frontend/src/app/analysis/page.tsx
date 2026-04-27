@@ -3,6 +3,10 @@
 import { useState, useCallback } from "react";
 import Sidebar from "@/components/Sidebar";
 import { ResultCard, ProgressBar } from "@/components/ResultCard";
+import ThemeToggle from "@/components/ThemeToggle";
+import PressureHeatmap from "@/components/PressureHeatmap";
+import GaitRadar from "@/components/GaitRadar";
+import CopTrajectory from "@/components/CopTrajectory";
 import { api, SampleResponse, ClassifyResponse } from "@/lib/api";
 
 const PROFILES = ["normal", "parkinsons", "stroke", "fall_risk"] as const;
@@ -31,26 +35,38 @@ const C = {
 };
 
 const SENSOR_CARDS = [
-  { key: "imu",      title: "IMU",          sub: "가속도 + 자이로스코프 6ch", color: C.blue },
-  { key: "pressure", title: "족저압",        sub: "16 × 8 그리드",             color: C.green },
-  { key: "skeleton", title: "스켈레톤",      sub: "17 관절 × 3D 좌표",          color: C.purple },
+  { key: "imu",      title: "IMU",      sub: "가속도 + 자이로스코프 6ch", color: C.blue },
+  { key: "pressure", title: "족저압",    sub: "16 × 8 그리드",            color: C.green },
+  { key: "skeleton", title: "스켈레톤",  sub: "17 관절 × 3D 좌표",         color: C.purple },
 ];
 
 const FEATURE_LABELS: Record<string, string> = {
-  gait_speed:                "보행 속도 (m/s)",
-  cadence:                   "케이던스 (steps/min)",
-  stride_regularity:         "보폭 규칙성",
-  step_symmetry:             "스텝 대칭성",
-  heel_pressure_ratio:       "뒤꿈치 압력 비율",
-  forefoot_pressure_ratio:   "앞발 압력 비율",
-  arch_index:                "아치 지수",
-  pressure_asymmetry:        "압력 비대칭",
-  cop_sway:                  "CoP 흔들림",
-  ml_variability:            "ML 변동성",
-  trunk_sway:                "몸통 흔들림 (deg/s)",
-  acceleration_rms:          "가속도 RMS (m/s²)",
-  acceleration_variability:  "가속도 변동성",
+  gait_speed:               "보행 속도 (m/s)",
+  cadence:                  "케이던스 (steps/min)",
+  stride_regularity:        "보폭 규칙성",
+  step_symmetry:            "스텝 대칭성",
+  heel_pressure_ratio:      "뒤꿈치 압력 비율",
+  forefoot_pressure_ratio:  "앞발 압력 비율",
+  arch_index:               "아치 지수",
+  pressure_asymmetry:       "압력 비대칭",
+  cop_sway:                 "CoP 흔들림",
+  ml_variability:           "ML 변동성",
+  trunk_sway:               "몸통 흔들림 (deg/s)",
+  acceleration_rms:         "가속도 RMS (m/s²)",
+  acceleration_variability: "가속도 변동성",
 };
+
+function toPressureGrid(raw: unknown): number[][] | null {
+  if (!raw || !Array.isArray(raw) || raw.length === 0) return null;
+  if (Array.isArray(raw[0])) return raw as number[][];
+  if (typeof raw[0] === "number") {
+    const flat = raw as number[];
+    const rows: number[][] = [];
+    for (let i = 0; i < 16; i++) rows.push(flat.slice(i * 8, i * 8 + 8));
+    return rows;
+  }
+  return null;
+}
 
 export default function AnalysisPage() {
   const [profile, setProfile] = useState<Profile>("normal");
@@ -58,6 +74,7 @@ export default function AnalysisPage() {
   const [result, setResult] = useState<ClassifyResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"radar" | "table">("radar");
 
   const run = useCallback(async () => {
     setLoading(true);
@@ -74,6 +91,8 @@ export default function AnalysisPage() {
     }
   }, [profile]);
 
+  const pressureGrid = sample ? toPressureGrid(sample.sensor_data.pressure) : null;
+
   return (
     <div className="flex h-screen bg-bg overflow-hidden">
       <Sidebar />
@@ -88,6 +107,7 @@ export default function AnalysisPage() {
             >
               {PROFILES.map((p) => <option key={p} value={p}>{PROFILE_KR[p]}</option>)}
             </select>
+            <ThemeToggle />
             <button
               onClick={run}
               disabled={loading}
@@ -124,22 +144,60 @@ export default function AnalysisPage() {
             </div>
           </section>
 
-          {/* 추출 특성 */}
-          {sample && (
+          {/* 족저압 히트맵 + CoP 궤적 */}
+          {sample && pressureGrid && (
             <section>
-              <h2 className="text-textSec text-[14px] font-semibold mb-3">추출된 보행 지표 (13개)</h2>
-              <div className="bg-card rounded-xl p-5 grid grid-cols-2 gap-x-10 gap-y-3">
-                {Object.entries(sample.features).map(([k, v]) => (
-                  <div key={k} className="flex justify-between items-center border-b border-border/40 pb-2">
-                    <span className="text-textSec text-[12px]">{FEATURE_LABELS[k] ?? k}</span>
-                    <span className="text-textPri font-semibold text-[13px]">{v.toFixed(3)}</span>
-                  </div>
-                ))}
+              <h2 className="text-textSec text-[14px] font-semibold mb-3">족저압 시각화</h2>
+              <div className="grid grid-cols-2 gap-5">
+                <div className="bg-card rounded-xl p-5">
+                  <PressureHeatmap pressure={pressureGrid} label="족저압 분포 (16×8)" />
+                </div>
+                <div className="bg-card rounded-xl p-5">
+                  <CopTrajectory features={sample.features} label="체중심(CoP) 이동 궤적" />
+                </div>
               </div>
             </section>
           )}
 
-          {/* 분류 결과 */}
+          {/* 보행 지표 — 레이더 / 수치 탭 */}
+          {sample && (
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-textSec text-[14px] font-semibold">보행 지표 분석</h2>
+                <div className="flex gap-1 bg-surface rounded-lg p-0.5">
+                  {(["radar", "table"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3 py-1 rounded text-[12px] font-medium transition-colors ${
+                        activeTab === tab
+                          ? "bg-blue text-white"
+                          : "text-textSec hover:text-textPri"
+                      }`}
+                    >
+                      {tab === "radar" ? "레이더 차트" : "수치 표"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {activeTab === "radar" ? (
+                <div className="bg-card rounded-xl p-5 flex justify-center">
+                  <GaitRadar features={sample.features} label="보행 지표 레이더 (10개 축)" />
+                </div>
+              ) : (
+                <div className="bg-card rounded-xl p-5 grid grid-cols-2 gap-x-10 gap-y-3">
+                  {Object.entries(sample.features).map(([k, v]) => (
+                    <div key={k} className="flex justify-between items-center border-b border-border/40 pb-2">
+                      <span className="text-textSec text-[12px]">{FEATURE_LABELS[k] ?? k}</span>
+                      <span className="text-textPri font-semibold text-[13px]">{v.toFixed(3)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           {loading && (
             <div className="bg-card rounded-2xl p-12 text-center">
               <div className="inline-block w-8 h-8 border-2 border-blue border-t-transparent rounded-full animate-spin mb-3" />

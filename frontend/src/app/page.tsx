@@ -1,9 +1,20 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import { ResultCard, ProgressBar } from "@/components/ResultCard";
+import ThemeToggle from "@/components/ThemeToggle";
+import RiskGauge from "@/components/RiskGauge";
+import ExportButton from "@/components/ExportButton";
 import { api, AnalyzeResponse, SampleResponse } from "@/lib/api";
+import {
+  saveSession,
+  getSessions,
+  computeBaseline,
+  deviationZ,
+  type GaitSession,
+  type BaselineStats,
+} from "@/lib/baseline";
 
 const PROFILES = ["normal", "parkinsons", "stroke", "fall_risk"] as const;
 type Profile = (typeof PROFILES)[number];
@@ -30,12 +41,52 @@ const CLASS_KR: Record<string, string> = {
   parkinsonian: "파킨슨",
 };
 
+const FEATURE_LABELS: Record<string, string> = {
+  gait_speed:               "보행 속도",
+  cadence:                  "케이던스",
+  stride_regularity:        "보폭 규칙성",
+  step_symmetry:            "스텝 대칭성",
+  cop_sway:                 "CoP 흔들림",
+  ml_variability:           "ML 변동성",
+  heel_pressure_ratio:      "뒤꿈치 압력",
+  forefoot_pressure_ratio:  "앞발 압력",
+  arch_index:               "아치 지수",
+  pressure_asymmetry:       "압력 비대칭",
+  acceleration_rms:         "가속도 RMS",
+  acceleration_variability: "가속도 변동성",
+  trunk_sway:               "몸통 흔들림",
+};
+
+// Features where higher is worse (inverted deviation coloring)
+const LOWER_BETTER = new Set([
+  "cop_sway", "ml_variability", "pressure_asymmetry",
+  "acceleration_variability", "trunk_sway",
+]);
+
+function zColor(z: number | null, key: string): string {
+  if (z == null) return C.blue;
+  const abs = Math.abs(z);
+  const isHigherWorse = LOWER_BETTER.has(key);
+  const bad = isHigherWorse ? z > 0 : z < 0;
+  if (abs < 1) return C.green;
+  if (abs < 2) return bad ? C.amber : C.green;
+  return bad ? C.red : C.blue;
+}
+
 export default function Dashboard() {
   const [profile, setProfile] = useState<Profile>("parkinsons");
   const [sample, setSample] = useState<SampleResponse | null>(null);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [baseline, setBaseline] = useState<BaselineStats | null>(null);
+  const [sessionCount, setSessionCount] = useState(0);
+
+  useEffect(() => {
+    const sessions = getSessions();
+    setSessionCount(sessions.length);
+    setBaseline(computeBaseline(sessions));
+  }, []);
 
   const runAnalysis = useCallback(async () => {
     setLoading(true);
@@ -45,6 +96,18 @@ export default function Dashboard() {
       setSample(s);
       const r = await api.analyze(s.sensor_data, s.features);
       setResult(r);
+
+      const session: GaitSession = {
+        id: Math.random().toString(36).slice(2, 10),
+        timestamp: new Date().toLocaleString("ko-KR"),
+        profile,
+        features: s.features,
+        injuryRisk: r.injury_risk.combined_risk_score,
+      };
+      saveSession(session);
+      const sessions = getSessions();
+      setSessionCount(sessions.length);
+      setBaseline(computeBaseline(sessions));
     } catch (e) {
       setError(e instanceof Error ? e.message : "분석 실패");
     } finally {
@@ -83,6 +146,8 @@ export default function Dashboard() {
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium text-blue bg-blue/20">
               v0.1.0 MVP
             </span>
+            <ExportButton result={result} profile={PROFILE_KR[profile]} />
+            <ThemeToggle />
             <button
               onClick={runAnalysis}
               disabled={loading}
@@ -130,6 +195,12 @@ export default function Dashboard() {
               <div className="text-textMuted text-[14px]">
                 보행 프로파일을 선택하고 <strong className="text-textSec">분석 시작</strong>을 누르세요.
               </div>
+              {sessionCount > 0 && (
+                <div className="mt-2 text-textMuted text-[12px]">
+                  저장된 세션 {sessionCount}건
+                  {baseline ? ` · 개인 기준선 활성 (${baseline.sessions}회 기준)` : " · 기준선 구축까지 " + (3 - sessionCount) + "회 필요"}
+                </div>
+              )}
             </div>
           )}
 
@@ -194,18 +265,13 @@ export default function Dashboard() {
                 {/* ── 부상 위험 ── */}
                 <ResultCard title="부상 위험 예측" badge="부상 예측" accentColor={C.amber}>
                   {inj && (
-                    <div className="flex gap-5">
-                      <div className="shrink-0">
-                        <div className="text-amber font-bold text-4xl">
-                          {(inj.combined_risk_score * 100).toFixed(1)}%
-                        </div>
-                        <div className="text-textSec text-[11px] mt-1">종합 위험도</div>
-                        <span className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                          style={{ color: C.red, background: `${C.red}28` }}>
-                          {inj.combined_risk_grade}
-                        </span>
-                      </div>
-                      <div className="flex-1 space-y-3">
+                    <div className="flex gap-5 items-start">
+                      <RiskGauge
+                        score={inj.combined_risk_score}
+                        label={inj.combined_risk_grade}
+                        size={160}
+                      />
+                      <div className="flex-1 space-y-3 mt-1">
                         {inj.top3.slice(0, 3).map((injury) => (
                           <ProgressBar key={injury.name_kr} pct={injury.probability}
                             color={injury.probability > 0.4 ? C.red : C.amber}
@@ -252,6 +318,55 @@ export default function Dashboard() {
                   )}
                 </ResultCard>
               </div>
+
+              {/* ── 개인 기준선 편차 ── */}
+              {baseline && sample && (
+                <section>
+                  <h2 className="text-textSec text-[14px] font-semibold mb-3">
+                    개인 기준선 편차
+                    <span className="ml-2 text-textMuted text-[12px] font-normal">
+                      최근 {baseline.sessions}회 기준
+                    </span>
+                  </h2>
+                  <div className="bg-card rounded-xl p-5 grid grid-cols-2 gap-x-8 gap-y-3">
+                    {Object.entries(sample.features).map(([key, val]) => {
+                      const z = deviationZ(val, baseline, key);
+                      const color = zColor(z, key);
+                      const baseVal = baseline.mean[key];
+                      return (
+                        <div key={key} className="flex items-center justify-between border-b border-border/30 pb-2">
+                          <span className="text-textSec text-[12px]">
+                            {FEATURE_LABELS[key] ?? key}
+                          </span>
+                          <div className="flex items-center gap-3 text-right">
+                            {baseVal != null && (
+                              <span className="text-textMuted text-[11px]">
+                                기준 {baseVal.toFixed(3)}
+                              </span>
+                            )}
+                            <span className="text-textPri font-semibold text-[13px]">
+                              {val.toFixed(3)}
+                            </span>
+                            {z != null && (
+                              <span
+                                className="text-[11px] font-semibold w-12 text-right"
+                                style={{ color }}
+                              >
+                                {z > 0 ? "+" : ""}{z.toFixed(1)}σ
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 flex gap-4 text-[11px] text-textMuted">
+                    <span><span style={{ color: C.green }}>●</span> 정상 범위 (&lt;1σ)</span>
+                    <span><span style={{ color: C.amber }}>●</span> 주의 (1–2σ)</span>
+                    <span><span style={{ color: C.red }}>●</span> 이탈 (&gt;2σ)</span>
+                  </div>
+                </section>
+              )}
             </>
           )}
         </div>

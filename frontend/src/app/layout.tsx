@@ -12,6 +12,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
+      <head>
+        {/* 테마 flash 방지: 렌더 전 data-theme 주입 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark')}catch(e){}`,
+          }}
+        />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );

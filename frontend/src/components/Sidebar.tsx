@@ -16,6 +16,12 @@ const NAV = [
 
 type ApiStatus = "checking" | "ok" | "error";
 
+const STATUS_STYLES: Record<ApiStatus, { dot: string; card: string; text: string; label: string }> = {
+  ok:       { dot: "bg-green",  card: "bg-green/10 border-green/20",  text: "text-green",  label: "API 서버 정상" },
+  error:    { dot: "bg-red",    card: "bg-red/10 border-red/20",      text: "text-red",    label: "API 서버 오프라인" },
+  checking: { dot: "bg-amber",  card: "bg-amber/10 border-amber/20",  text: "text-amber",  label: "연결 확인 중…" },
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
   const [status, setStatus] = useState<ApiStatus>("checking");
@@ -26,10 +32,7 @@ export default function Sidebar() {
     const check = async () => {
       try {
         const res = await api.health();
-        if (!cancelled) {
-          setStatus("ok");
-          setVersion(res.version ?? "");
-        }
+        if (!cancelled) { setStatus("ok"); setVersion(res.version ?? ""); }
       } catch {
         if (!cancelled) setStatus("error");
       }
@@ -39,11 +42,7 @@ export default function Sidebar() {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  const statusColor  = status === "ok" ? "green" : status === "error" ? "red" : "amber";
-  const statusLabel  = status === "ok" ? "API 서버 정상" : status === "error" ? "API 서버 오프라인" : "연결 확인 중…";
-  const dotBg        = `bg-${statusColor}`;
-  const cardBg       = `bg-${statusColor}/10 border-${statusColor}/20`;
-  const textColor    = `text-${statusColor}`;
+  const s = STATUS_STYLES[status];
 
   return (
     <aside className="w-60 shrink-0 h-screen bg-surface flex flex-col sticky top-0">
@@ -77,10 +76,12 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className={`m-3 p-3 rounded-xl border ${cardBg}`}>
+      <div className={`m-3 p-3 rounded-xl border ${s.card}`}>
         <div className="flex items-center gap-2 mb-1">
-          <span className={`w-2 h-2 rounded-full inline-block ${dotBg} ${status === "checking" ? "animate-pulse" : ""}`} />
-          <span className={`text-[12px] font-semibold ${textColor}`}>{statusLabel}</span>
+          <span
+            className={`w-2 h-2 rounded-full inline-block ${s.dot} ${status === "checking" ? "animate-pulse" : ""}`}
+          />
+          <span className={`text-[12px] font-semibold ${s.text}`}>{s.label}</span>
         </div>
         <div className="text-textMuted text-[10px]">
           {process.env.NEXT_PUBLIC_API_URL || "localhost:8000"}
