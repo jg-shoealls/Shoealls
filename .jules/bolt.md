@@ -1,0 +1,3 @@
+## 2024-05-24 - Optimizing PyTorch MultiheadAttention
+**Learning:** Setting `need_weights=False` in `nn.MultiheadAttention` prevents unnecessary memory allocation and computation for attention weights when they are discarded (e.g., unpacked into `_`). However, do not apply this optimization if the attention weights are explicitly unpacked into a named variable (e.g., `cross_attn_weights`), as unpacking `None` causes hidden regressions or breaks downstream usage.
+**Action:** When optimizing `nn.MultiheadAttention` by setting `need_weights=False`, always verify that the returned weights are safely discarded via `_` and not used anywhere else in the method.
