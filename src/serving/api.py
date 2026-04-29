@@ -176,6 +176,10 @@ app.add_middleware(
 from src.serving.payment import router as payment_router
 app.include_router(payment_router)
 
+# Dashboard API mock router
+from src.serving.mock_router import router as mock_router
+app.include_router(mock_router)
+
 
 # -- Endpoints ---------------------------------------------------------------
 

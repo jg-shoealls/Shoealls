@@ -7,12 +7,8 @@
 from pathlib import Path
 from datetime import date
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
-from matplotlib import font_manager as fm
 import numpy as np
 from sklearn.metrics import (
     confusion_matrix,
@@ -20,31 +16,16 @@ from sklearn.metrics import (
     accuracy_score,
     f1_score,
 )
-
-# ── 한글 폰트 설정 ────────────────────────────────────────────────────
-_FONT_PATH = "/usr/share/fonts/truetype/nanum/NanumSquareB.ttf"
-_FONT_PROP = fm.FontProperties(fname=_FONT_PATH)
-_FONT_PROP_LIGHT = fm.FontProperties(
-    fname="/usr/share/fonts/truetype/nanum/NanumSquareR.ttf"
+from src.utils.visualization import (
+    plt,
+    FONT_PROP as _FONT_PROP,
+    FONT_PROP_LIGHT as _FONT_PROP_LIGHT,
+    C_PRIMARY, C_ACCENT, C_SUCCESS, C_DANGER, C_LIGHT_BG,
+    set_ax_style as _set_ax_style,
+    CLASS_KR,
 )
 
-plt.rcParams["font.family"] = "NanumSquare"
-plt.rcParams["axes.unicode_minus"] = False
-
-# ── 색상 팔레트 (보고서용 톤) ──────────────────────────────────────────
-C_PRIMARY = "#1B3A5C"       # 진한 남색
-C_ACCENT = "#E8792B"        # 주황 강조
-C_SUCCESS = "#2E8B57"       # 초록 (성공)
-C_DANGER = "#C0392B"        # 빨강 (실패/경고)
-C_LIGHT_BG = "#F7F9FC"      # 밝은 배경
-
 CLASS_COLORS = ["#2196F3", "#FF9800", "#E53935", "#8E24AA"]
-CLASS_KR = {
-    "normal": "정상 보행",
-    "antalgic": "절뚝거림(Antalgic)",
-    "ataxic": "운동실조(Ataxic)",
-    "parkinsonian": "파킨슨(Parkinsonian)",
-}
 
 MODALITY_KR = {
     "IMU only": "IMU 단독",
@@ -59,18 +40,6 @@ MODALITY_KR = {
 
 def _kr(name: str) -> str:
     return CLASS_KR.get(name, name)
-
-
-def _set_ax_style(ax, title="", xlabel="", ylabel=""):
-    """공통 축 스타일 설정."""
-    if title:
-        ax.set_title(title, fontproperties=_FONT_PROP, fontsize=13, pad=10)
-    if xlabel:
-        ax.set_xlabel(xlabel, fontproperties=_FONT_PROP_LIGHT, fontsize=10)
-    if ylabel:
-        ax.set_ylabel(ylabel, fontproperties=_FONT_PROP_LIGHT, fontsize=10)
-    ax.tick_params(labelsize=9)
-    ax.grid(True, alpha=0.15, linewidth=0.5)
 
 
 def generate_report(

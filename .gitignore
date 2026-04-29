@@ -9,3 +9,8 @@ outputs/
 data/
 .pytest_cache/
 output/
+node_modules/
+.next/
+.env.local
+.venv/
+.venv-1/
