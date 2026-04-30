@@ -175,6 +175,59 @@ class SkeletonEncoder(nn.Module):
         return self.proj(x)
 
 
+class MagBaroEncoder(nn.Module):
+    """지자기(4채널) + 기압(1채널) 통합 인코더.
+
+    지자기: mx, my, mz, heading — FOG 감지 및 방향 안정성
+    기압  : 고도 — 발 지상고 (foot clearance)
+
+    Input shape : (batch, 5, time)
+    Output shape: (batch, time', embed_dim)
+    """
+
+    def __init__(
+        self,
+        in_channels: int = 5,
+        conv_channels: list = None,
+        kernel_size: int = 5,
+        lstm_hidden: int = 128,
+        lstm_layers: int = 1,
+        dropout: float = 0.3,
+    ):
+        super().__init__()
+        conv_channels = conv_channels or [32, 64]
+
+        layers = []
+        ch_in = in_channels
+        for ch_out in conv_channels:
+            layers.extend([
+                nn.Conv1d(ch_in, ch_out, kernel_size, padding=kernel_size // 2),
+                nn.BatchNorm1d(ch_out),
+                nn.ReLU(inplace=True),
+                nn.MaxPool1d(2),
+                nn.Dropout(dropout),
+            ])
+            ch_in = ch_out
+        self.cnn = nn.Sequential(*layers)
+
+        self.lstm = nn.LSTM(
+            input_size=conv_channels[-1],
+            hidden_size=lstm_hidden,
+            num_layers=lstm_layers,
+            batch_first=True,
+            dropout=dropout if lstm_layers > 1 else 0,
+            bidirectional=True,
+        )
+        self.proj = nn.Linear(lstm_hidden * 2, lstm_hidden)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, 5, T)
+        features = self.cnn(x)                  # (B, C, T')
+        features = features.permute(0, 2, 1)    # (B, T', C)
+        lstm_out, _ = self.lstm(features)        # (B, T', 2*hidden)
+        return self.proj(lstm_out)               # (B, T', hidden)
+
+
 class STGCNBlock(nn.Module):
     """Spatial-Temporal Graph Convolution block."""
 

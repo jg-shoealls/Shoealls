@@ -154,17 +154,13 @@ class LIMUBERTEncoder(nn.Module):
 class MobileNetV2PressureEncoder(nn.Module):
     """MobileNetV2-0.35 기반 족저압력 히트맵 인코더.
 
-    torchvision MobileNetV2 백본을 1채널 입력에 맞게 수정합니다.
-    ImageNet 사전학습 가중치를 사용하며, 첫 번째 Conv의 가중치 채널을
-    평균 내어 그레이스케일 입력과 호환합니다.
+    torchvision MobileNetV2 백본을 1채널 입력에 맞게 수정하며,
+    프레임 간 동역학을 캡처하기 위해 Temporal Transformer 레이어를 추가합니다.
 
     Input:  (B, T, 1, H, W)  — 족저압력 16×8 그리드
     Output: (B, T, embed_dim)
 
-    약 1.7M 파라미터 (MobileNetV2 width_mult=0.35 기준).
-
-    사용법:
-        enc = MobileNetV2PressureEncoder(pretrained=True)
+    약 1.8M 파라미터.
     """
 
     def __init__(
@@ -173,18 +169,27 @@ class MobileNetV2PressureEncoder(nn.Module):
         dropout: float = 0.1,
         pretrained: bool = True,
         width_mult: float = 0.35,
+        num_temporal_layers: int = 1,
     ):
         super().__init__()
 
         try:
             from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
-            weights = MobileNet_V2_Weights.IMAGENET1K_V1 if pretrained else None
+            if pretrained and width_mult != 1.0:
+                print(f"Warning: Pretrained weights are only available for width_mult=1.0. Initializing MobileNetV2(width_mult={width_mult}) randomly.")
+                weights = None
+            else:
+                weights = MobileNet_V2_Weights.IMAGENET1K_V1 if pretrained else None
+            
             backbone = mobilenet_v2(weights=weights, width_mult=width_mult)  # type: ignore[call-arg]
-        except TypeError:
+        except (TypeError, ImportError):
             from torchvision.models import mobilenet_v2
-            backbone = mobilenet_v2(pretrained=pretrained)
+            if pretrained and width_mult != 1.0:
+                backbone = mobilenet_v2(pretrained=False, width_mult=width_mult)
+            else:
+                backbone = mobilenet_v2(pretrained=pretrained)
 
-        # 첫 Conv: 3채널 → 1채널 (가중치를 채널 방향으로 평균)
+        # 첫 Conv: 3채널 → 1채널
         first_conv = backbone.features[0][0]
         new_conv = nn.Conv2d(
             1,
@@ -198,29 +203,41 @@ class MobileNetV2PressureEncoder(nn.Module):
             new_conv.weight.copy_(first_conv.weight.mean(dim=1, keepdim=True))
         backbone.features[0][0] = new_conv
 
-        # 분류기 헤드 제거, feature extractor만 유지
         self.features = backbone.features
-        feature_dim = backbone.last_channel  # width_mult=0.35 → 1280 * 0.35 ≈ 1280
+        feature_dim = backbone.last_channel
 
         self.pool = nn.AdaptiveAvgPool2d(1)
-        self.proj = nn.Sequential(
-            nn.Dropout(dropout),
-            nn.Linear(feature_dim, embed_dim),
+        self.proj = nn.Linear(feature_dim, embed_dim)
+
+        # Temporal refinement: 시간적 선후 관계 학습
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=embed_dim,
+            nhead=4,
+            dim_feedforward=embed_dim * 2,
+            dropout=dropout,
+            batch_first=True,
         )
+        self.temporal_refiner = nn.TransformerEncoder(
+            encoder_layer, num_layers=num_temporal_layers
+        )
+        self.norm = nn.LayerNorm(embed_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (B, T, 1, H, W)
         B, T = x.shape[:2]
-        x = x.reshape(B * T, *x.shape[2:])    # (B*T, 1, H, W)
+        x = x.reshape(B * T, *x.shape[2:])
 
-        # 16×8 → 최소 32×32 이상으로 보간 (MobileNet 첫 stride=2 대응)
         if x.shape[-1] < 32 or x.shape[-2] < 32:
             x = F.interpolate(x, size=(64, 32), mode="bilinear", align_corners=False)
 
-        feats = self.features(x)               # (B*T, C, h, w)
+        feats = self.features(x)
         feats = self.pool(feats).flatten(1)    # (B*T, C)
-        out = self.proj(feats)                 # (B*T, embed_dim)
-        return out.reshape(B, T, -1)           # (B, T, embed_dim)
+        out = self.proj(feats)                 # (B*T, D)
+        
+        # Temporal processing
+        out = out.reshape(B, T, -1)            # (B, T, D)
+        out = self.temporal_refiner(out)       # (B, T, D)
+        return self.norm(out)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -377,3 +394,16 @@ class CTRGCNEncoder(nn.Module):
         x = x.mean(dim=-1)                     # (B, C', T)  — 관절 평균
         x = x.permute(0, 2, 1)                 # (B, T, C')
         return self.proj(x)                     # (B, T, embed_dim)
+
+    def load_checkpoint(self, path: str):
+        """CTR-GCN 사전학습 체크포인트 로드."""
+        ckpt = torch.load(path, map_location="cpu", weights_only=True)
+        state = ckpt.get("model_state_dict", ckpt)
+        model_state = self.state_dict()
+        loaded = []
+        for k, v in state.items():
+            if k in model_state and model_state[k].shape == v.shape:
+                model_state[k] = v
+                loaded.append(k)
+        self.load_state_dict(model_state)
+        print(f"CTR-GCN: loaded {len(loaded)}/{len(model_state)} params from {path}")

@@ -120,10 +120,10 @@ export const api = {
       apiKey
     ),
 
-  analyze: (sensorData: SensorData, features: Record<string, number>, apiKey?: string) =>
+  analyze: (sensorData: SensorData, features: Record<string, number>, gaitProfile?: string, apiKey?: string) =>
     apiFetch<AnalyzeResponse>(
       "/api/v1/analyze",
-      { method: "POST", body: JSON.stringify({ sensor_data: sensorData, features }) },
+      { method: "POST", body: JSON.stringify({ sensor_data: sensorData, features, gait_profile: gaitProfile }) },
       apiKey
     ),
 };

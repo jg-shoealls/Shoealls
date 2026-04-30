@@ -64,28 +64,35 @@ class MultitaskGaitNet(nn.Module):
 
         embed_dim = model_cfg["fusion"]["embed_dim"]
 
-        # ── Shared encoders (same as base model) ──────────────────────
-        imu_cfg = model_cfg["imu_encoder"]
-        self.imu_encoder = IMUEncoder(
+        # ── Shared encoders (최신 사전학습 모델 적용) ──────────────────
+        from .pretrained_encoders import (
+            LIMUBERTEncoder,
+            MobileNetV2PressureEncoder,
+            CTRGCNEncoder,
+        )
+
+        # IMU Encoder: LIMU-BERT
+        self.imu_encoder = LIMUBERTEncoder(
             in_channels=data_cfg["imu_channels"],
-            conv_channels=imu_cfg["conv_channels"],
-            kernel_size=imu_cfg["kernel_size"],
-            lstm_hidden=embed_dim,
-            lstm_layers=imu_cfg["lstm_layers"],
-            dropout=imu_cfg["dropout"],
+            embed_dim=72,
+            num_heads=4,
+            num_layers=4,
+            patch_size=8,
+            dropout=model_cfg["imu_encoder"]["dropout"],
+            embed_dim_out=embed_dim,
         )
 
-        pressure_cfg = model_cfg["pressure_encoder"]
-        self.pressure_encoder = PressureEncoder(
-            in_channels=1,
-            conv_channels=pressure_cfg["conv_channels"],
-            kernel_size=pressure_cfg["kernel_size"],
+        # Pressure Encoder: MobileNetV2
+        self.pressure_encoder = MobileNetV2PressureEncoder(
             embed_dim=embed_dim,
-            dropout=pressure_cfg["dropout"],
+            dropout=model_cfg["pressure_encoder"]["dropout"],
+            pretrained=True,
+            width_mult=0.35,
         )
 
+        # Skeleton Encoder: CTR-GCN
         skeleton_cfg = model_cfg["skeleton_encoder"]
-        self.skeleton_encoder = SkeletonEncoder(
+        self.skeleton_encoder = CTRGCNEncoder(
             in_channels=data_cfg["skeleton_dims"],
             num_joints=data_cfg["skeleton_joints"],
             gcn_channels=skeleton_cfg["gcn_channels"],

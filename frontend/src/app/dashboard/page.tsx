@@ -43,7 +43,7 @@ export default function Dashboard() {
     try {
       const s = await api.sample(profile);
       setSample(s);
-      const r = await api.analyze(s.sensor_data, s.features);
+      const r = await api.analyze(s.sensor_data, s.features, profile);
       setResult(r);
     } catch (e) {
       setError(e instanceof Error ? e.message : "분석 실패");

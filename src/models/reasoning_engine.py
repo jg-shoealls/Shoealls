@@ -13,6 +13,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.utils.llm_utils import llm_service
+
 
 class AnomalyDetectionModule(nn.Module):
     """1단계: 모달리티별 이상 패턴 감지.
@@ -400,27 +402,35 @@ class GaitReasoningEngine(nn.Module):
         reasoning_cfg = config.get("reasoning", {})
         num_reasoning_steps = reasoning_cfg.get("num_steps", 3)
 
-        # 공유 인코더 (기존 모델에서 로드)
-        from .encoders import IMUEncoder, PressureEncoder, SkeletonEncoder
-        imu_cfg = model_cfg["imu_encoder"]
-        self.imu_encoder = IMUEncoder(
+        # 공유 인코더 (최신 사전학습 모델 적용)
+        from .pretrained_encoders import (
+            LIMUBERTEncoder,
+            MobileNetV2PressureEncoder,
+            CTRGCNEncoder,
+        )
+        
+        # IMU Encoder: LIMU-BERT
+        self.imu_encoder = LIMUBERTEncoder(
             in_channels=data_cfg["imu_channels"],
-            conv_channels=imu_cfg["conv_channels"],
-            kernel_size=imu_cfg["kernel_size"],
-            lstm_hidden=embed_dim,
-            lstm_layers=imu_cfg["lstm_layers"],
-            dropout=imu_cfg["dropout"],
+            embed_dim=72,
+            num_heads=4,
+            num_layers=4,
+            patch_size=8,
+            dropout=model_cfg["imu_encoder"]["dropout"],
+            embed_dim_out=embed_dim,
         )
-        pressure_cfg = model_cfg["pressure_encoder"]
-        self.pressure_encoder = PressureEncoder(
-            in_channels=1,
-            conv_channels=pressure_cfg["conv_channels"],
-            kernel_size=pressure_cfg["kernel_size"],
+        
+        # Pressure Encoder: MobileNetV2
+        self.pressure_encoder = MobileNetV2PressureEncoder(
             embed_dim=embed_dim,
-            dropout=pressure_cfg["dropout"],
+            dropout=model_cfg["pressure_encoder"]["dropout"],
+            pretrained=True,
+            width_mult=0.35,
         )
+        
+        # Skeleton Encoder: CTR-GCN
         skeleton_cfg = model_cfg["skeleton_encoder"]
-        self.skeleton_encoder = SkeletonEncoder(
+        self.skeleton_encoder = CTRGCNEncoder(
             in_channels=data_cfg["skeleton_dims"],
             num_joints=data_cfg["skeleton_joints"],
             gcn_channels=skeleton_cfg["gcn_channels"],
@@ -628,6 +638,61 @@ class GaitReasoningEngine(nn.Module):
         lines.append("=" * 60)
 
         return "\n".join(lines)
+
+    async def explain_llm(self, result: dict, sample_idx: int = 0) -> str:
+        """LLM을 사용하여 자연스러운 환자용 리포트 생성."""
+        data = self._prepare_llm_data(result, sample_idx)
+        return await llm_service.generate_report(data)
+
+    async def explain_clinical(self, result: dict, sample_idx: int = 0) -> str:
+        """LLM을 사용하여 전문의용 심층 소견서 생성."""
+        data = self._prepare_llm_data(result, sample_idx)
+        return await llm_service.generate_clinical_notes(data)
+
+    def _prepare_llm_data(self, result: dict, i: int) -> dict:
+        """LLM 프롬프트용 데이터 정리."""
+        pred = result["prediction"][i].item()
+        probs = result["calibrated_probs"][i].cpu().numpy()
+        
+        # 이상 징후 텍스트 정리
+        anomaly_list = []
+        anomaly_raw = {}
+        for m_idx, (m_name, anom) in enumerate(
+            zip(self.MODALITY_NAMES_KR, result["anomaly_results"])
+        ):
+            scores = anom["anomaly_scores"][i].cpu().numpy()
+            anomaly_raw[m_name] = {
+                self.ANOMALY_NAMES_KR[j]: float(scores[j]) 
+                for j in range(len(self.ANOMALY_NAMES_KR))
+            }
+            detected = [
+                f"{self.ANOMALY_NAMES_KR[j]}({scores[j]:.1%})"
+                for j in range(len(scores)) if scores[j] > 0.4
+            ]
+            if detected:
+                anomaly_list.append(f"- {m_name}: {', '.join(detected)}")
+
+        # 추론 체인 텍스트 정리
+        trace_list = []
+        trace = result["diagnosis"]["reasoning_trace"]
+        for s, logits in enumerate(trace):
+            p = F.softmax(logits[i], dim=-1).cpu().numpy()
+            top = p.argmax()
+            trace_list.append(f"Step {s}: {self.CLASS_NAMES_KR[top]} ({p[top]:.1%})")
+
+        return {
+            "prediction": self.CLASS_NAMES_KR[pred],
+            "probabilities": {self.CLASS_NAMES_KR[j]: float(probs[j]) for j in range(len(probs))},
+            "confidence": float(probs[pred]),
+            "uncertainty": float(result["uncertainty"][i]),
+            "evidence_strength": float(result["evidence"]["evidence_strength"][i]),
+            "cross_support": result["evidence"]["cross_support"][i].cpu().numpy().tolist(),
+            "anomalies": "\n".join(anomaly_list) if anomaly_list else "특이 이상 패턴 없음",
+            "anomalies_raw": anomaly_raw,
+            "reasoning_trace": "\n".join(trace_list),
+            "pro_scores": result["diagnosis"]["pro_scores"][i].cpu().numpy().tolist(),
+            "con_scores": result["diagnosis"]["con_scores"][i].cpu().numpy().tolist(),
+        }
 
     def load_base_model_weights(self, checkpoint_path: str, device="cpu"):
         """기존 학습된 모델에서 인코더 가중치를 로드."""
