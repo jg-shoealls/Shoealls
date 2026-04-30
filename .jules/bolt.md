@@ -1,0 +1,3 @@
+## 2024-05-01 - Optimizing PyTorch MultiheadAttention
+**Learning:** In PyTorch, using `nn.MultiheadAttention` inherently computes and returns attention weights. In scenarios where these are discarded via `attn_out, _ = self.attn(...)`, memory and compute are wasted. Providing `need_weights=False` is a low-risk micro-optimization that can unlock accelerated backends like FlashAttention. This applies to `fusion.py` but must be strictly avoided in `reasoning_engine.py` where cross attention weights are explicitly extracted and used for explainability.
+**Action:** When working on PyTorch codebase, aggressively check for `nn.MultiheadAttention` invocations bound to `_` and apply `need_weights=False`, while carefully respecting variables capturing weights.
