@@ -28,13 +28,13 @@ export default function Sidebar() {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] transition-all duration-300 ${
+              className={`flex items-center gap-3 px-4 py-4 rounded-xl text-lg transition-all duration-300 ${
                 active
                   ? "bg-primaryBlue/10 text-primaryBlue font-semibold shadow-sm border border-primaryBlue/20"
                   : "text-textSec hover:bg-black/5 dark:hover:bg-white/5 hover:text-textPri border border-transparent"
               }`}
             >
-              <span className={`w-6 text-center text-lg ${active ? 'text-primaryBlue' : 'text-textMuted'}`}>
+              <span className={`w-8 text-center text-lg ${active ? 'text-primaryBlue' : 'text-textMuted'}`}>
                 {item.icon}
               </span>
               {item.label}
@@ -49,9 +49,9 @@ export default function Sidebar() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-medicalTeal opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-medicalTeal"></span>
           </span>
-          <span className="text-medicalTeal text-[13px] font-semibold tracking-wide">API Server Active</span>
+          <span className="text-medicalTeal text-base font-semibold tracking-wide">API Server Active</span>
         </div>
-        <div className="relative z-10 text-textMuted text-[11px] ml-5">localhost:8000 · v0.1.0</div>
+        <div className="relative z-10 text-textMuted text-sm ml-5">localhost:8000 · v0.1.0</div>
       </div>
 
       <div className="px-5 pb-5 mt-auto flex justify-end">

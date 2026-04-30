@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-size: 18px;
+  }
+
   :root {
     --color-bg: #F8FAFC;
     --color-surface: rgba(255, 255, 255, 0.95);

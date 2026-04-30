@@ -67,9 +67,9 @@ export default function Dashboard() {
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         {/* 탑바 (Glassmorphism) */}
         <header className="glass border-b border-border px-10 py-5 flex items-center justify-between shrink-0 shadow-sm relative z-20">
-          <h1 className="text-textPri font-bold text-2xl tracking-tight flex items-center gap-3">
+          <h1 className="text-textPri font-bold text-4xl tracking-tight flex items-center gap-3">
             보행 분석 대시보드
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider text-primaryBlue bg-primaryBlue/10 border border-primaryBlue/20">
+            <span className="px-3 py-1 rounded-full text-base font-bold tracking-wider text-primaryBlue bg-primaryBlue/10 border border-primaryBlue/20">
               PRO
             </span>
           </h1>
@@ -78,7 +78,7 @@ export default function Dashboard() {
               <select
                 value={profile}
                 onChange={(e) => setProfile(e.target.value as Profile)}
-                className="appearance-none bg-surface border border-border text-textPri text-[14px] font-medium rounded-xl px-5 py-2.5 pr-10 focus:outline-none focus:border-primaryBlue focus:ring-1 focus:ring-primaryBlue transition-all cursor-pointer shadow-sm backdrop-blur-md"
+                className="appearance-none bg-surface border border-border text-textPri text-lg font-medium rounded-xl px-5 py-4 pr-10 focus:outline-none focus:border-primaryBlue focus:ring-1 focus:ring-primaryBlue transition-all cursor-pointer shadow-sm backdrop-blur-md"
               >
                 {PROFILES.map((p) => (
                   <option key={p} value={p} className="bg-bg text-textPri">{PROFILE_KR[p]}</option>
@@ -90,7 +90,7 @@ export default function Dashboard() {
             </div>
             
             {cls?.is_demo_mode !== false && (
-              <span className="px-3 py-1.5 rounded-xl text-[12px] font-bold text-amber bg-amber/10 border border-amber/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+              <span className="px-3 py-1.5 rounded-xl text-lg font-bold text-amber bg-amber/10 border border-amber/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
                 데모 모드
               </span>
             )}
@@ -98,7 +98,7 @@ export default function Dashboard() {
             <button
               onClick={runAnalysis}
               disabled={loading}
-              className="relative overflow-hidden bg-primaryBlue hover:bg-primaryBlue/90 disabled:opacity-50 text-white font-bold text-[14px] px-8 py-2.5 rounded-xl transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none disabled:cursor-not-allowed"
+              className="relative overflow-hidden bg-primaryBlue hover:bg-primaryBlue/90 disabled:opacity-50 text-white font-bold text-xl px-12 py-4 rounded-xl transition-all shadow-md hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -113,7 +113,7 @@ export default function Dashboard() {
         {/* 스크롤 영역 */}
         <div className="flex-1 overflow-y-auto p-10 space-y-8 relative z-10">
           {error && (
-            <div className="glass border border-red/40 text-red rounded-2xl px-6 py-5 text-[15px] font-medium shadow-[0_0_20px_rgba(239,68,68,0.2)] animate-fade-in">
+            <div className="glass border border-red/40 text-red rounded-2xl px-6 py-5 text-xl font-medium shadow-[0_0_20px_rgba(239,68,68,0.2)] animate-fade-in">
               <div className="flex items-center gap-3">
                 <span className="text-xl">⚠️</span>
                 오류: {error}
@@ -123,7 +123,7 @@ export default function Dashboard() {
 
           {/* 센서 입력 요약 */}
           <section className="animate-fade-in-up">
-            <h2 className="text-textPri text-[16px] font-bold tracking-wide mb-4 flex items-center gap-2">
+            <h2 className="text-textPri text-2xl font-bold tracking-wide mb-4 flex items-center gap-2">
               <span className="w-1.5 h-6 bg-neonBlue rounded-full shadow-[0_0_10px_rgba(0,229,255,0.8)]" />
               센서 데이터 수집
             </h2>
@@ -141,10 +141,10 @@ export default function Dashboard() {
                       <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: card.color }} />
                       <span className="absolute inset-0 rounded-full" style={{ background: card.color, boxShadow: `0 0 10px ${card.color}` }} />
                     </span>
-                    <span className="text-textPri font-bold text-[16px] tracking-wide">{card.title}</span>
+                    <span className="text-textPri font-bold text-2xl tracking-wide">{card.title}</span>
                   </div>
-                  <span className="text-textSec text-[13px] relative z-10 mt-1">{card.sub}</span>
-                  <span className="text-[14px] font-bold mt-2 relative z-10" style={{ color: card.color, textShadow: `0 0 10px ${card.color}40` }}>
+                  <span className="text-textSec text-lg relative z-10 mt-1">{card.sub}</span>
+                  <span className="text-xl font-bold mt-2 relative z-10" style={{ color: card.color, textShadow: `0 0 10px ${card.color}40` }}>
                     {card.val}
                   </span>
                 </div>
@@ -158,10 +158,10 @@ export default function Dashboard() {
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center mb-6 shadow-inner">
                 <span className="text-4xl text-neonBlue">⚡</span>
               </div>
-              <div className="text-textPri text-[18px] font-medium tracking-wide mb-2">
+              <div className="text-textPri text-3xl font-medium tracking-wide mb-2">
                 보행 데이터를 분석할 준비가 되었습니다
               </div>
-              <div className="text-textSec text-[14px]">
+              <div className="text-textSec text-xl">
                 우측 상단에서 프로파일을 선택하고 <strong className="text-neonBlue font-semibold">분석 시작</strong>을 클릭하세요
               </div>
             </div>
@@ -175,10 +175,10 @@ export default function Dashboard() {
                 <div className="absolute inset-0 border-4 border-neonBlue border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(0,229,255,0.5)]" />
                 <div className="absolute inset-0 flex items-center justify-center text-neonBlue font-bold text-xs">AI</div>
               </div>
-              <div className="text-textPri text-[16px] font-medium tracking-widest uppercase mb-1">
+              <div className="text-textPri text-2xl font-medium tracking-widest uppercase mb-1">
                 Deep Analysis Running
               </div>
-              <div className="text-textSec text-[13px]">
+              <div className="text-textSec text-lg">
                 멀티모달 AI 엔진이 데이터를 추론하고 있습니다...
               </div>
             </div>
@@ -207,10 +207,10 @@ export default function Dashboard() {
                           className="transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(0,229,255,0.8)]"
                         />
                       </svg>
-                      <span className="text-blue text-[13px] font-bold tracking-wider uppercase mb-1 drop-shadow-md">{cls?.prediction_kr}</span>
-                      <span className="text-textPri font-black text-3xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                      <span className="text-blue text-xl font-bold tracking-wider uppercase mb-1 drop-shadow-md">{cls?.prediction_kr}</span>
+                      <span className="text-textPri font-black text-5xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
                         {cls ? (cls.confidence * 100).toFixed(1) : "--"}
-                        <span className="text-lg text-textSec ml-0.5">%</span>
+                        <span className="text-2xl text-textSec ml-0.5">%</span>
                       </span>
                     </div>
                     <div className="flex-1 flex flex-col justify-center space-y-4">
@@ -231,11 +231,11 @@ export default function Dashboard() {
                     <div className="flex flex-col h-full justify-between">
                       <div className="bg-black/20 rounded-xl p-4 border border-green/20 flex items-center justify-between mb-5 shadow-inner">
                         <div>
-                          <div className="text-textSec text-[12px] uppercase tracking-wider mb-1">Primary Prediction</div>
-                          <div className="text-textPri font-bold text-lg">{dis.ml_prediction_kr}</div>
+                          <div className="text-textSec text-lg uppercase tracking-wider mb-1">Primary Prediction</div>
+                          <div className="text-textPri font-bold text-2xl">{dis.ml_prediction_kr}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-green font-black text-2xl drop-shadow-[0_0_10px_rgba(5,213,158,0.5)]">
+                          <div className="text-green font-black text-4xl drop-shadow-[0_0_10px_rgba(5,213,158,0.5)]">
                             {(dis.ml_confidence * 100).toFixed(1)}%
                           </div>
                         </div>
@@ -251,10 +251,10 @@ export default function Dashboard() {
                       
                       {dis.abnormal_biomarkers && dis.abnormal_biomarkers.length > 0 && (
                         <div className="mt-5 pt-4 border-t border-white/5">
-                          <div className="text-textSec text-[11px] uppercase tracking-wider mb-2">이상 징후 감지</div>
+                          <div className="text-textSec text-base uppercase tracking-wider mb-2">이상 징후 감지</div>
                           <div className="flex flex-wrap gap-2">
                             {dis.abnormal_biomarkers.slice(0, 3).map(bm => (
-                              <span key={bm} className="px-2.5 py-1 bg-black/5 dark:bg-white/5 border border-border rounded-lg text-textPri text-[12px]">
+                              <span key={bm} className="px-2.5 py-1 bg-black/5 dark:bg-white/5 border border-border rounded-lg text-textPri text-lg">
                                 {bm}
                               </span>
                             ))}
@@ -272,31 +272,53 @@ export default function Dashboard() {
                       <div className="shrink-0 text-center">
                         <div className="relative inline-flex items-center justify-center w-32 h-32">
                           <div className="absolute inset-0 rounded-full border-4 border-amber/20" />
-                          <div className="absolute inset-0 rounded-full border-4 border-amber border-l-transparent animate-spin-slow opacity-80" style={{ animationDuration: '3s' }} />
+                          <div className={`absolute inset-0 rounded-full border-4 border-l-transparent animate-spin-slow opacity-80 ${inj.combined_risk_score > 0.7 ? 'border-red shadow-[0_0_20px_rgba(239,68,68,0.5)]' : 'border-amber'}`} style={{ animationDuration: '3s' }} />
+                          {inj.combined_risk_score > 0.7 && (
+                            <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-red" />
+                          )}
                           <div className="flex flex-col items-center">
-                            <span className="text-amber font-black text-3xl drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]">
-                              {(inj.combined_risk_score * 100).toFixed(0)}<span className="text-lg">%</span>
+                            <span className={`font-black text-5xl drop-shadow-[0_0_15px_rgba(245,158,11,0.6)] ${inj.combined_risk_score > 0.7 ? 'text-red' : 'text-amber'}`}>
+                              {(inj.combined_risk_score * 100).toFixed(0)}<span className="text-2xl">%</span>
                             </span>
-                            <span className="text-textSec text-[11px] uppercase tracking-wider mt-1">Risk Score</span>
+                            <span className="text-textSec text-base uppercase tracking-wider mt-1">Risk Score</span>
                           </div>
                         </div>
                         <div className="mt-4">
-                          <span className="px-4 py-1.5 rounded-xl text-[13px] font-bold tracking-widest uppercase"
-                            style={{ color: C.red, background: `${C.red}20`, border: `1px solid ${C.red}40`, boxShadow: `0 0 15px ${C.red}30` }}>
+                          <span className="px-4 py-1.5 rounded-xl text-lg font-bold tracking-widest uppercase"
+                            style={inj.combined_risk_score > 0.7 
+                              ? { color: C.red, background: `${C.red}20`, border: `1px solid ${C.red}40`, boxShadow: `0 0 15px ${C.red}30` }
+                              : { color: C.amber, background: `${C.amber}20`, border: `1px solid ${C.amber}40` }}>
                             {inj.combined_risk_grade}
                           </span>
                         </div>
                       </div>
                       
-                      <div className="flex-1 flex flex-col justify-center space-y-4">
-                        <div className="text-textSec text-[12px] uppercase tracking-wider mb-[-4px]">Risk Factors</div>
-                        {inj.top3.slice(0, 3).map((injury) => (
-                          <ProgressBar key={injury.name_kr} pct={injury.probability}
-                            color={injury.probability > 0.4 ? C.red : C.amber}
-                            label={injury.name_kr} valueLabel={(injury.probability * 100).toFixed(1) + "%"} />
-                        ))}
-                        <div className="mt-3 p-3 bg-black/20 rounded-lg border border-white/5 text-textMuted text-[12px]">
-                          <span className="text-amber">⏳ 예상 시기:</span> {inj.timeline}
+                      <div className="flex-1 flex flex-col justify-between space-y-3 h-full py-1">
+                        <div>
+                          <div className="text-textSec text-base uppercase tracking-wider mb-2">Primary Risk Factors</div>
+                          <div className="space-y-2">
+                            {inj.top3.slice(0, 2).map((injury) => (
+                              <ProgressBar key={injury.name_kr} pct={injury.probability}
+                                color={injury.probability > 0.4 ? C.red : C.amber}
+                                label={injury.name_kr} valueLabel={(injury.probability * 100).toFixed(1) + "%"} />
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-red/5 border border-red/20 rounded-xl p-3 flex-1 flex flex-col justify-center shadow-inner relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-red/10 rounded-bl-full pointer-events-none" />
+                          <div className="flex items-center gap-2 mb-2 relative z-10">
+                            <span className="w-2 h-2 rounded-full bg-red animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                            <span className="text-red font-bold text-lg tracking-wide">AI 추천 우선 행동</span>
+                          </div>
+                          <ul className="space-y-1.5 relative z-10">
+                            {inj.priority_actions && inj.priority_actions.slice(0, 3).map((action, idx) => (
+                              <li key={idx} className="text-textPri text-lg flex items-start gap-2 leading-tight">
+                                <span className="text-red mt-0.5 text-[10px]">▶</span>
+                                {action}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
                     </div>
@@ -321,12 +343,12 @@ export default function Dashboard() {
                                   style={{ background: color, boxShadow: isLast ? `0 0 10px ${color}` : 'none' }} />
                               </div>
                               <div className={`flex-1 flex justify-between items-center p-3 rounded-xl border ${isLast ? 'bg-purple/10 border-purple/30' : 'bg-black/5 dark:bg-white/5 border-transparent'} transition-colors`}>
-                                <span className="text-textSec text-[12px] w-20">{step.label}</span>
-                                <span className={`font-bold text-[14px] ${isLast ? '' : 'text-textPri'}`}
+                                <span className="text-textSec text-base w-24">{step.label}</span>
+                                <span className={`font-bold text-xl ${isLast ? '' : 'text-textPri'}`}
                                   style={isLast ? { color: C.purple } : {}}>
                                   {step.prediction_kr}
                                 </span>
-                                <span className={`text-[13px] font-medium ${isLast ? 'text-textPri' : 'text-textMuted'}`}>
+                                <span className={`text-lg font-medium ${isLast ? 'text-textPri' : 'text-textMuted'}`}>
                                   {(step.probability * 100).toFixed(1)}%
                                 </span>
                               </div>
@@ -337,18 +359,18 @@ export default function Dashboard() {
                       
                       <div className="flex items-center gap-4 p-3 bg-black/5 dark:bg-black/30 rounded-xl border border-border">
                         <div className="flex-1">
-                          <div className="text-textMuted text-[10px] uppercase tracking-wider mb-1">Uncertainty</div>
-                          <div className="text-textPri font-medium text-[13px]">{(rsn.uncertainty * 100).toFixed(1)}%</div>
+                          <div className="text-textMuted text-sm uppercase tracking-wider mb-1">Uncertainty</div>
+                          <div className="text-textPri font-medium text-lg">{(rsn.uncertainty * 100).toFixed(1)}%</div>
                         </div>
                         <div className="w-px h-6 bg-border" />
                         <div className="flex-1">
-                          <div className="text-textMuted text-[10px] uppercase tracking-wider mb-1">Evidence</div>
-                          <div className="text-textPri font-medium text-[13px]">{(rsn.evidence_strength * 100).toFixed(1)}%</div>
+                          <div className="text-textMuted text-sm uppercase tracking-wider mb-1">Evidence</div>
+                          <div className="text-textPri font-medium text-lg">{(rsn.evidence_strength * 100).toFixed(1)}%</div>
                         </div>
                         {rsn.is_demo_mode && (
                           <>
                             <div className="w-px h-6 bg-border" />
-                            <div className="flex-1 text-center text-amber text-[11px] font-bold tracking-wider">DEMO</div>
+                            <div className="flex-1 text-center text-amber text-sm font-bold tracking-wider">DEMO</div>
                           </>
                         )}
                       </div>
@@ -356,12 +378,34 @@ export default function Dashboard() {
                   )}
                 </ResultCard>
               </div>
+
+              {/* ── AI 종합 소견서 (Full Width) ── */}
+              {rsn?.report_kr && (
+                <div className="mt-6 glass-card rounded-[24px] p-8 border border-white/10 relative overflow-hidden group animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue to-purple shadow-[0_0_15px_rgba(59,130,246,0.6)]" />
+                  <div className="absolute right-0 bottom-0 w-64 h-64 bg-blue/10 rounded-full blur-3xl pointer-events-none group-hover:bg-blue/20 transition-all duration-700" />
+                  
+                  <div className="flex items-center gap-3 mb-4 relative z-10">
+                    <span className="text-2xl drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">🤖</span>
+                    <h3 className="text-textPri font-bold text-3xl tracking-wide">AI 멀티모달 종합 소견서</h3>
+                    <span className="px-2.5 py-1 rounded-full text-base font-bold tracking-wider text-purple bg-purple/10 border border-purple/30 ml-2 shadow-[0_0_10px_rgba(217,70,239,0.2)]">
+                      Llama 3 Generated
+                    </span>
+                  </div>
+                  
+                  <div className="relative z-10 bg-black/20 dark:bg-white/5 rounded-xl p-6 border border-border">
+                    <p className="text-textPri text-2xl leading-relaxed font-medium">
+                      {rsn.report_kr}
+                    </p>
+                  </div>
+                </div>
+              )}
             </section>
           )}
         </div>
 
         {/* 하단 바 (Glassmorphism) */}
-        <footer className="glass border-t border-white/5 px-8 py-3 text-textMuted text-[12px] flex justify-between shrink-0 relative z-20">
+        <footer className="glass border-t border-white/5 px-8 py-3 text-textMuted text-base flex justify-between shrink-0 relative z-20">
           <span className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-neonBlue animate-pulse" />
             Shoealls Advanced Gait AI · POST /api/v1/analyze

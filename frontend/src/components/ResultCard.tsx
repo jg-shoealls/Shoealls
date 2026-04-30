@@ -30,7 +30,7 @@ export function ResultCard({
           <Badge label={badge} color={accentColor} />
           {isDemo && <Badge label="Demo" color="#F59E0B" />}
         </div>
-        <h3 className="text-textPri font-bold text-[18px] mb-5 tracking-wide">{title}</h3>
+        <h3 className="text-textPri font-bold text-2xl mb-5 tracking-wide">{title}</h3>
         {children}
       </div>
     </div>
@@ -41,7 +41,7 @@ export function ResultCard({
 export function Badge({ label, color }: { label: string; color: string }) {
   return (
     <span
-      className="px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase border"
+      className="px-3 py-1 rounded-full text-sm font-bold tracking-wider uppercase border"
       style={{ 
         color, 
         background: `${color}10`,
@@ -68,10 +68,10 @@ export function ProgressBar({
   return (
     <div className="group">
       <div className="flex justify-between mb-2">
-        <span className="text-textSec text-[13px] group-hover:text-textPri transition-colors">{label}</span>
-        <span className="text-textPri text-[13px] font-bold tracking-wide">{valueLabel}</span>
+        <span className="text-textSec text-lg group-hover:text-textPri transition-colors">{label}</span>
+        <span className="text-textPri text-lg font-bold tracking-wide">{valueLabel}</span>
       </div>
-      <div className="h-2 bg-black/10 dark:bg-black/40 rounded-full overflow-hidden border border-border/50 relative">
+      <div className="h-3 bg-black/10 dark:bg-black/40 rounded-full overflow-hidden border border-border/50 relative">
         <div
           className="h-full rounded-full transition-all duration-1000 ease-out relative"
           style={{ 
