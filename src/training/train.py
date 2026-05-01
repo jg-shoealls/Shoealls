@@ -117,7 +117,7 @@ def evaluate(
     return metrics
 
 
-def train(config: dict, output_dir: Path):
+def train(config: dict, output_dir: Path, checkpoint_path: Path = None):
     """Full training loop."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -129,6 +129,23 @@ def train(config: dict, output_dir: Path):
 
     # Model
     model = MultimodalGaitNet(config).to(device)
+    
+    if checkpoint_path and checkpoint_path.exists():
+        print(f"Loading checkpoint from {checkpoint_path} (Transfer Learning mode)")
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        state_dict = checkpoint["model_state_dict"]
+        
+        # If number of classes is different, we must skip the final classifier weights
+        current_model_dict = model.state_dict()
+        # Filter out classifier weights if they don't match in size
+        filtered_dict = {
+            k: v for k, v in state_dict.items() 
+            if k in current_model_dict and v.size() == current_model_dict[k].size()
+        }
+        
+        missing, unexpected = model.load_state_dict(filtered_dict, strict=False)
+        print(f"  Loaded {len(filtered_dict)} layers. Missing: {len(missing)} (expected for classifier), Unexpected: {len(unexpected)}")
+        
     print(f"Model parameters: {model.get_num_trainable_params():,}")
 
     # Training setup
@@ -238,12 +255,17 @@ def main():
         "--output-dir", type=str, default="outputs",
         help="Output directory for checkpoints",
     )
+    parser.add_argument(
+        "--checkpoint", type=str, default=None,
+        help="Path to pre-trained checkpoint for fine-tuning",
+    )
     args = parser.parse_args()
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    train(config, Path(args.output_dir))
+    checkpoint_path = Path(args.checkpoint) if args.checkpoint else None
+    train(config, Path(args.output_dir), checkpoint_path)
 
 
 if __name__ == "__main__":
