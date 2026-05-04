@@ -7,6 +7,45 @@ from .encoders import IMUEncoder, PressureEncoder, SkeletonEncoder
 from .fusion import CrossModalAttentionFusion
 
 
+class IMUGaitNet(nn.Module):
+    """IMU-only gait classification network (1D-CNN + BiLSTM + classifier).
+
+    Used when only real accelerometer data is available (e.g. Daphnet dataset).
+    """
+
+    def __init__(self, config: dict):
+        super().__init__()
+        model_cfg = config["model"]
+        data_cfg = config["data"]
+
+        embed_dim = model_cfg["fusion"]["embed_dim"]
+        imu_cfg = model_cfg["imu_encoder"]
+
+        self.imu_encoder = IMUEncoder(
+            in_channels=data_cfg["imu_channels"],
+            conv_channels=imu_cfg["conv_channels"],
+            kernel_size=imu_cfg["kernel_size"],
+            lstm_hidden=embed_dim,
+            lstm_layers=imu_cfg["lstm_layers"],
+            dropout=imu_cfg["dropout"],
+        )
+
+        cls_cfg = model_cfg["classifier"]
+        layers = []
+        in_dim = embed_dim
+        for h_dim in cls_cfg["hidden_dims"]:
+            layers.extend([nn.Linear(in_dim, h_dim), nn.ReLU(inplace=True), nn.Dropout(cls_cfg["dropout"])])
+            in_dim = h_dim
+        layers.append(nn.Linear(in_dim, data_cfg["num_classes"]))
+        self.classifier = nn.Sequential(*layers)
+
+    def forward(self, batch: dict) -> torch.Tensor:
+        # imu_encoder: (B, 6, T) -> (B, T', embed_dim)
+        features = self.imu_encoder(batch["imu"])
+        pooled = features.mean(dim=1)   # (B, embed_dim)
+        return self.classifier(pooled)
+
+
 class MultimodalGaitNet(nn.Module):
     """End-to-end multimodal gait classification network.
 

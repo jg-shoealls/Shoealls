@@ -25,7 +25,15 @@
       "Bash(git add *)",
       "Bash(git restore *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(gh pr *)",
+      "PowerShell(gh pr *)",
+      "Bash(dir scripts/)",
+      "Bash(Get-Content -Path \"C:\\\\Users\\\\xop12\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-xop12-OneDrive-------Shoealls-Shoealls\\\\7f5503da-399e-4243-9902-082425368a6d\\\\tasks\\\\br0kus2v8.output\" -Wait)",
+      "Bash(Select-String --line-buffered \"Fold|>>|Mean|Std|Error|Traceback|Early stop\")",
+      "PowerShell(Get-WmiObject *)",
+      "Bash(nvidia-smi *)",
+      "PowerShell(Get-ChildItem outputs\\\\daphnet_loso\\\\ | Select-Object Name, LastWriteTime, @{N='Size\\(MB\\)';E={[math]::Round\\($_.Length/1MB,2\\)}} | Sort-Object LastWriteTime)"
     ]
   }
 }

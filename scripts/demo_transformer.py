@@ -76,9 +76,9 @@ def run_transformer_demo():
     
     print("\n" + "=" * 60)
     print("KEY TRANSFORMER FEATURES DEMONSTRATED:")
-    print("✔ Self-Attention: AI looks at the whole gait cycle at once")
-    print("✔ Parallelism: Faster than LSTM because it doesn't process one-by-one")
-    print("✔ Scalability: Can be much larger and smarter than old CNN/RNN models")
+    print("[OK] Self-Attention: AI looks at the whole gait cycle at once")
+    print("[OK] Parallelism: Faster than LSTM because it doesn't process one-by-one")
+    print("[OK] Scalability: Can be much larger and smarter than old CNN/RNN models")
     print("=" * 60)
 
 if __name__ == "__main__":
