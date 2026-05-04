@@ -631,7 +631,7 @@ class GaitReasoningEngine(nn.Module):
 
     def load_base_model_weights(self, checkpoint_path: str, device="cpu"):
         """기존 학습된 모델에서 인코더 가중치를 로드."""
-        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
         state = checkpoint["model_state_dict"]
 
         # 인코더 가중치만 추출하여 로드

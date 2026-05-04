@@ -117,7 +117,34 @@ def evaluate(
     return metrics
 
 
-def train(config: dict, output_dir: Path, num_samples: int = 50, resume: bool = False):
+def _load_matching_checkpoint_weights(
+    model: nn.Module,
+    checkpoint_path: Path,
+    device: torch.device,
+) -> None:
+    """Load compatible checkpoint weights, skipping heads with changed shapes."""
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    state_dict = checkpoint["model_state_dict"]
+    current_state = model.state_dict()
+    filtered_state = {
+        key: value
+        for key, value in state_dict.items()
+        if key in current_state and value.size() == current_state[key].size()
+    }
+    missing, unexpected = model.load_state_dict(filtered_state, strict=False)
+    print(
+        f"Loaded {len(filtered_state)} layers from {checkpoint_path}. "
+        f"Missing: {len(missing)}, unexpected: {len(unexpected)}"
+    )
+
+
+def train(
+    config: dict,
+    output_dir: Path,
+    num_samples: int = 50,
+    resume: bool = False,
+    checkpoint_path: Path | None = None,
+):
     """Full training loop."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -129,6 +156,8 @@ def train(config: dict, output_dir: Path, num_samples: int = 50, resume: bool = 
 
     # Model
     model = MultimodalGaitNet(config).to(device)
+    if checkpoint_path and checkpoint_path.exists() and not resume:
+        _load_matching_checkpoint_weights(model, checkpoint_path, device)
     print(f"Model parameters: {model.get_num_trainable_params():,}")
 
     # Training setup
@@ -148,6 +177,7 @@ def train(config: dict, output_dir: Path, num_samples: int = 50, resume: bool = 
 
     # Resume from checkpoint
     start_epoch = 1
+    best_val_acc = 0.0
     if resume:
         ckpt_path = output_dir / "best_model.pt"
         if ckpt_path.exists():
@@ -161,7 +191,6 @@ def train(config: dict, output_dir: Path, num_samples: int = 50, resume: bool = 
             print(f"Warning: --resume 지정했지만 {ckpt_path} 없음. 처음부터 학습합니다.")
 
     # Training loop
-    best_val_acc = best_val_acc if resume else 0.0
     patience_counter = 0
     es_cfg = train_cfg["early_stopping"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -254,6 +283,8 @@ def main():
     parser.add_argument("--epochs", type=int, default=None, help="에포크 수 (설정 파일 오버라이드)")
     parser.add_argument("--lr", type=float, default=None, help="학습률 (설정 파일 오버라이드)")
     parser.add_argument("--resume", action="store_true", help="outputs/best_model.pt에서 재개")
+    parser.add_argument("--checkpoint", default=None,
+                        help="compatible pre-trained checkpoint for transfer learning")
     parser.add_argument("--verify", action="store_true",
                         help="학습 후 API 호환성 검증 실행")
     args = parser.parse_args()
@@ -268,8 +299,9 @@ def main():
         config["training"]["learning_rate"] = args.lr
 
     output_dir = Path(args.output_dir)
+    checkpoint_path = Path(args.checkpoint) if args.checkpoint else None
     test_metrics = train(config, output_dir, num_samples=args.samples,
-                         resume=args.resume)
+                         resume=args.resume, checkpoint_path=checkpoint_path)
 
     # 학습 결과 JSON 저장
     import json

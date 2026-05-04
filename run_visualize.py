@@ -45,7 +45,7 @@ from src.analysis import (
 
 def run_ablation(config: dict, device: torch.device) -> dict:
     """모달리티 제거 실험 (Ablation Study)."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=True)
+    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=False)
     model = MultimodalGaitNet(config).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
@@ -97,7 +97,7 @@ def run_ablation(config: dict, device: torch.device) -> dict:
 
 def run_evaluation(config: dict, device: torch.device):
     """전체 평가: 예측 + 확률."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=True)
+    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=False)
     model = MultimodalGaitNet(config).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
@@ -189,7 +189,7 @@ def main():
     print("=" * 70)
     train(config, output_dir)
 
-    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=True)
+    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=False)
     history = checkpoint["history"]
 
     print("\n학습 곡선 시각화 생성...")

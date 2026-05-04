@@ -151,10 +151,14 @@ def main():
                         help="학습률 (기본: config 값)")
     parser.add_argument("--batch-size", type=int, default=None,
                         help="배치 크기 (기본: config 값)")
+    parser.add_argument("--checkpoint", type=str, default=None,
+                        help="사전 학습된 모델 체크포인트 경로")
+    parser.add_argument("--target-classes", type=str, default=None,
+                        help="학습에 사용할 클래스 인덱스 (쉼표 구분, 예: '0,2')")
     args = parser.parse_args()
 
     # Config
-    with open(args.config) as f:
+    with open(args.config, encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     if args.epochs:
@@ -163,6 +167,13 @@ def main():
         config["training"]["learning_rate"] = args.lr
     if args.batch_size:
         config["training"]["batch_size"] = args.batch_size
+    
+    # Filter classes if requested
+    if args.target_classes:
+        target_indices = [int(x.strip()) for x in args.target_classes.split(",")]
+        # Note: This requires adapter logic to filter, 
+        # for now we assume labels.csv filtering happens in the adapter or manual config
+        print(f"Target classes selected: {target_indices}")
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -173,6 +184,20 @@ def main():
     print("STEP 1: 데이터 로드")
     print("=" * 60)
     dataset = load_dataset(args, config)
+    
+    # Filtering dataset based on target classes
+    if args.target_classes:
+        target_indices = [int(x.strip()) for x in args.target_classes.split(",")]
+        # Create a mapping for the new labels (e.g., 0 and 2 become 0 and 1)
+        label_map = {orig: new for new, orig in enumerate(target_indices)}
+        
+        indices = [i for i, label in enumerate(dataset.labels) if label in target_indices]
+        dataset.imu_data = [dataset.imu_data[i] for i in indices]
+        dataset.pressure_data = [dataset.pressure_data[i] for i in indices]
+        dataset.skeleton_data = [dataset.skeleton_data[i] for i in indices]
+        dataset.labels = [label_map[dataset.labels[i]] for i in indices]
+        print(f"Filtered samples: {len(dataset)} (Original classes: {target_indices})")
+
     print(f"총 샘플 수: {len(dataset)}")
 
     # ── STEP 2: 데이터 분할 ──────────────────────────────────────────
@@ -191,6 +216,19 @@ def main():
     print("=" * 60)
 
     model = MultimodalGaitNet(config).to(device)
+    
+    if args.checkpoint:
+        print(f"Loading checkpoint from {args.checkpoint} (Transfer Learning)")
+        checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=False)
+        state_dict = checkpoint["model_state_dict"]
+        current_model_dict = model.state_dict()
+        filtered_dict = {
+            k: v for k, v in state_dict.items() 
+            if k in current_model_dict and v.size() == current_model_dict[k].size()
+        }
+        model.load_state_dict(filtered_dict, strict=False)
+        print(f"  Loaded {len(filtered_dict)} layers.")
+
     print(f"모델 파라미터: {model.get_num_trainable_params():,}")
 
     criterion = nn.CrossEntropyLoss()

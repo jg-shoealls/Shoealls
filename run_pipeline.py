@@ -25,7 +25,7 @@ from src.validation.visualize import (
 
 def run_ablation(config: dict, device: torch.device) -> dict:
     """Run modality ablation study with zero-masking."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=True)
+    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=False)
     model = MultimodalGaitNet(config).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
@@ -84,7 +84,7 @@ def run_ablation(config: dict, device: torch.device) -> dict:
 
 def run_full_evaluation(config: dict, device: torch.device):
     """Run full evaluation and collect predictions + probabilities."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=True)
+    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=False)
     model = MultimodalGaitNet(config).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
@@ -145,7 +145,7 @@ def main():
     print("STEP 2: Generating Visualizations")
     print("=" * 60)
 
-    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=True)
+    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=False)
     history = checkpoint["history"]
 
     plot_training_curves(history, figures_dir / "training_curves.png")

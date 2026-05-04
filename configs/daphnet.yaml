@@ -1,0 +1,58 @@
+# Real-data training: Daphnet Freezing of Gait (binary classification)
+
+data:
+  data_dir: data/daphnet/dataset_fog_release/dataset
+  window: 128
+  stride: 64
+  sequence_length: 128
+  imu_channels: 6
+  pressure_grid_size: [16, 8]
+  skeleton_joints: 17
+  skeleton_dims: 3
+  num_classes: 2           # normal_walking, freezing_of_gait
+  train_split: 0.7
+  val_split: 0.15
+
+model:
+  imu_encoder:
+    conv_channels: [32, 64, 128]
+    kernel_size: 5
+    lstm_hidden: 128
+    lstm_layers: 2
+    dropout: 0.3
+
+  pressure_encoder:
+    conv_channels: [16, 32, 64]
+    kernel_size: 3
+    dropout: 0.3
+
+  skeleton_encoder:
+    gcn_channels: [64, 128]
+    temporal_kernel: 3
+    dropout: 0.3
+
+  fusion:
+    embed_dim: 128
+    num_heads: 4
+    ff_dim: 256
+    num_layers: 2
+    dropout: 0.2
+
+  classifier:
+    hidden_dims: [128, 64]
+    dropout: 0.3
+
+training:
+  batch_size: 64
+  epochs: 50
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  scheduler:
+    type: cosine
+    warmup_epochs: 3
+  early_stopping:
+    patience: 10
+    min_delta: 0.005
+
+validation:
+  metrics: [accuracy, f1_macro, precision, recall, confusion_matrix]
