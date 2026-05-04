@@ -40,6 +40,35 @@ python -m src.training.train --config configs/default.yaml
 python -m src.validation.validate --checkpoint outputs/best_model.pt
 ```
 
+## WearGait-PD to Google Drive
+
+To avoid storing WearGait-PD locally, stream each Synapse file through a temporary
+directory and upload it to Google Drive:
+
+```bash
+python scripts/sync_weargait_to_gdrive.py ^
+  --synapse-token <SYNAPSE_PAT> ^
+  --service-account-json <google-service-account.json>
+```
+
+For a personal Drive folder, share the destination folder with the service
+account email first. To use user OAuth instead:
+
+```bash
+python scripts/sync_weargait_to_gdrive.py ^
+  --synapse-token <SYNAPSE_PAT> ^
+  --oauth-client-json <oauth-client.json>
+```
+
+Useful checks:
+
+```bash
+python scripts/sync_weargait_to_gdrive.py --synapse-token <SYNAPSE_PAT> --oauth-client-json <oauth-client.json> --dry-run --max-files 5
+```
+
+By default, files are uploaded under a `WearGait-PD` folder in My Drive. Pass
+`--drive-folder-id <GOOGLE_DRIVE_FOLDER_ID>` to use another parent folder.
+
 ## Supported Tasks
 
 - Gait pattern classification (normal / abnormal)
