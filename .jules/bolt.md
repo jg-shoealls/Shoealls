@@ -1,0 +1,3 @@
+## 2025-03-03 - [PyTorch MultiheadAttention Optimization]
+**Learning:** PyTorch's `nn.MultiheadAttention` computes and returns attention weights by default. Setting `need_weights=False` prevents unnecessary computation and memory allocation, enabling optimized attention backends (like FlashAttention). However, avoid applying it if the returned attention weights are explicitly unpacked into a named variable (e.g., `cross_attn_weights`), as receiving `None` may cause hidden regressions.
+**Action:** When using `nn.MultiheadAttention`, if the attention weights are unused (e.g., unpacked into `_`), pass `need_weights=False` in the forward pass to improve performance. Check how the weights are unpacked to avoid downstream regressions.
