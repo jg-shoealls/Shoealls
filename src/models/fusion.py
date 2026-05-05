@@ -69,7 +69,10 @@ class CrossModalAttentionFusion(nn.Module):
         combined = torch.cat(enriched, dim=1)  # (B, sum(T_i), D)
 
         # Self-attention over combined
-        attn_out, _ = self.self_attention(combined, combined, combined)
+        # Bolt Optimization: Setting need_weights=False prevents unnecessary memory allocation
+        # and computation for attention weights since they are discarded. This enables
+        # optimized attention backends (like FlashAttention) when available.
+        attn_out, _ = self.self_attention(combined, combined, combined, need_weights=False)
         combined = self.norm(combined + attn_out)
 
         # Global average pooling
@@ -102,7 +105,9 @@ class CrossAttentionBlock(nn.Module):
 
     def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         # Cross-attention: query attends to context
-        attn_out, _ = self.cross_attn(query, context, context)
+        # Bolt Optimization: need_weights=False skips attention weight computation and memory
+        # allocation since the weights are unpacked into _. This enables fast paths like FlashAttention.
+        attn_out, _ = self.cross_attn(query, context, context, need_weights=False)
         query = self.norm1(query + attn_out)
 
         # Feed-forward
