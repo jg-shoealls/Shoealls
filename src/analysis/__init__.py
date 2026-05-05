@@ -10,6 +10,7 @@ from .disease_predictor import DiseaseRiskPredictor, DiseaseScreeningReport
 from .disease_classifier import GaitDiseaseClassifier, ClassificationResult
 from .gait_anomaly import GaitAnomalyDetector, GaitAnomalyReport, AnomalyPattern
 from .injury_predictor import InjuryRiskPredictor, InjuryPrediction, ComprehensiveInjuryReport
+from .parkinsons_analyzer import ParkinsonsAnalyzer, ParkinsonsReport, SubPatternResult
 
 __all__ = [
     "FootZoneAnalyzer",
@@ -38,4 +39,7 @@ __all__ = [
     "InjuryRiskPredictor",
     "InjuryPrediction",
     "ComprehensiveInjuryReport",
+    "ParkinsonsAnalyzer",
+    "ParkinsonsReport",
+    "SubPatternResult",
 ]
