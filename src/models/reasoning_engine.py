@@ -477,7 +477,11 @@ class GaitReasoningEngine(nn.Module):
         evidence = self.evidence_collector(modality_features, deviations)
 
         # Step 3: 감별 진단
-        anomaly_context = sum(deviations) / 3
+        # 모달리티 가중치를 적용한 가중 평균 컨텍스트 생성
+        weights = evidence["modality_weights"].unsqueeze(-1)  # (B, 3, 1)
+        dev_stack = torch.stack(deviations, dim=1)           # (B, 3, D)
+        anomaly_context = (dev_stack * weights).sum(dim=1)    # (B, D)
+
         diagnosis = self.diagnosis_chain(
             evidence["evidence_embedding"], anomaly_context
         )

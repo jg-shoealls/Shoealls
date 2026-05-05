@@ -54,6 +54,8 @@ class WearGaitPDAdapter:
             "imu": imu_list,
             "pressure": pressure_list,
             "skeleton": skeleton_list,
+            "magnetometer": [np.zeros((len(f), 3), dtype=np.float32) for f in imu_list],
+            "barometer": [np.zeros((len(f), 1), dtype=np.float32) for f in imu_list],
             "labels": np.array(labels, dtype=np.int64),
             "subject_ids": subject_ids
         }

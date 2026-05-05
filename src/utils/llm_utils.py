@@ -36,47 +36,53 @@ class LLMService:
         return await self._call_ollama(prompt)
 
     def _build_report_prompt(self, data: Dict) -> str:
-        return f"""당신은 숙련된 보행 분석 AI 전문가입니다. 
-다음의 정밀 분석 데이터를 바탕으로 환자가 이해하기 쉬운 '종합 건강 리포트'를 작성해주세요.
+        return f"""당신은 숙련된 보행 분석 AI 전문가이자 친절한 건강 상담사입니다. 
+다음의 정밀 분석 데이터를 바탕으로 환자가 이해하기 쉬운 'AI 보행 건강 리포트'를 작성해주세요.
 
-[분석 요약]
-- 판정 결과: {data['prediction']} (확신도: {data['confidence']:.1%})
-- 불확실성: {data['uncertainty']:.1%}
-- 종합 근거 강도: {data['evidence_strength']:.1%}
+### [분석 요약]
+- **최종 판정**: {data['prediction']}
+- **판정 신뢰도**: {data['confidence']:.1%}
+- **데이터 분석 강도**: {data['evidence_strength']:.1%}
 
-[이상 징후 상세]
+### [상세 이상 징후]
 {data['anomalies']}
 
-[감별 진단 근거]
-- 찬성 근거 강도: {data['pro_scores']}
-- 반대 근거 강도: {data['con_scores']}
+### [감별 진단 근거]
+- **주요 일치 지표**: {data['pro_scores']}
+- **상충 가능 지표**: {data['con_scores']}
 
-작성 지침:
-1. 전문 용어보다는 환자가 이해하기 쉬운 비유와 설명을 사용하세요.
-2. 현재 상태의 심각성과 개선을 위한 긍정적인 조언을 포함하세요.
-3. 3~4개 문단으로 구성된 자연스러운 한국어로 작성하세요.
+---
+**작성 지침:**
+1. **친절한 어조**: 환자가 불안해하지 않도록 친절하고 전문적인 어조를 유지하세요.
+2. **쉬운 설명**: '비대칭성', '운동실조' 등의 용어를 사용할 때는 "걷는 모양이 좌우가 조금 다르시네요"와 같이 쉽게 풀어서 설명해주세요.
+3. **구조적 구성**:
+   - 1문단: 현재 보행 상태에 대한 전체적인 총평
+   - 2문단: 발견된 주요 이상 징후와 그 의미 설명
+   - 3문단: 건강 개선을 위한 일상생활 속 실천 제안 (예: 근력 운동, 보행 주의사항)
+4. **언어**: 반드시 자연스러운 한국어로 작성하세요.
 """
 
     def _build_clinical_prompt(self, data: Dict) -> str:
-        return f"""당신은 대학병원 신경과/정형외과 전문의를 보조하는 의료 AI 컨설턴트입니다.
-다음의 멀티모달 보행 분석 데이터를 기반으로 심층적인 '임상 분석 소견서'를 작성하세요.
+        return f"""당신은 대학병원 신경과 및 정형외과 전문의를 보조하는 '의료 AI 임상 컨설턴트'입니다.
+다음의 멀티모달 보행 데이터(IMU, 족저압, 스켈레톤) 분석 결과를 기반으로 전문적인 '임상 분석 소견서(Clinical Assessment)'를 작성하세요.
 
-[데이터 요약]
-- 가설 진단: {data['prediction']} (Softmax Probs: {data['probabilities']})
-- 신뢰도 보정 결과: {data['confidence']:.1%} (Uncertainty: {data['uncertainty']:.1%})
-- 교차 모달 지지도: {data['cross_support']}
+### [Data Synthesis]
+- **Primary Hypothesis**: {data['prediction']} (Confidence: {data['confidence']:.1%})
+- **Softmax Distribution**: {data['probabilities']}
+- **Reasoning Calibration**: Uncertainty Index {data['uncertainty']:.1%}, Cross-Modal Support {data['cross_support']}
 
-[모달리티별 이상 패턴 점수]
+### [Modal-specific Abnormalities]
 {data['anomalies_raw']}
 
-[추론 체인 과정]
+### [Chain-of-Reasoning Trace]
 {data['reasoning_trace']}
 
-작성 지침:
-1. 의학적 관점에서 보행 특성(Gait Pathomechanics)과 질환 간의 연관성을 심층 분석하세요.
-2. 각 모달리티(IMU, 족저압, 스켈레톤) 간의 불일치나 특이사항이 있다면 지적하세요.
-3. 감별 진단을 위한 추가 검사 제안이나 임상적 주의사항을 포함하세요.
-4. 전문적인 의학 용어를 사용하여 한국어로 작성하세요.
+---
+**작성 지침:**
+1. **의학적 심층 분석**: 보행 병태생리학(Gait Pathophysiology)적 관점에서 특징을 분석하세요. (예: 파킨슨 보행의 경우 서동증, 소보행, 동결 현상 등과 연결)
+2. **모달리티 통합 해석**: IMU의 가속도 변화, 족저압의 압심점(COP) 이동, 스켈레톤의 관절 각도 변화가 어떻게 상호 보완적으로 특정 질환을 지지하는지 설명하세요.
+3. **임상적 권고**: 차등 진단(Differential Diagnosis)을 위해 필요한 추가 임상 검사(예: UPDRS score, MRI, EMG)나 처방 방향에 대한 조언을 포함하세요.
+4. **전문 용어 사용**: 의료 현장에서 사용하는 전문적인 의학 용어를 사용하여 격식 있는 한국어로 작성하세요.
 """
 
     async def _call_ollama(self, prompt: str) -> str:

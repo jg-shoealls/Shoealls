@@ -6,7 +6,7 @@ build/
 outputs/
 *.pt
 .env
-data/
+/data/
 .pytest_cache/
 output/
 node_modules/
