@@ -1,12 +1,13 @@
-# Multimodal Walking AI Algorithm Configuration
+# Fine-tuning Configuration Example
+# Based on default.yaml but with lower learning rate for fine-tuning
 
 data:
   sequence_length: 128
-  imu_channels: 6          # 3-axis accel + 3-axis gyro
-  pressure_grid_size: [16, 8]  # pressure sensor grid (H x W)
-  skeleton_joints: 17      # number of body keypoints
-  skeleton_dims: 3         # x, y, z coordinates
-  num_classes: 11          # 11 disease classes
+  imu_channels: 6
+  pressure_grid_size: [16, 8]
+  skeleton_joints: 17
+  skeleton_dims: 3
+  num_classes: 11
   train_split: 0.7
   val_split: 0.15
   test_split: 0.15
@@ -41,15 +42,15 @@ model:
     dropout: 0.3
 
 training:
-  batch_size: 32
-  epochs: 100
-  learning_rate: 0.001
+  batch_size: 16       # Smaller batch size for fine-tuning
+  epochs: 20           # Fewer epochs for fine-tuning
+  learning_rate: 0.0001 # 10x lower LR (Critical for fine-tuning)
   weight_decay: 0.0001
   scheduler:
     type: cosine
-    warmup_epochs: 5
+    warmup_epochs: 2
   early_stopping:
-    patience: 15
+    patience: 5
     min_delta: 0.001
 
 validation:

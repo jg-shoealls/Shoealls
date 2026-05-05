@@ -1,0 +1,57 @@
+# Lightweight Configuration for Mobile/Embedded Devices
+# Optimized for low latency and small memory footprint
+
+data:
+  sequence_length: 128
+  imu_channels: 6
+  pressure_grid_size: [16, 8]
+  skeleton_joints: 17
+  skeleton_dims: 3
+  num_classes: 11
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+
+model:
+  imu_encoder:
+    conv_channels: [16, 32]   # Reduced from [32, 64, 128]
+    kernel_size: 3            # Reduced from 5
+    lstm_hidden: 64           # Reduced from 128
+    lstm_layers: 1            # Reduced from 2
+    dropout: 0.2
+
+  pressure_encoder:
+    conv_channels: [8, 16]    # Reduced from [16, 32, 64]
+    kernel_size: 3
+    dropout: 0.2
+
+  skeleton_encoder:
+    gcn_channels: [32, 64]    # Reduced from [64, 128]
+    temporal_kernel: 3
+    dropout: 0.2
+
+  fusion:
+    embed_dim: 64             # Reduced from 128
+    num_heads: 2              # Reduced from 4
+    ff_dim: 128               # Reduced from 256
+    num_layers: 1              # Reduced from 2
+    dropout: 0.1
+
+  classifier:
+    hidden_dims: [32]         # Reduced from [128, 64]
+    dropout: 0.2
+
+training:
+  batch_size: 64              # Can increase batch size for lightweight model
+  epochs: 50
+  learning_rate: 0.002        # Slightly higher LR for faster convergence
+  weight_decay: 0.0001
+  scheduler:
+    type: cosine
+    warmup_epochs: 5
+  early_stopping:
+    patience: 10
+    min_delta: 0.001
+
+validation:
+  metrics: [accuracy, f1_macro]

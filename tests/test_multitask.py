@@ -13,7 +13,7 @@ from src.training.multitask_loss import MultitaskGaitLoss
 
 
 def load_config():
-    with open("configs/multitask.yaml") as f:
+    with open("configs/multitask.yaml", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
