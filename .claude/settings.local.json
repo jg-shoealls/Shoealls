@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install)",
+      "Bash(python *)",
+      "Bash(nvcc --version)",
+      "Bash(nvidia-smi)",
+      "Bash(pip show *)",
+      "Bash(pip uninstall *)",
+      "Bash(pip install *)",
+      "PowerShell(Get-Content *)",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\JG\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-JG-Desktop-ShoeAlls-Shoealls\\\\eef7a2a4-d24b-4bcf-af0d-3665239eac97\\\\tasks\\\\bo8dmc3s1.output'\")",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-Process *)",
+      "Bash(KMP_DUPLICATE_LIB_OK=TRUE python *)",
+      "WebSearch",
+      "Bash(PYTHONPATH=. python scripts/train_daphnet.py)",
+      "Bash(echo \"PID: $!\")",
+      "mcp__claude_ai_Hugging_Face__hub_repo_search",
+      "mcp__claude_ai_Hugging_Face__hf_hub_query",
+      "Bash(gh repo *)",
+      "Bash(curl -s https://api.github.com/repos/jg-shoealls/Shoealls)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('visibility:', d.get\\('visibility','N/A'\\)\\); print\\('private:', d.get\\('private','N/A'\\)\\); print\\('name:', d.get\\('name','N/A'\\)\\)\")",
+      "PowerShell($r = Invoke-RestMethod -Uri \"https://api.github.com/repos/jg-shoealls/Shoealls\" -ErrorAction SilentlyContinue; if \\($r\\) { \"visibility: $\\($r.visibility\\)\"; \"private: $\\($r.private\\)\"; \"name: $\\($r.name\\)\" } else { \"접근 불가 \\(private 또는 존재하지 않음\\)\" })",
+      "Bash(git add *)",
+      "Bash(git restore *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ]
+  }
+}
