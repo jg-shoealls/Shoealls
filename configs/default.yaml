@@ -54,3 +54,32 @@ training:
 
 validation:
   metrics: [accuracy, f1_macro, precision, recall, confusion_matrix]
+
+# HuggingFace 인코더 설정 (hf_gait_net.HFMultimodalGaitNet 에서 사용)
+# enabled: true 시 run_pipeline.py 에서 HFMultimodalGaitNet 으로 자동 전환
+hf_encoders:
+  enabled: false          # true 로 변경하면 HF 모델 사용
+
+  patchtst:
+    pretrained: true      # false = random init (오프라인/빠른 테스트 시)
+    patch_len: 16         # 패치 길이 (IMU T=128, stride=8 → 약 15 패치)
+    stride: 8
+    d_model: 128          # PatchTST hidden dim (embed_dim 과 일치)
+    num_heads: 4
+    num_layers: 3
+    dropout: 0.2
+    model_id: "ibm-granite/granite-timeseries-patchtst"
+
+  videomae:
+    pretrained: true      # false = random init
+    img_size: 224         # 스틱피겨 캔버스 크기
+    num_frames: 16        # VideoMAE 입력 프레임 수
+    dropout: 0.2
+    model_id: "MCG-NJU/videomae-base"
+
+  llm_report:
+    enabled: false        # true = BioMistral 임상 보고서 생성
+    model_id: "BioMistral/BioMistral-7B"
+    fallback_model_id: "dmis-lab/biobert-base-cased-v1.2"
+    max_new_tokens: 512
+    temperature: 0.3

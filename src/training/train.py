@@ -1,6 +1,7 @@
 """Training pipeline for multimodal gait classification."""
 
 import argparse
+import json
 import time
 from pathlib import Path
 
@@ -16,12 +17,12 @@ from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.utils.metrics import compute_metrics
 
 
-def create_dataloaders(config: dict) -> tuple:
+def create_dataloaders(config: dict, num_samples: int = 50) -> tuple:
     """Create train/val/test dataloaders with synthetic data."""
     data_cfg = config["data"]
 
     dataset_dict = generate_synthetic_dataset(
-        num_samples_per_class=50,
+        num_samples_per_class=num_samples,
         num_classes=data_cfg["num_classes"],
         grid_size=tuple(data_cfg["pressure_grid_size"]),
         num_joints=data_cfg["skeleton_joints"],
@@ -117,13 +118,13 @@ def evaluate(
     return metrics
 
 
-def train(config: dict, output_dir: Path):
+def train(config: dict, output_dir: Path, num_samples: int = 50, resume: bool = False):
     """Full training loop."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # Data
-    train_loader, val_loader, test_loader = create_dataloaders(config)
+    train_loader, val_loader, test_loader = create_dataloaders(config, num_samples)
     print(f"Dataset splits - Train: {len(train_loader.dataset)}, "
           f"Val: {len(val_loader.dataset)}, Test: {len(test_loader.dataset)}")
 
@@ -146,8 +147,22 @@ def train(config: dict, output_dir: Path):
         T_max=train_cfg["epochs"] - scheduler_cfg["warmup_epochs"],
     )
 
+    # Resume from checkpoint
+    start_epoch = 1
+    if resume:
+        ckpt_path = output_dir / "best_model.pt"
+        if ckpt_path.exists():
+            ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+            model.load_state_dict(ckpt["model_state_dict"])
+            optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+            start_epoch = ckpt["epoch"] + 1
+            best_val_acc = ckpt["val_accuracy"]
+            print(f"Resumed from epoch {ckpt['epoch']} (best val acc: {best_val_acc:.4f})")
+        else:
+            print(f"Warning: --resume 지정했지만 {ckpt_path} 없음. 처음부터 학습합니다.")
+
     # Training loop
-    best_val_acc = 0.0
+    best_val_acc = best_val_acc if resume else 0.0
     patience_counter = 0
     es_cfg = train_cfg["early_stopping"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -157,7 +172,7 @@ def train(config: dict, output_dir: Path):
     print(f"\nStarting training for {train_cfg['epochs']} epochs...")
     print("-" * 70)
 
-    for epoch in range(1, train_cfg["epochs"] + 1):
+    for epoch in range(start_epoch, train_cfg["epochs"] + 1):
         t0 = time.time()
 
         train_metrics = train_one_epoch(
@@ -229,21 +244,67 @@ def train(config: dict, output_dir: Path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train multimodal gait classifier")
-    parser.add_argument(
-        "--config", type=str, default="configs/default.yaml",
-        help="Path to configuration file",
+    parser = argparse.ArgumentParser(
+        description="Shoealls — 멀티모달 보행 분류 모델 학습",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "--output-dir", type=str, default="outputs",
-        help="Output directory for checkpoints",
-    )
+    parser.add_argument("--config", default="configs/default.yaml", help="설정 파일 경로")
+    parser.add_argument("--output-dir", default="outputs", help="체크포인트 저장 디렉터리")
+    parser.add_argument("--samples", type=int, default=50,
+                        help="클래스당 합성 샘플 수 (많을수록 정확도 향상)")
+    parser.add_argument("--epochs", type=int, default=None, help="에포크 수 (설정 파일 오버라이드)")
+    parser.add_argument("--lr", type=float, default=None, help="학습률 (설정 파일 오버라이드)")
+    parser.add_argument("--resume", action="store_true", help="outputs/best_model.pt에서 재개")
+    parser.add_argument("--verify", action="store_true",
+                        help="학습 후 API 호환성 검증 실행")
     args = parser.parse_args()
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    train(config, Path(args.output_dir))
+    # CLI 오버라이드
+    if args.epochs:
+        config["training"]["epochs"] = args.epochs
+    if args.lr:
+        config["training"]["learning_rate"] = args.lr
+
+    output_dir = Path(args.output_dir)
+    test_metrics = train(config, output_dir, num_samples=args.samples,
+                         resume=args.resume)
+
+    # 학습 결과 JSON 저장
+    result = {
+        "test_accuracy": round(test_metrics["accuracy"], 4),
+        "test_f1_macro": round(test_metrics["f1_macro"], 4),
+        "checkpoint": str(output_dir / "best_model.pt"),
+        "config": args.config,
+    }
+    (output_dir / "train_result.json").write_text(json.dumps(result, indent=2))
+    print(f"\n체크포인트 저장 완료: {output_dir / 'best_model.pt'}")
+    print(f"API에서 사용: --checkpoint_path {output_dir / 'best_model.pt'}")
+
+    if args.verify:
+        _verify_api_compat(config, output_dir / "best_model.pt")
+
+
+def _verify_api_compat(config: dict, ckpt_path: Path):
+    """저장된 체크포인트가 API와 호환되는지 빠른 검증."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    print("\n[검증] API 호환성 확인 중...")
+    try:
+        from api.schemas import SensorData
+        from api.service import GaitMLService
+        from api.examples import generate_sample_sensor_data
+
+        svc = GaitMLService()
+        sensor = SensorData(**generate_sample_sensor_data())
+        result = svc.classify(sensor, ckpt=str(ckpt_path))
+        print(f"  보행 분류 OK: {result.prediction_kr} ({result.confidence:.1%})")
+        assert not result.is_demo_mode, "체크포인트 로드 실패"
+        print("  API 호환성 검증 통과!")
+    except Exception as e:
+        print(f"  경고: 검증 실패 — {e}")
 
 
 if __name__ == "__main__":

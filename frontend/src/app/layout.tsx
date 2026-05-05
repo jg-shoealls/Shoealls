@@ -1,0 +1,26 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Shoealls — 보행 분석 대시보드",
+  description: "멀티모달 AI 기반 보행 패턴 분석 서비스",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko">
+      <head>
+        {/* 테마 flash 방지: 렌더 전 data-theme 주입 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'dark')}catch(e){}`,
+          }}
+        />
+      </head>
+      <body className={inter.className}>{children}</body>
+    </html>
+  );
+}

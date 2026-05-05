@@ -1,0 +1,222 @@
+"""Shoealls MVP — FastAPI REST API server.
+
+보행 데이터 분석 AI 서비스:
+  - 보행 패턴 분류 (MultimodalGaitNet)
+  - 질환 위험도 예측 (규칙기반 + ML 앙상블)
+  - 부상 위험 예측 (ML + 패턴감지)
+  - Chain-of-Reasoning 추론 분석 (GaitReasoningEngine)
+
+Run:
+    uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+"""
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
+
+from .schemas import (
+    ClassifyRequest,
+    DiseaseRiskRequest,
+    InjuryRiskRequest,
+    ReasoningRequest,
+    AnalyzeRequest,
+    GaitClassifyResponse,
+    DiseaseRiskResponse,
+    InjuryRiskResponse,
+    ReasoningResponse,
+    AnalyzeResponse,
+)
+from .service import get_service
+from .examples import generate_sample_sensor_data, GAIT_PROFILES
+from .auth import APIKeyMiddleware, AUTH_ENABLED
+from .logging_config import setup_logging, RequestLoggingMiddleware
+
+logger = setup_logging()
+
+
+def _svc_call(fn, handler: str):
+    """서비스 호출을 공통 예외 처리로 감싼다."""
+    try:
+        return fn()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception(f"{handler} error")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("startup: warming up ML models...")
+    svc = get_service()
+    svc.warmup()
+    auth_status = f"enabled ({len(__import__('os').getenv('API_KEYS','').split(','))} keys)" if AUTH_ENABLED else "disabled (demo mode)"
+    logger.info(f"startup complete — auth={auth_status}")
+    yield
+    logger.info("shutdown")
+
+
+app = FastAPI(
+    title="Shoealls Gait Analysis API",
+    description=(
+        "멀티모달 보행 AI 분석 REST API\n\n"
+        "**센서 입력**: IMU (6ch) + 족저압 (16×8) + 스켈레톤 (17 joints × 3D)\n\n"
+        "**분석 기능**: 보행 패턴 분류 / 질환 위험도 / 부상 위험 / Chain-of-Reasoning\n\n"
+        "**인증**: `X-API-Key` 헤더 (API_KEYS 환경변수 미설정 시 인증 비활성화)"
+    ),
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+# FastAPI 미들웨어는 역순 실행: 마지막 add_middleware가 가장 먼저 실행됨
+# 실제 실행 순서: RequestLoggingMiddleware → APIKeyMiddleware
+app.add_middleware(APIKeyMiddleware)
+app.add_middleware(RequestLoggingMiddleware, logger=logger)
+
+
+# ── Health ─────────────────────────────────────────────────────────────
+
+@app.get("/health", tags=["System"])
+def health_check():
+    """서버 상태 확인."""
+    return {"status": "ok", "service": "shoealls-gait-api", "version": "0.1.0"}
+
+
+# ── Sample Data ────────────────────────────────────────────────────────
+
+_GAIT_CLASS_MAP = {
+    "normal": 0,
+    "antalgic": 1, "stroke": 1,        # 절뚝거림/비대칭 패턴
+    "ataxic": 2,   "fall_risk": 2,     # 운동실조/불안정 패턴
+    "parkinsonian": 3, "parkinsons": 3, # 파킨슨 패턴
+}
+
+@app.get(
+    "/api/v1/sample",
+    tags=["System"],
+    summary="샘플 입력 데이터 생성",
+    description=(
+        "API 테스트용 합성 데이터를 반환합니다.\n\n"
+        "반환된 `sensor_data`와 `features`를 그대로 `/api/v1/analyze`에 붙여넣으세요.\n\n"
+        "**gait_profile**: `normal` | `parkinsons` | `stroke` | `fall_risk`"
+    ),
+)
+def get_sample(gait_profile: str = "normal"):
+    """테스트용 합성 센서 데이터 + 보행 특성 반환."""
+    if gait_profile not in GAIT_PROFILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"gait_profile must be one of: {list(GAIT_PROFILES.keys())}",
+        )
+    gait_class = _GAIT_CLASS_MAP.get(gait_profile, 0)
+    sensor_data = generate_sample_sensor_data(gait_class=gait_class)
+    return {
+        "gait_profile": gait_profile,
+        "sensor_data": sensor_data,
+        "features": GAIT_PROFILES[gait_profile],
+        "usage": {
+            "classify":     "POST /api/v1/classify     — sensor_data 사용",
+            "disease_risk": "POST /api/v1/disease-risk — features 사용",
+            "injury_risk":  "POST /api/v1/injury-risk  — features 사용",
+            "reasoning":    "POST /api/v1/reasoning    — sensor_data 사용",
+            "analyze":      "POST /api/v1/analyze      — sensor_data + features 모두 사용",
+        },
+    }
+
+
+# ── Gait Classification ────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/classify",
+    response_model=GaitClassifyResponse,
+    tags=["Analysis"],
+    summary="보행 패턴 분류",
+    description=(
+        "IMU + 족저압 + 스켈레톤 센서 데이터로 보행 패턴을 분류합니다.\n\n"
+        "**분류 클래스**: 정상 보행 / 절뚝거림 / 운동실조 / 파킨슨\n\n"
+        "> 체크포인트 없으면 랜덤 초기화 데모 모드로 실행됩니다."
+    ),
+)
+def classify_gait(req: ClassifyRequest):
+    svc = get_service()
+    return _svc_call(lambda: svc.classify(req.sensor_data, req.checkpoint_path), "classify_gait")
+
+
+# ── Disease Risk ───────────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/disease-risk",
+    response_model=DiseaseRiskResponse,
+    tags=["Analysis"],
+    summary="질환 위험도 예측",
+    description=(
+        "보행 바이오마커로 14개 질환 위험도를 평가합니다.\n\n"
+        "**질환 카테고리**: 신경계(파킨슨, 치매, 다발성경화증, 소뇌실조증) | "
+        "뇌혈관계(뇌졸중, 뇌출혈, 뇌경색) | "
+        "근골격계(골관절염, 류마티스, 디스크, 척추관협착증) | "
+        "기타(당뇨신경병증, 말초동맥질환, 전정기관장애)\n\n"
+        "규칙 기반 위험도 + ML 앙상블 분류 결과를 함께 제공합니다."
+    ),
+)
+def predict_disease_risk(req: DiseaseRiskRequest):
+    svc = get_service()
+    return _svc_call(lambda: svc.disease_risk(req.features), "predict_disease_risk")
+
+
+# ── Injury Risk ────────────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/injury-risk",
+    response_model=InjuryRiskResponse,
+    tags=["Analysis"],
+    summary="부상 위험 예측",
+    description=(
+        "보행 패턴 기반 ML 부상 위험 예측.\n\n"
+        "**예측 부상**: 족저근막염 / 중족골 피로골절 / 발목 염좌 / "
+        "무릎 과부하 / 고관절·요통 / 낙상 위험 / 아킬레스건염 / 경골 스트레스\n\n"
+        "이상 패턴 감지(40%) + ML 예측(60%) 종합 위험 점수를 제공합니다."
+    ),
+)
+def predict_injury_risk(req: InjuryRiskRequest):
+    svc = get_service()
+    return _svc_call(lambda: svc.injury_risk(req.features), "predict_injury_risk")
+
+
+# ── Chain-of-Reasoning ────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/reasoning",
+    response_model=ReasoningResponse,
+    tags=["Analysis"],
+    summary="Chain-of-Reasoning 추론 분석",
+    description=(
+        "4단계 추론 체인으로 보행을 심층 분석합니다.\n\n"
+        "1. **이상 감지** — 모달리티별 비정상 패턴 탐지\n"
+        "2. **근거 수집** — 교차 모달 검증으로 근거 강화\n"
+        "3. **감별 진단** — 가설 생성→대조→업데이트 반복\n"
+        "4. **신뢰도 보정** — 추론 일관성 기반 최종 판정\n\n"
+        "> 체크포인트 없으면 랜덤 초기화 데모 모드로 실행됩니다."
+    ),
+)
+def reasoning_analysis(req: ReasoningRequest):
+    svc = get_service()
+    return _svc_call(lambda: svc.reasoning(req.sensor_data, req.checkpoint_path), "reasoning_analysis")
+
+
+# ── Full Analysis ─────────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/analyze",
+    response_model=AnalyzeResponse,
+    tags=["Analysis"],
+    summary="종합 분석 (모든 기능)",
+    description=(
+        "4가지 분석을 한 번에 실행합니다:\n"
+        "보행 분류 + 질환 위험 + 부상 위험 + Chain-of-Reasoning"
+    ),
+)
+def full_analysis(req: AnalyzeRequest):
+    svc = get_service()
+    return _svc_call(lambda: svc.analyze(req.sensor_data, req.features, req.checkpoint_path), "full_analysis")

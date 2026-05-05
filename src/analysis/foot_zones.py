@@ -157,7 +157,7 @@ class FootZoneAnalyzer:
         if pressure_seq.ndim == 4:
             pressure_seq = pressure_seq[:, 0]  # remove channel dim
 
-        frames = [self.analyze_frame(pressure_seq[t]) for t in range(len(pressure_seq))]
+        frames = [self.analyze_frame(frame) for frame in pressure_seq]
 
         # Temporal COP trajectory
         cop_trajectory = np.array([(f.cop_x, f.cop_y) for f in frames])

@@ -386,15 +386,7 @@ class DiseaseRiskPredictor:
         details = []
 
         for feat_name, criteria in gait_features.items():
-            # 직접 매칭 또는 바이오마커에서 파생
-            value = features.get(feat_name)
-            if value is None:
-                # 바이오마커에서 찾기
-                for bio in bio_profile.biomarkers:
-                    if bio.name == feat_name:
-                        value = bio.value
-                        break
-
+            value = self._get_feature_value(feat_name, features, bio_profile)
             if value is None:
                 continue
 
@@ -441,8 +433,10 @@ class DiseaseRiskPredictor:
             risk_score = 0.0
 
         # 신뢰도: 사용 가능한 바이오마커 비율
-        available = sum(1 for f in gait_features if f in features or
-                       any(b.name == f for b in bio_profile.biomarkers))
+        available = sum(
+            1 for f in gait_features
+            if self._get_feature_value(f, features, bio_profile) is not None
+        )
         confidence = available / max(len(gait_features), 1)
 
         # 심각도 판정
@@ -467,6 +461,16 @@ class DiseaseRiskPredictor:
             referral=disease_def["referral"],
             biomarker_details=details,
         )
+
+    @staticmethod
+    def _get_feature_value(feat_name: str, features: dict, bio_profile) -> float | None:
+        """특성 값을 features dict → 바이오마커 순서로 조회."""
+        value = features.get(feat_name)
+        if value is None and bio_profile is not None:
+            for bio in bio_profile.biomarkers:
+                if bio.name == feat_name:
+                    return bio.value
+        return value
 
     def _get_korean_name(self, feature_name: str) -> str:
         """피처 이름의 한글 변환."""

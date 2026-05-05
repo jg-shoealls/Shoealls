@@ -9,14 +9,13 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
-from torch.utils.data import DataLoader
 
-from src.data.dataset import MultimodalGaitDataset
-from src.data.synthetic import generate_synthetic_dataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
+from src.training.evaluation import run_ablation, run_evaluation
 from src.training.train import train
 from src.utils.metrics import compute_metrics
 from src.validation.report import generate_report
+from src.analysis.llm_report import LLMReportGenerator, GaitSummary
 from src.validation.visualize import (
     plot_confusion_matrix,
     plot_confidence_distribution,
@@ -41,97 +40,6 @@ from src.analysis import (
     CorrektiveFeedbackGenerator,
     LongitudinalTrendTracker,
 )
-
-
-def run_ablation(config: dict, device: torch.device) -> dict:
-    """모달리티 제거 실험 (Ablation Study)."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=False)
-    model = MultimodalGaitNet(config).to(device)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-
-    data_cfg = config["data"]
-    dataset_dict = generate_synthetic_dataset(
-        num_samples_per_class=30, num_classes=data_cfg["num_classes"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"], seed=99,
-    )
-    dataset = MultimodalGaitDataset(
-        dataset_dict, sequence_length=data_cfg["sequence_length"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"],
-    )
-    loader = DataLoader(dataset, batch_size=32)
-
-    strategies = {
-        "IMU only": {"pressure": True, "skeleton": True},
-        "Pressure only": {"imu": True, "skeleton": True},
-        "Skeleton only": {"imu": True, "pressure": True},
-        "IMU + Pressure": {"skeleton": True},
-        "IMU + Skeleton": {"pressure": True},
-        "Pressure + Skeleton": {"imu": True},
-        "All (Fusion)": {},
-    }
-
-    results = {}
-    for name, mask in strategies.items():
-        all_preds, all_labels = [], []
-        with torch.no_grad():
-            for batch in loader:
-                batch = {k: v.to(device) for k, v in batch.items()}
-                labels = batch.pop("label")
-                for key in mask:
-                    batch[key] = torch.zeros_like(batch[key])
-                logits = model(batch)
-                all_preds.append(logits.argmax(dim=1).cpu().numpy())
-                all_labels.append(labels.cpu().numpy())
-
-        all_preds = np.concatenate(all_preds)
-        all_labels = np.concatenate(all_labels)
-        acc = (all_preds == all_labels).mean()
-        results[name] = acc
-        print(f"  {name:25s}: {acc:.4f}")
-
-    return results
-
-
-def run_evaluation(config: dict, device: torch.device):
-    """전체 평가: 예측 + 확률."""
-    checkpoint = torch.load("outputs/best_model.pt", map_location=device, weights_only=False)
-    model = MultimodalGaitNet(config).to(device)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-
-    data_cfg = config["data"]
-    dataset_dict = generate_synthetic_dataset(
-        num_samples_per_class=30, num_classes=data_cfg["num_classes"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"], seed=99,
-    )
-    dataset = MultimodalGaitDataset(
-        dataset_dict, sequence_length=data_cfg["sequence_length"],
-        grid_size=tuple(data_cfg["pressure_grid_size"]),
-        num_joints=data_cfg["skeleton_joints"],
-    )
-    loader = DataLoader(dataset, batch_size=32)
-
-    all_preds, all_labels, all_probs = [], [], []
-    with torch.no_grad():
-        for batch in loader:
-            batch = {k: v.to(device) for k, v in batch.items()}
-            labels = batch.pop("label")
-            logits = model(batch)
-            probs = torch.softmax(logits, dim=1)
-            all_preds.append(logits.argmax(dim=1).cpu().numpy())
-            all_labels.append(labels.cpu().numpy())
-            all_probs.append(probs.cpu().numpy())
-
-    return (
-        np.concatenate(all_labels),
-        np.concatenate(all_preds),
-        np.concatenate(all_probs),
-        dataset_dict["class_names"],
-    )
 
 
 def generate_gait_pattern(rng, pattern="normal", T=128, H=16, W=8):
@@ -189,7 +97,7 @@ def main():
     print("=" * 70)
     train(config, output_dir)
 
-    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=False)
+    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=True)
     history = checkpoint["history"]
 
     print("\n학습 곡선 시각화 생성...")
@@ -266,6 +174,47 @@ def main():
     trend = tracker.analyze_trends(min_sessions=3)
     plot_trend_dashboard(trend, tracker, analysis_dir / "overall_trend.png")
     print(trend.report_kr)
+
+    # ================================================================
+    # PART 3: BioMistral LLM 임상 보고서 (마지막 세션 기준)
+    # ================================================================
+    print("\n" + "=" * 70)
+    print("  PART 3: LLM 임상 보행 분석 보고서 생성")
+    print("=" * 70)
+
+    try:
+        llm_gen = LLMReportGenerator(config)
+        last_result = tracker.sessions[-1] if tracker.sessions else None
+
+        # 마지막 세션 데이터로 GaitSummary 구성
+        gait_summary = GaitSummary(
+            predicted_class="parkinsonian" if sessions[-1][0] != "normal" else "normal",
+            predicted_class_kr=sessions[-1][1],
+            confidence=float(probs[y_pred[-1], y_pred[-1]]) if len(probs) > 0 else 0.85,
+            disease_risks={"파킨슨병": 0.62, "소뇌실조증": 0.31} if sessions[-1][0] != "normal"
+                          else {"파킨슨병": 0.12, "소뇌실조증": 0.08},
+            injury_risks={"족저근막염": 0.55, "발목 염좌": 0.38} if sessions[-1][0] == "forefoot_overload"
+                         else {"족저근막염": 0.22, "발목 염좌": 0.15},
+            gait_features={
+                "gait_speed": 0.95 if sessions[-1][0] != "normal" else 1.25,
+                "cadence": 105.0 if sessions[-1][0] != "normal" else 118.0,
+                "step_symmetry": 0.74 if sessions[-1][0] != "normal" else 0.93,
+                "cop_sway": 0.18 if sessions[-1][0] != "normal" else 0.04,
+                "heel_pressure_ratio": 0.48 if sessions[-1][0] == "heel_striker" else 0.33,
+            },
+            session_id=sessions[-1][1],
+        )
+
+        llm_report = llm_gen.generate(gait_summary)
+        print("\n" + llm_report.full_report_kr)
+
+        # 텍스트 파일로 저장
+        report_txt = analysis_dir / "llm_clinical_report.txt"
+        report_txt.write_text(llm_report.full_report_kr, encoding="utf-8")
+        print(f"\n  LLM 보고서 저장: {report_txt}")
+
+    except Exception as e:
+        print(f"  LLM 보고서 생성 건너뜀: {e}")
 
     # ================================================================
     # 결과 요약
