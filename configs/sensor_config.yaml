@@ -1,0 +1,103 @@
+# 센서 하드웨어 사양 및 BLE 프로토콜 설정
+# Shoealls MVP v0.1.0
+
+hardware:
+  device_name: "Shoealls Sensor v1"
+  soc: "nRF52840"
+  ble_version: "5.0"
+  firmware_version: "0.1.0"
+  battery_capacity_mah: 200
+
+imu:
+  model: "ICM-42688-P"
+  axes: 6                   # accel(3) + gyro(3)
+  channel_order: [ax, ay, az, gx, gy, gz]
+  axis_up: ay               # 수직 방향 (신발 발등 기준 y축)
+  sample_rate_hz: 128
+  accel_range_g: 8          # ±8 g
+  gyro_range_dps: 1000      # ±1000 dps
+  resolution_bits: 16
+  accel_sensitivity: 4096   # LSB/g  (±8g 기준)
+  gyro_sensitivity: 32.8    # LSB/(°/s)
+  # 필터
+  lowpass_cutoff_hz: 40     # 보행 신호 대역 (< 40 Hz)
+  highpass_cutoff_hz: 0.5   # DC offset 제거
+
+pressure:
+  model: "Custom FSR Array (16×8)"
+  grid_rows: 16
+  grid_cols: 8
+  total_cells: 128
+  sample_rate_hz: 100
+  resolution_bits: 12
+  adc_reference_mv: 3300
+  cell_size_mm: 10          # 각 셀 10 mm × 10 mm
+  total_area_mm2: 12800     # 160 mm × 80 mm
+  # 족부 해부학적 구역 매핑 (row 기준, 앞발=0)
+  zones:
+    toes:             { rows: [0, 3],   cols: [0, 8] }
+    forefoot_medial:  { rows: [3, 7],   cols: [0, 4] }
+    forefoot_lateral: { rows: [3, 7],   cols: [4, 8] }
+    midfoot_medial:   { rows: [7, 11],  cols: [0, 4] }
+    midfoot_lateral:  { rows: [7, 11],  cols: [4, 8] }
+    heel_medial:      { rows: [11, 16], cols: [0, 4] }
+    heel_lateral:     { rows: [11, 16], cols: [4, 8] }
+
+skeleton:
+  source: "external"          # 외부 카메라/pose estimation
+  format: "COCO-17"
+  joints: 17
+  dims: 3                     # x, y, z
+  sample_rate_hz: 30          # 리샘플링 후 128 프레임
+  joint_names:
+    - nose           # 0
+    - left_eye       # 1
+    - right_eye      # 2
+    - left_ear       # 3
+    - right_ear      # 4
+    - left_shoulder  # 5
+    - right_shoulder # 6
+    - left_elbow     # 7
+    - right_elbow    # 8
+    - left_wrist     # 9
+    - right_wrist    # 10
+    - left_hip       # 11
+    - right_hip      # 12
+    - left_knee      # 13
+    - right_knee     # 14
+    - left_ankle     # 15
+    - right_ankle    # 16
+
+ble:
+  service_uuid: "f000aa00-0451-4000-b000-000000000000"
+  characteristics:
+    imu:      "f000aa01-0451-4000-b000-000000000000"
+    pressure: "f000aa02-0451-4000-b000-000000000000"
+    skeleton: "f000aa03-0451-4000-b000-000000000000"
+    control:  "f000aa04-0451-4000-b000-000000000000"
+    status:   "f000aa05-0451-4000-b000-000000000000"
+  mtu: 244
+  max_payload_bytes: 232      # MTU - 12 byte header
+  tx_power_dbm: 4
+  connection_interval_ms: 15  # 15 ms (빠른 갱신)
+  # 청크 수 (seq_len=128 기준)
+  imu_chunks: 7               # 1536 bytes ÷ 232 ≈ 7
+  pressure_chunks: 2          # 256 bytes ÷ 232 ≈ 2
+  skeleton_chunks: 113        # 26112 bytes ÷ 232 ≈ 113
+
+pipeline:
+  sequence_length: 128
+  # int16 스케일 (encode/decode 양측 동일 값 사용)
+  imu_scale: 1000.0           # ×1000 → int16
+  pressure_scale: 65535.0     # ×65535 → uint16
+  # 특성 추출 파라미터
+  feature_extraction:
+    step_detection_min_gap_ms: 250
+    autocorr_min_s: 0.3
+    autocorr_max_s: 1.5
+    stride_length_model: "hausdorff_linear"  # L = 0.28 + 0.34 × stride_freq
+
+calibration:
+  imu_offset: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # ax,ay,az,gx,gy,gz 오프셋
+  pressure_baseline: 0.0                         # 무게 없을 때 최솟값
+  gravity_mps2: 9.81

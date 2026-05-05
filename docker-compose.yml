@@ -1,0 +1,51 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shoealls-gait-api:latest
+    container_name: shoealls-api
+    ports:
+      - "8000:8000"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_KEYS=${API_KEYS:-dev-key-1234}
+      - WORKERS=${WORKERS:-2}
+    volumes:
+      # 학습된 체크포인트 마운트
+      - ./outputs:/app/outputs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # 개발 모드 (hot-reload, 소스 마운트)
+  api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shoealls-gait-api:latest
+    container_name: shoealls-api-dev
+    ports:
+      - "8001:8000"
+    environment:
+      - LOG_LEVEL=DEBUG
+      - API_KEYS=dev-key-1234
+    volumes:
+      - ./src:/app/src
+      - ./api:/app/api
+      - ./configs:/app/configs
+      - ./outputs:/app/outputs:ro
+    command: >
+      uvicorn api.main:app
+        --host 0.0.0.0
+        --port 8000
+        --reload
+        --reload-dir /app/api
+        --reload-dir /app/src
+    profiles: ["dev"]
+    restart: "no"
