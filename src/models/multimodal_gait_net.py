@@ -47,14 +47,14 @@ class MultimodalGaitNet(nn.Module):
         )
 
         # 지자기+기압 인코더 (mx,my,mz,heading,altitude — 5채널)
-        mb_cfg = model_cfg["mag_baro_encoder"]
+        mb_cfg = model_cfg.get("mag_baro_encoder", {})
         self.mag_baro_encoder = MagBaroEncoder(
             in_channels=data_cfg.get("mag_baro_channels", 5),
-            conv_channels=mb_cfg["conv_channels"],
-            kernel_size=mb_cfg["kernel_size"],
+            conv_channels=mb_cfg.get("conv_channels"),
+            kernel_size=mb_cfg.get("kernel_size", 5),
             lstm_hidden=embed_dim,
-            lstm_layers=mb_cfg["lstm_layers"],
-            dropout=mb_cfg["dropout"],
+            lstm_layers=mb_cfg.get("lstm_layers", 1),
+            dropout=mb_cfg.get("dropout", 0.1),
         )
 
         # 크로스 모달 어텐션 융합 (3 모달리티)
