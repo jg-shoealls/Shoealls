@@ -1,0 +1,3 @@
+## 2025-04-18 - PyTorch Attention Optimization
+**Learning:** PyTorch's `nn.MultiheadAttention` computes and returns attention weights by default, which takes O(B * num_heads * N^2) memory and prevents optimized attention backends (like FlashAttention) from being used.
+**Action:** Always set `need_weights=False` when calling `nn.MultiheadAttention` if the attention weights output is discarded (e.g., `attn_out, _ = self.attn(...)`), but ensure it is NOT applied if the attention weights are explicitly unpacked into a named variable (e.g., `out, weights = ...`), as unpacking `None` causes hidden regressions or breaks expected downstream usage.
