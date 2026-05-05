@@ -246,7 +246,7 @@ def main():
             break
 
     # Save final history
-    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=False)
+    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=True)
     checkpoint["history"] = history
     torch.save(checkpoint, output_dir / "best_model.pt")
 

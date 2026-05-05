@@ -98,7 +98,12 @@ class FolderDataAdapter:
     def _load_csv(self, filepath: Path) -> np.ndarray:
         """Load a CSV file into numpy array."""
         skip = 1 if self.has_header else 0
-        data = np.loadtxt(filepath, delimiter=self.delimiter, skiprows=skip)
+        try:
+            data = np.loadtxt(filepath, delimiter=self.delimiter, skiprows=skip)
+        except (ValueError, OSError) as e:
+            raise ValueError(f"Failed to load CSV file {filepath}: {e}") from e
+        if data.size == 0:
+            raise ValueError(f"CSV file is empty: {filepath}")
         if self.has_timestamp_col:
             data = data[:, 1:]  # Remove timestamp column
         return data.astype(np.float32)
@@ -273,9 +278,18 @@ class CSVDataAdapter:
         for i, (imu_f, pres_f, skel_f) in enumerate(
             zip(self.imu_files, self.pressure_files, self.skeleton_files)
         ):
-            imu = np.loadtxt(imu_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
-            pressure = np.loadtxt(pres_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
-            skeleton = np.loadtxt(skel_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
+            try:
+                imu = np.loadtxt(imu_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
+            except (ValueError, OSError) as e:
+                raise ValueError(f"Failed to load IMU data from {imu_f}: {e}") from e
+            try:
+                pressure = np.loadtxt(pres_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
+            except (ValueError, OSError) as e:
+                raise ValueError(f"Failed to load pressure data from {pres_f}: {e}") from e
+            try:
+                skeleton = np.loadtxt(skel_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
+            except (ValueError, OSError) as e:
+                raise ValueError(f"Failed to load skeleton data from {skel_f}: {e}") from e
 
             pressure = pressure.reshape(-1, h, w)
             skeleton = skeleton.reshape(-1, j, 3)

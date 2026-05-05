@@ -6,5 +6,15 @@ build/
 outputs/
 *.pt
 .env
-data/
+/data/
 .pytest_cache/
+output/
+node_modules/
+.next/
+.env.local
+.venv/
+.venv-1/
+# Google Auth
+credentials.json
+token.pickle
+client_secret_*.json

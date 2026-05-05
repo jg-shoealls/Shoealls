@@ -1,0 +1,70 @@
+# 질환 발병 전(전임상~초기징후) 이상징후 감지 설정
+# 4단계: 정상 / 전임상 / 초기 / 임상
+#
+# 신발 전용 3 모달리티:
+#   imu      : 발목 6축 (가속도 + 자이로)
+#   pressure : 인솔 16×8 족저압
+#   mag_baro : 지자기 4ch + 기압 1ch
+
+data:
+  sequence_length: 128
+  imu_channels: 6
+  pressure_grid_size: [16, 8]
+  mag_baro_channels: 5          # mx, my, mz, heading, altitude
+  num_classes: 4
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  num_samples_per_stage: 250
+
+augmentation:
+  noise_std: 0.04
+  amplitude_range: [0.85, 1.15]
+  time_shift_max: 8
+  frame_dropout: 0.05
+
+model:
+  imu_encoder:
+    conv_channels: [32, 64, 128]
+    kernel_size: 5
+    lstm_layers: 2
+    dropout: 0.3
+
+  pressure_encoder:
+    conv_channels: [16, 32, 64]
+    kernel_size: 3
+    dropout: 0.3
+
+  mag_baro_encoder:
+    conv_channels: [32, 64]
+    kernel_size: 5
+    lstm_layers: 1
+    dropout: 0.3
+
+  fusion:
+    embed_dim: 128
+    num_heads: 4
+    ff_dim: 256
+    num_layers: 2
+    dropout: 0.2
+
+  classifier:
+    hidden_dims: [128, 64]
+    dropout: 0.3
+
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  label_smoothing: 0.1
+  mixup_alpha: 0.3
+  scheduler:
+    type: onecycle
+    warmup_epochs: 5
+  early_stopping:
+    patience: 25
+    min_delta: 0.001
+
+validation:
+  metrics: [accuracy, f1_macro, precision, recall, confusion_matrix, ece]

@@ -19,7 +19,9 @@ def run_validation(config: dict, checkpoint_path: str):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load model
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    if not Path(checkpoint_path).exists():
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
     model = MultimodalGaitNet(config).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()

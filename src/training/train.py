@@ -14,6 +14,7 @@ from src.data.dataset import MultimodalGaitDataset
 from src.data.synthetic import generate_synthetic_dataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.utils.metrics import compute_metrics
+from src.utils.model_manager import model_manager
 
 
 def create_dataloaders(config: dict) -> tuple:
@@ -117,10 +118,10 @@ def evaluate(
     return metrics
 
 
-def train(config: dict, output_dir: Path):
+def train(config: dict, version: str = "1.0.0"):
     """Full training loop."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    print(f"Using device: {device} | Version: {version}")
 
     # Data
     train_loader, val_loader, test_loader = create_dataloaders(config)
@@ -148,9 +149,9 @@ def train(config: dict, output_dir: Path):
 
     # Training loop
     best_val_acc = 0.0
+    best_model_state = None
     patience_counter = 0
     es_cfg = train_cfg["early_stopping"]
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
 
@@ -184,15 +185,8 @@ def train(config: dict, output_dir: Path):
         # Early stopping / checkpointing
         if val_metrics["accuracy"] > best_val_acc + es_cfg["min_delta"]:
             best_val_acc = val_metrics["accuracy"]
+            best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             patience_counter = 0
-            torch.save({
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "val_accuracy": best_val_acc,
-                "config": config,
-                "history": history,
-            }, output_dir / "best_model.pt")
         else:
             patience_counter += 1
 
@@ -205,25 +199,31 @@ def train(config: dict, output_dir: Path):
     print("Final Test Evaluation")
     print("=" * 70)
 
-    checkpoint = torch.load(output_dir / "best_model.pt", weights_only=False)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    if best_model_state is None:
+        best_model_state = model.state_dict()
+    
+    model.load_state_dict(best_model_state)
     test_metrics = evaluate(model, test_loader, criterion, device)
 
     print(f"Test Accuracy:  {test_metrics['accuracy']:.4f}")
     print(f"Test F1 (macro): {test_metrics['f1_macro']:.4f}")
     print(f"Test Precision:  {test_metrics['precision']:.4f}")
     print(f"Test Recall:     {test_metrics['recall']:.4f}")
-    print(f"\nConfusion Matrix:\n{test_metrics['confusion_matrix']}")
 
-    # Save final history (includes all epochs, not just up to best)
-    torch.save({
-        "epoch": checkpoint["epoch"],
-        "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": checkpoint["optimizer_state_dict"],
-        "val_accuracy": checkpoint["val_accuracy"],
-        "config": config,
-        "history": history,
-    }, output_dir / "best_model.pt")
+    # Register best model in ModelManager
+    model_id = model_manager.save_model(
+        model_state=best_model_state,
+        config=config,
+        metrics={
+            "val_acc": float(best_val_acc),
+            "test_acc": float(test_metrics["accuracy"]),
+            "test_f1": float(test_metrics["f1_macro"])
+        },
+        version=version,
+        model_type="basic",
+        alias="latest"
+    )
+    print(f"\nModel registered with ID: {model_id}")
 
     return test_metrics
 
@@ -235,15 +235,15 @@ def main():
         help="Path to configuration file",
     )
     parser.add_argument(
-        "--output-dir", type=str, default="outputs",
-        help="Output directory for checkpoints",
+        "--version", type=str, default="1.0.0",
+        help="Model version (e.g. 1.0.0)",
     )
     args = parser.parse_args()
 
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    train(config, Path(args.output_dir))
+    train(config, version=args.version)
 
 
 if __name__ == "__main__":

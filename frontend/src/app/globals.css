@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 18px;
+  }
+
+  :root {
+    --color-bg: #F8FAFC;
+    --color-surface: rgba(255, 255, 255, 0.95);
+    --color-card: #FFFFFF;
+    --color-border: #E2E8F0;
+    --color-text-pri: #0F172A;
+    --color-text-sec: #475569;
+    --color-text-muted: #94A3B8;
+    /* Soft, subtle meshes for light mode */
+    --color-mesh-1: rgba(37, 99, 235, 0.05); /* primaryBlue */
+    --color-mesh-2: rgba(13, 148, 136, 0.05); /* medicalTeal */
+    --color-mesh-3: rgba(79, 70, 229, 0.03); /* accentIndigo */
+  }
+
+  .dark {
+    --color-bg: #0F172A; /* Slate 900 */
+    --color-surface: rgba(30, 41, 59, 0.8); /* Slate 800 */
+    --color-card: #1E293B;
+    --color-border: #334155; /* Slate 700 */
+    --color-text-pri: #F8FAFC;
+    --color-text-sec: #94A3B8;
+    --color-text-muted: #64748B;
+    /* Soft, subtle meshes for dark mode */
+    --color-mesh-1: rgba(37, 99, 235, 0.1);
+    --color-mesh-2: rgba(13, 148, 136, 0.1);
+    --color-mesh-3: rgba(79, 70, 229, 0.05);
+  }
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-pri);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+@layer utilities {
+  .glass {
+    background-color: var(--color-surface);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border);
+  }
+  .glass-card {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+    transition: all 0.2s ease-in-out;
+    border-radius: 24px;
+  }
+  .glass-card:hover {
+    border-color: #94A3B8;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+  }
+  .dark .glass-card {
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1);
+  }
+  .dark .glass-card:hover {
+    border-color: #475569;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.2);
+  }
+}
