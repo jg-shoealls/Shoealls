@@ -1,6 +1,7 @@
 """Preprocessing utilities for multimodal gait data."""
 
 import numpy as np
+from scipy.signal import resample
 
 
 def preprocess_imu(data: np.ndarray, target_length: int = 128) -> np.ndarray:
@@ -17,7 +18,6 @@ def preprocess_imu(data: np.ndarray, target_length: int = 128) -> np.ndarray:
         raise ValueError(f"Expected IMU data shape (T, 6), got {data.shape}")
 
     # Resample to target length
-    from scipy.signal import resample
     resampled = resample(data, target_length, axis=0)
 
     # Normalize per channel (z-score)
@@ -53,7 +53,6 @@ def preprocess_pressure(
         raise ValueError(f"Expected pressure data with 2 or 3 dims, got {data.ndim}")
 
     # Resample temporal dimension
-    from scipy.signal import resample
     resampled = resample(data, target_length, axis=0)
 
     # Min-max normalization per frame
@@ -86,7 +85,6 @@ def preprocess_skeleton(
         )
 
     # Resample temporal dimension
-    from scipy.signal import resample
     resampled = resample(data, target_length, axis=0)
 
     # Center skeleton at hip joint (joint 0) per frame
