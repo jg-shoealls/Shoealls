@@ -14,3 +14,7 @@ node_modules/
 .env.local
 .venv/
 .venv-1/
+# Google Auth
+credentials.json
+token.pickle
+client_secret_*.json
