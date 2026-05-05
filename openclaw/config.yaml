@@ -1,0 +1,14 @@
+# OpenClaw configuration — Shoealls R&D
+project: shoealls
+description: "멀티모달 보행 AI 알고리즘 실험 자동화"
+
+skills:
+  - name: shoealls_experiment
+    description: "슈올즈 보행 분석 실험 실행 및 관리"
+    path: skills/shoealls_experiment.py
+    examples:
+      - '{"command": "list"}'
+      - '{"command": "run", "config": "default"}'
+      - '{"command": "run", "config": "multitask", "train_only": true}'
+      - '{"command": "batch", "configs": ["default", "multitask", "biomarker_analysis"]}'
+      - '{"command": "status"}'
