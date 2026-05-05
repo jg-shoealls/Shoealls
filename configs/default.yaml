@@ -24,9 +24,10 @@ model:
     kernel_size: 3
     dropout: 0.3
 
-  skeleton_encoder:
-    gcn_channels: [64, 128]
-    temporal_kernel: 3
+  mag_baro_encoder:
+    conv_channels: [32, 64]
+    kernel_size: 5
+    lstm_layers: 1
     dropout: 0.3
 
   fusion:
