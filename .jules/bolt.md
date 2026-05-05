@@ -1,0 +1,3 @@
+## 2025-02-20 - [MultiheadAttention Optimization]
+**Learning:** In PyTorch, calling `nn.MultiheadAttention` with `need_weights=True` (the default) calculates and returns an $N \times N$ attention weight matrix. When this matrix is unused and discarded (e.g., `attn_out, _ = self.attn(...)`), keeping the default allocates unnecessary memory and compute, preventing the use of optimized fast paths like FlashAttention or Fused MHA kernels.
+**Action:** When working with `nn.MultiheadAttention` where the attention weights are not needed downstream, explicitly set `need_weights=False` to unlock optimized memory and compute paths.
