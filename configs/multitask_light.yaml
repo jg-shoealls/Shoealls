@@ -1,0 +1,69 @@
+# Lightweight Multi-task Configuration
+# One backbone, multiple specialized heads for different brain conditions
+
+data:
+  sequence_length: 128
+  imu_channels: 6
+  pressure_grid_size: [16, 8]
+  skeleton_joints: 17
+  skeleton_dims: 3
+  # Primary task (can be general gait classification)
+  num_classes: 11
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+
+model:
+  imu_encoder:
+    conv_channels: [16, 32]
+    kernel_size: 3
+    lstm_hidden: 64
+    lstm_layers: 1
+    dropout: 0.2
+  
+  pressure_encoder:
+    conv_channels: [8, 16]
+    kernel_size: 3
+    dropout: 0.2
+
+  skeleton_encoder:
+    gcn_channels: [32, 64]
+    temporal_kernel: 3
+    dropout: 0.2
+
+  fusion:
+    embed_dim: 64
+    num_heads: 2
+    ff_dim: 128
+    num_layers: 1
+    dropout: 0.1
+
+  # Multi-task Heads Configuration
+  multitask:
+    heads:
+      stroke_risk:
+        type: classification
+        num_classes: 2      # Normal vs Stroke
+        hidden_dims: [32]
+      dementia_risk:
+        type: classification
+        num_classes: 2      # Normal vs Dementia
+        hidden_dims: [32]
+      gait_regularity:
+        type: regression
+        output_dim: 1       # 0.0 to 1.0 score
+        hidden_dims: [16]
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  # Loss balancing weights
+  loss_weights:
+    stroke_risk: 1.0
+    dementia_risk: 1.0
+    gait_regularity: 0.5
+  early_stopping:
+    patience: 10
+    min_delta: 0.001
