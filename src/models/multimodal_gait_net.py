@@ -78,12 +78,16 @@ class MultimodalGaitNet(nn.Module):
         self.classifier = nn.Sequential(*layers)
 
     def forward(self, batch: dict) -> torch.Tensor:
+        fused = self.extract_features(batch)
+        return self.classifier(fused)
+
+    def extract_features(self, batch: dict) -> torch.Tensor:
+        """분류기 직전의 융합된 특징 벡터를 추출합니다."""
         imu_feat  = self.imu_encoder(batch["imu"])
         pres_feat = self.pressure_encoder(batch["pressure"])
         mb_feat   = self.mag_baro_encoder(batch["mag_baro"])
 
-        fused = self.fusion([imu_feat, pres_feat, mb_feat])
-        return self.classifier(fused)
+        return self.fusion([imu_feat, pres_feat, mb_feat])
 
     def get_num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

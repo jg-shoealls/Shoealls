@@ -39,7 +39,8 @@
       "PowerShell(nvidia-smi *)",
       "PowerShell(Get-WmiObject *)",
       "PowerShell(Get-CimInstance *)",
-      "PowerShell(Select-String *)"
+      "PowerShell(Select-String *)",
+      "PowerShell(git config *)"
     ]
   }
 }

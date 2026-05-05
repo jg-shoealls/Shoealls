@@ -107,6 +107,18 @@ def main():
     test_m = evaluate(model, test_loader, criterion, device)
     print(f"최종 테스트 정확도: {test_m['accuracy']:.4f}")
 
+    # model_manager를 사용하여 모델 등록
+    from src.utils.model_manager import model_manager
+    model_id = model_manager.save_model(
+        model_state=checkpoint["model_state_dict"],
+        config=config,
+        metrics={"test_accuracy": float(test_m["accuracy"]), "val_accuracy": float(best_val_acc)},
+        version="1.0.0",
+        model_type="basic",
+        alias="production"
+    )
+    print(f"모델이 레지스트리에 등록되었습니다: {model_id} (alias: production)")
+
     print(f"\n학습 완료! 결과가 {output_dir}에 저장되었습니다.")
 
 if __name__ == "__main__":
