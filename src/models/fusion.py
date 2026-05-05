@@ -69,7 +69,8 @@ class CrossModalAttentionFusion(nn.Module):
         combined = torch.cat(enriched, dim=1)  # (B, sum(T_i), D)
 
         # Self-attention over combined
-        attn_out, _ = self.self_attention(combined, combined, combined)
+        # Optimization: Set need_weights=False to prevent computing attention weights
+        attn_out, _ = self.self_attention(combined, combined, combined, need_weights=False)
         combined = self.norm(combined + attn_out)
 
         # Global average pooling
@@ -102,7 +103,8 @@ class CrossAttentionBlock(nn.Module):
 
     def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         # Cross-attention: query attends to context
-        attn_out, _ = self.cross_attn(query, context, context)
+        # Optimization: Set need_weights=False to prevent computing attention weights
+        attn_out, _ = self.cross_attn(query, context, context, need_weights=False)
         query = self.norm1(query + attn_out)
 
         # Feed-forward
