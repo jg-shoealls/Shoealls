@@ -40,7 +40,11 @@
       "PowerShell(Get-WmiObject *)",
       "PowerShell(Get-CimInstance *)",
       "PowerShell(Select-String *)",
-      "PowerShell(git config *)"
+      "PowerShell(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "mcp__claude_ai_Google_Drive__create_file"
     ]
   }
 }
