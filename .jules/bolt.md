@@ -1,0 +1,3 @@
+## 2024-05-09 - [PyTorch Attention Optimization]
+**Learning:** By default, `nn.MultiheadAttention` computes and returns the attention weights tensor, which requires extra memory allocation and FLOPs. Additionally, this prevents PyTorch's optimized attention backends (like FlashAttention or MathAttention via scaled_dot_product_attention) from being utilized when training or inferring.
+**Action:** Always set `need_weights=False` on `nn.MultiheadAttention` forward passes when the returned attention weights are discarded (assigned to `_`), as this speeds up computation and saves memory without altering the output.
