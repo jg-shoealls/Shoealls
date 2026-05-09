@@ -6,6 +6,7 @@ build/
 outputs/
 *.pt
 .env
+.venv/
 .gdrive_token.json
 data/
 .pytest_cache/

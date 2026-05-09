@@ -39,7 +39,14 @@
       "WebFetch(domain:bmi.hmu.gr)",
       "WebFetch(domain:www.nature.com)",
       "Bash(python3 -c ' *)",
-      "Bash(python3 -m pip install pyyaml -q)"
+      "Bash(python3 -m pip install pyyaml -q)",
+      "PowerShell(python --version 2>&1)",
+      "Bash(where python *)",
+      "Bash(C:\\\\Users\\\\JG\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\python.exe *)",
+      "Bash(py *)",
+      "Bash(uv --version)",
+      "Bash(/d/shoealls/Shoealls/.venv/Scripts/python.exe *)",
+      "Bash(/d/shoealls/Shoealls/.venv/Scripts/pip.exe install *)"
     ]
   }
 }
