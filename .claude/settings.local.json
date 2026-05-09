@@ -46,7 +46,10 @@
       "Bash(py *)",
       "Bash(uv --version)",
       "Bash(/d/shoealls/Shoealls/.venv/Scripts/python.exe *)",
-      "Bash(/d/shoealls/Shoealls/.venv/Scripts/pip.exe install *)"
+      "Bash(/d/shoealls/Shoealls/.venv/Scripts/pip.exe install *)",
+      "Bash(git config *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\shoealls\\\\Shoealls\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

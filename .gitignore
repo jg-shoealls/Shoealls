@@ -8,5 +8,5 @@ outputs/
 .env
 .venv/
 .gdrive_token.json
-data/
+/data/
 .pytest_cache/

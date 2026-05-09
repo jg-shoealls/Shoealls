@@ -22,18 +22,21 @@ _PRESSURE_COLS = (
     + [f"RPressure{i}" for i in range(1, 17)]
 )
 
+def _is_hc(name: str) -> bool:
+    lower = name.lower()
+    return lower.startswith(("hc", "whc"))
+
+
 def validate_file(path):
     try:
-        # Just read the header first to be fast
+        # nrows=0 reads only the header — avoids loading data just for column names
         header = pd.read_csv(path, nrows=0).columns.tolist()
-        
+
         has_imu = all(c in header for c in _IMU_COLS)
         has_pressure = all(c in header for c in _PRESSURE_COLS)
-        
-        # Read a few rows to check for data quality (NaNs)
-        df_sample = pd.read_csv(path, nrows=100)
-        row_count = len(pd.read_csv(path, usecols=[header[0]])) # Efficient way to count rows
-        
+
+        row_count = len(pd.read_csv(path, usecols=[header[0]]))
+
         missing_imu = [c for c in _IMU_COLS if c not in header]
         missing_pres = [c for c in _PRESSURE_COLS if c not in header]
         
@@ -73,7 +76,7 @@ def main():
             print(f"{res['name']:<35} | ERROR: {res['error']}")
             continue
             
-        label = "HC" if res['name'].lower().startswith("hc") else "NLS"
+        label = "HC" if _is_hc(res['name']) else "PD"
         imu_str = "OK" if res['has_imu'] else f"Miss({res['missing_imu_count']})"
         pres_str = "OK" if res['has_pressure'] else f"Miss({res['missing_pres_count']})"
         
@@ -86,17 +89,18 @@ def main():
     
     print("-" * 110)
     
-    # Summary
     if results:
-        total = len(results)
-        ok_imu = sum(1 for r in results if r['has_imu'])
-        ok_pres = sum(1 for r in results if r['has_pressure'])
-        hcs = sum(1 for r in results if r['name'].lower().startswith("hc"))
-        nls = total - hcs
+        total = hcs = ok_imu = ok_pres = 0
+        for r in results:
+            total += 1
+            if _is_hc(r['name']): hcs += 1
+            if r['has_imu']: ok_imu += 1
+            if r['has_pressure']: ok_pres += 1
+        pds = total - hcs
         
         print(f"Total files: {total}")
         print(f"  Healthy Controls (HC): {hcs}")
-        print(f"  Parkinson's (NLS):    {nls}")
+        print(f"  Parkinson's (PD):     {pds}")
         print(f"  IMU OK:               {ok_imu}/{total}")
         print(f"  Pressure OK:          {ok_pres}/{total}")
 

@@ -29,11 +29,15 @@ DISEASE_DEFINITIONS = {
         "korean_name": "파킨슨병",
         "description": "도파민 부족으로 인한 운동 장애",
         "gait_features": {
-            "stride_regularity": {"direction": "low", "weight": 0.9, "threshold": 0.6},
-            "cadence": {"direction": "high", "weight": 0.7, "threshold": 140},
-            "gait_speed": {"direction": "low", "weight": 0.9, "threshold": 0.8},
-            "acceleration_variability": {"direction": "high", "weight": 0.8, "threshold": 0.3},
-            "step_symmetry": {"direction": "low", "weight": 0.5, "threshold": 0.8},
+            "stride_regularity":          {"direction": "low",  "weight": 0.90, "threshold": 0.60},
+            "cadence":                    {"direction": "high", "weight": 0.70, "threshold": 140},
+            "gait_speed":                 {"direction": "low",  "weight": 0.90, "threshold": 0.80},
+            "acceleration_variability":   {"direction": "high", "weight": 0.80, "threshold": 0.30},
+            "step_symmetry":              {"direction": "low",  "weight": 0.50, "threshold": 0.80},
+            # 전임상 바이오마커 (prodromal_biomarkers.py 계산값)
+            "prodromal_composite_score":  {"direction": "high", "weight": 0.95, "threshold": 0.15},
+            "rest_tremor_index":          {"direction": "high", "weight": 0.80, "threshold": 0.10},
+            "stride_time_cv":             {"direction": "high", "weight": 0.70, "threshold": 0.03},
         },
         "key_signs": [
             "소보행 (짧은 보폭 + 빠른 보행률)",
@@ -41,8 +45,10 @@ DISEASE_DEFINITIONS = {
             "전진 가속 (festination)",
             "팔 흔들림 감소",
             "체간 전경 자세",
+            "안정 시 4-6 Hz 트레모 (전임상)",
+            "보폭 변동성 증가 (전임상)",
         ],
-        "severity_thresholds": (0.25, 0.50, 0.75),
+        "severity_thresholds": (0.15, 0.35, 0.60),  # 전임상 단계 포착을 위해 하향
         "referral": "신경과",
     },
     "stroke": {
