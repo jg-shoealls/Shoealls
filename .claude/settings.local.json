@@ -35,7 +35,8 @@
       "Bash(/d/shoealls/Shoealls/.venv/Scripts/python.exe *)",
       "Bash(/d/shoealls/Shoealls/.venv/Scripts/pip.exe install *)",
       "Bash(winget install *)",
-      "Bash(ollama *)"
+      "Bash(ollama *)",
+      "Bash(git stash *)"
     ]
   }
 }
