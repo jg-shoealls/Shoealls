@@ -2,23 +2,20 @@
 
 import numpy as np
 
-# 11-class gait profiles
-# 0:normal, 1:parkinson, 2:stroke, 3:diabetic_neuropathy, 4:cerebellar_ataxia,
-# 5:osteoarthritis, 6:dementia, 7:cerebral_hemorrhage, 8:cerebral_infarction,
-# 9:disc_herniation, 10:rheumatoid_arthritis
+# 11-class gait profiles. The first four labels match the public API contract.
 CLASS_NAMES = [
-    "normal", "parkinson", "stroke", "diabetic_neuropathy", "cerebellar_ataxia",
-    "osteoarthritis", "dementia", "cerebral_hemorrhage", "cerebral_infarction",
-    "disc_herniation", "rheumatoid_arthritis",
+    "normal", "antalgic", "ataxic", "parkinsonian", "stroke",
+    "diabetic_neuropathy", "osteoarthritis", "dementia",
+    "cerebral_hemorrhage", "cerebral_infarction", "disc_herniation",
 ]
 
 _FREQ_MAP = {
-    0: 1.8, 1: 1.0, 2: 1.1, 3: 1.3, 4: 1.5,
-    5: 1.2, 6: 1.1, 7: 1.0, 8: 1.1, 9: 1.3, 10: 1.2,
+    0: 1.8, 1: 1.2, 2: 1.5, 3: 1.0, 4: 1.1,
+    5: 1.3, 6: 1.2, 7: 1.1, 8: 1.0, 9: 1.1, 10: 1.3,
 }
 _NOISE_MAP = {
-    0: 0.10, 1: 0.15, 2: 0.25, 3: 0.30, 4: 0.40,
-    5: 0.20, 6: 0.20, 7: 0.35, 8: 0.30, 9: 0.20, 10: 0.25,
+    0: 0.10, 1: 0.20, 2: 0.40, 3: 0.15, 4: 0.25,
+    5: 0.30, 6: 0.20, 7: 0.20, 8: 0.35, 9: 0.30, 10: 0.20,
 }
 
 
@@ -48,30 +45,29 @@ def generate_synthetic_imu(
     for _ in range(6):
         signal = _generate_gait_cycle(num_frames, freq, noise, rng)
 
-        if gait_class == 1:   # Parkinson: tremor + reduced amplitude
+        if gait_class == 1:   # Antalgic: asymmetric pattern
+            signal += 0.3 * np.sin(np.pi * freq * t)
+        elif gait_class == 2:  # Ataxic: highly irregular
+            signal += 0.35 * rng.standard_normal(num_frames)
+        elif gait_class == 3:  # Parkinsonian: tremor + reduced amplitude
             signal *= 0.5
             signal += 0.2 * np.sin(2 * np.pi * 5.0 * t)
-        elif gait_class == 2:  # Stroke: hemiplegic asymmetry
+        elif gait_class == 4:  # Stroke: hemiplegic asymmetry
             signal += 0.3 * np.sin(np.pi * freq * t)
-        elif gait_class == 3:  # Diabetic neuropathy: steppage, high lift
+        elif gait_class == 5:  # Diabetic neuropathy: steppage, high lift
             signal += 0.25 * np.abs(np.sin(np.pi * freq * t))
-        elif gait_class == 4:  # Cerebellar ataxia: highly irregular
-            signal += 0.35 * rng.standard_normal(num_frames)
-        elif gait_class == 5:  # Osteoarthritis: antalgic, slow
+        elif gait_class == 6:  # Osteoarthritis: antalgic, slow
             signal += 0.2 * np.sin(np.pi * freq * t) * 0.7
-        elif gait_class == 6:  # Dementia: shuffling, reduced arm swing
+        elif gait_class == 7:  # Dementia: shuffling, reduced arm swing
             signal *= 0.6
-        elif gait_class == 7:  # Cerebral hemorrhage: spastic asymmetry
+        elif gait_class == 8:  # Cerebral hemorrhage: spastic asymmetry
             signal *= 0.55
             signal += 0.25 * rng.standard_normal(num_frames)
-        elif gait_class == 8:  # Cerebral infarction: hemiparetic
+        elif gait_class == 9:  # Cerebral infarction: hemiparetic
             signal += 0.2 * np.sin(np.pi * freq * t)
             signal *= 0.7
-        elif gait_class == 9:  # Disc herniation: trunk lean, antalgic
+        elif gait_class == 10:  # Disc herniation: trunk lean, antalgic
             signal += 0.15 * np.sin(np.pi * freq * t)
-        elif gait_class == 10:  # Rheumatoid arthritis: stiff, slow
-            signal *= 0.65
-            signal += 0.1 * rng.standard_normal(num_frames)
 
         channels.append(signal)
 
@@ -99,29 +95,28 @@ def generate_synthetic_pressure(
         pressure[i][heel_region] = heel_signal[i]
         pressure[i][toe_region] = toe_signal[i]
 
-    if gait_class == 1:    # Parkinson: flat-footed, shuffle
+    if gait_class == 1:    # Antalgic: uneven loading
+        pressure[:, :, :w // 2] *= 0.5
+    elif gait_class == 2:  # Ataxic: irregular pressure
+        pressure += 0.3 * rng.standard_normal(pressure.shape).astype(np.float32)
+    elif gait_class == 3:  # Parkinsonian: flat-footed, shuffle
         pressure = np.clip(pressure, 0.2, 0.8)
-    elif gait_class == 2:  # Stroke: unilateral loading
+    elif gait_class == 4:  # Stroke: unilateral loading
         pressure[:, :, :w // 2] *= 0.4
-    elif gait_class == 3:  # Diabetic neuropathy: reduced sensation, forefoot
+    elif gait_class == 5:  # Diabetic neuropathy: reduced sensation, forefoot
         pressure[:, h // 2:, :] *= 0.5
         pressure[:, :h // 3, :] *= 1.3
-    elif gait_class == 4:  # Cerebellar ataxia: wide, irregular
-        pressure += 0.3 * rng.standard_normal(pressure.shape).astype(np.float32)
-    elif gait_class == 5:  # Osteoarthritis: uneven loading
+    elif gait_class == 6:  # Osteoarthritis: uneven loading
         pressure[:, :, :w // 2] *= 0.6
-    elif gait_class == 6:  # Dementia: flat, shuffling
+    elif gait_class == 7:  # Dementia: flat, shuffling
         pressure = np.clip(pressure, 0.15, 0.75)
-    elif gait_class == 7:  # Cerebral hemorrhage: spastic, asymmetric
+    elif gait_class == 8:  # Cerebral hemorrhage: spastic, asymmetric
         pressure[:, :, w // 2:] *= 0.3
         pressure += 0.2 * rng.standard_normal(pressure.shape).astype(np.float32)
-    elif gait_class == 8:  # Cerebral infarction: hemiparetic loading
+    elif gait_class == 9:  # Cerebral infarction: hemiparetic loading
         pressure[:, :, :w // 2] *= 0.5
-    elif gait_class == 9:  # Disc herniation: antalgic unloading
+    elif gait_class == 10: # Disc herniation: antalgic unloading
         pressure[:, :, w // 2:] *= 0.7
-    elif gait_class == 10: # Rheumatoid arthritis: forefoot offloading
-        pressure[:, h // 2:, :] *= 1.2
-        pressure[:, :h // 3, :] *= 0.6
 
     noise = 0.05 * rng.standard_normal(pressure.shape).astype(np.float32)
     return np.clip(pressure + noise, 0, 1)
@@ -173,36 +168,35 @@ def generate_synthetic_skeleton(
         skeleton[i, 8, 0] += arm_amp * np.sin(phase) * 1.2
         skeleton[i, :, 2] += 0.5 * t[i]
 
-    if gait_class == 1:    # Parkinson: forward lean, reduced motion
-        skeleton[:, 1:3, 2] -= 0.05
-        skeleton[:, 3:9, :] *= 0.6
-    elif gait_class == 2:  # Stroke: hemiplegic, unilateral arm reduction
-        skeleton[:, 3:6, :] *= 0.4
-        skeleton[:, 9:12, 0] -= 0.04
-    elif gait_class == 3:  # Diabetic neuropathy: high-stepping
-        skeleton[:, 10, 1] += 0.06
-        skeleton[:, 13, 1] += 0.06
-    elif gait_class == 4:  # Cerebellar ataxia: wide base, unsteady
+    if gait_class == 1:    # Antalgic: limping, asymmetric
+        skeleton[:, 10:12, 1] += 0.03
+    elif gait_class == 2:  # Ataxic: wide base, unsteady
         skeleton[:, 9:12, 0] -= 0.07
         skeleton[:, 12:15, 0] += 0.07
         skeleton += 0.02 * rng.standard_normal(skeleton.shape).astype(np.float32)
-    elif gait_class == 5:  # Osteoarthritis: antalgic, limping
+    elif gait_class == 3:  # Parkinsonian: forward lean, reduced motion
+        skeleton[:, 1:3, 2] -= 0.05
+        skeleton[:, 3:9, :] *= 0.6
+    elif gait_class == 4:  # Stroke: hemiplegic, unilateral arm reduction
+        skeleton[:, 3:6, :] *= 0.4
+        skeleton[:, 9:12, 0] -= 0.04
+    elif gait_class == 5:  # Diabetic neuropathy: high-stepping
+        skeleton[:, 10, 1] += 0.06
+        skeleton[:, 13, 1] += 0.06
+    elif gait_class == 6:  # Osteoarthritis: antalgic, limping
         skeleton[:, 10:12, 1] += 0.03
-    elif gait_class == 6:  # Dementia: stooped, shuffling
+    elif gait_class == 7:  # Dementia: stooped, shuffling
         skeleton[:, 1:3, 2] -= 0.04
         skeleton[:, 3:9, :] *= 0.65
-    elif gait_class == 7:  # Cerebral hemorrhage: spastic arm, asymmetric
+    elif gait_class == 8:  # Cerebral hemorrhage: spastic arm, asymmetric
         skeleton[:, 3:6, :] *= 0.3
         skeleton += 0.015 * rng.standard_normal(skeleton.shape).astype(np.float32)
-    elif gait_class == 8:  # Cerebral infarction: hemiparetic gait
+    elif gait_class == 9:  # Cerebral infarction: hemiparetic gait
         skeleton[:, 3:6, :] *= 0.5
         skeleton[:, 10:12, 0] += 0.03
-    elif gait_class == 9:  # Disc herniation: trunk lateral lean
+    elif gait_class == 10: # Disc herniation: trunk lateral lean
         skeleton[:, 0:2, 0] += 0.04
         skeleton[:, 10:12, 1] += 0.02
-    elif gait_class == 10: # Rheumatoid arthritis: stiff joints, slow
-        skeleton *= 0.85
-        skeleton += 0.008 * rng.standard_normal(skeleton.shape).astype(np.float32)
 
     noise = 0.005 * rng.standard_normal(skeleton.shape).astype(np.float32)
     return (skeleton + noise).astype(np.float32)

@@ -1,0 +1,19 @@
+# Next.js
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Lock files (commit only one)
+# package-lock.json  ← 커밋 포함
+
+# Env
+.env.local
+.env.*.local
+
+# Debug
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
