@@ -10,3 +10,5 @@ fastapi>=0.110.0
 uvicorn[standard]>=0.27.0
 pydantic>=2.0.0
 python-dotenv>=1.0.0
+datasets==2.18.0
+pyarrow==14.0.2

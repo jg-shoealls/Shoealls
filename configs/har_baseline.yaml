@@ -1,0 +1,36 @@
+# HAR/IMU baseline plan for ShoeAlls.
+
+data:
+  source: synthetic
+  hf_repo: monster-monash/PAMAP2
+  hf_split: train
+  local_npz: data/shoealls_har_windows.npz
+  max_samples: null
+  sequence_length: 128
+  channels: 6
+  num_classes: 4
+  train_split: 0.7
+  val_split: 0.15
+  seed: 42
+
+model:
+  patch_size: 16
+  stride: 8
+  embed_dim: 96
+  num_heads: 4
+  num_layers: 2
+  ff_dim: 192
+  dropout: 0.1
+
+training:
+  batch_size: 32
+  epochs: 20
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  early_stopping:
+    patience: 5
+    min_delta: 0.001
+
+experiment:
+  phase: pamap2-baseline
+  output_dir: outputs/har_baseline
