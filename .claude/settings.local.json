@@ -36,7 +36,12 @@
       "Bash(/d/shoealls/Shoealls/.venv/Scripts/pip.exe install *)",
       "Bash(winget install *)",
       "Bash(ollama *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(xargs grep -l \"openclaw\\\\|OpenClaw\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\JG\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--shoealls-Shoealls\\\\68d98732-f030-4106-a3f6-d69749505589\\\\tasks\\\\bd904oeiu.output\" -Wait)",
+      "Bash(Select-String --line-buffered \"Fold|Ep |Early|success|failed|Error|Traceback|SUMMARY|Mean|Std|Device|Subject\")",
+      "mcp__claude_ai_Hugging_Face__hf_whoami"
     ]
   }
 }
