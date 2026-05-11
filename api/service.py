@@ -284,6 +284,19 @@ class GaitMLService:
             is_demo_mode=is_demo,
         )
 
+    def fall_risk(self, features: GaitFeatures) -> FallRiskResponse:
+        feat_dict = _features_to_dict(features)
+        report = self._fall_engine.assess(feat_dict)
+        return FallRiskResponse(
+            risk_score=report.risk_score,
+            risk_level=report.risk_level,
+            stability_score=report.stability_score,
+            symmetry_score=report.symmetry_score,
+            rhythm_score=report.rhythm_score,
+            risk_factors=report.risk_factors,
+            recommendations=report.recommendations,
+        )
+
     def analyze(
         self,
         sensor_data: SensorData,
@@ -294,6 +307,7 @@ class GaitMLService:
             classify=self.classify(sensor_data, ckpt),
             disease_risk=self.disease_risk(features),
             injury_risk=self.injury_risk(features),
+            fall_risk=self.fall_risk(features),
             reasoning=self.reasoning(sensor_data, ckpt),
         )
 

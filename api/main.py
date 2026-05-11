@@ -32,6 +32,7 @@ from .service import get_service
 from .examples import generate_sample_sensor_data, GAIT_PROFILES
 from .auth import APIKeyMiddleware, AUTH_ENABLED
 from .logging_config import setup_logging, RequestLoggingMiddleware
+from .routers.websocket_stream import router as realtime_router
 
 logger = setup_logging()
 
@@ -63,6 +64,9 @@ app = FastAPI(
 # 실제 실행 순서: RequestLoggingMiddleware → APIKeyMiddleware
 app.add_middleware(APIKeyMiddleware)
 app.add_middleware(RequestLoggingMiddleware, logger=logger)
+
+# CES 실시간 스트리밍 라우터 (WebSocket + SSE)
+app.include_router(realtime_router)
 
 
 # ── Health ─────────────────────────────────────────────────────────────
@@ -183,6 +187,30 @@ def predict_injury_risk(req: InjuryRiskRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.exception("predict_injury_risk error")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ── Fall Risk ─────────────────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/fall-risk",
+    response_model=FallRiskResponse,
+    tags=["Analysis"],
+    summary="낙상 위험도 분석",
+    description=(
+        "보행 바이오마커를 통한 실시간 낙상 위험도 평가.\n\n"
+        "**분석 항목**: 동적 안정성(COP 흔들림), 좌우 대칭성, 보행 리듬.\n\n"
+        "정상/주의/경고/위험 4단계 등급과 맞춤형 권고 사항을 제공합니다."
+    ),
+)
+def predict_fall_risk(req: FallRiskRequest):
+    try:
+        svc = get_service()
+        return svc.fall_risk(req.features)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("predict_fall_risk error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

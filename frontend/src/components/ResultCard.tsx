@@ -1,4 +1,5 @@
-/** 결과 카드 컨테이너 */
+import type { ReactNode } from "react";
+
 export function ResultCard({
   title,
   badge,
@@ -9,12 +10,11 @@ export function ResultCard({
   title: string;
   badge: string;
   accentColor: string;
-  children: React.ReactNode;
+  children: ReactNode;
   isDemo?: boolean;
 }) {
   return (
-    <div className="bg-card rounded-2xl overflow-hidden flex flex-col">
-      {/* 상단 컬러 바 */}
+    <section className="bg-card rounded-xl overflow-hidden flex flex-col border border-border/50">
       <div className="h-1" style={{ background: accentColor }} />
       <div className="p-5 flex-1">
         <div className="flex items-center gap-2 mb-3">
@@ -24,11 +24,10 @@ export function ResultCard({
         <h3 className="text-textPri font-semibold text-[17px] mb-4">{title}</h3>
         {children}
       </div>
-    </div>
+    </section>
   );
 }
 
-/** 소형 배지 */
 export function Badge({ label, color }: { label: string; color: string }) {
   return (
     <span
@@ -40,7 +39,6 @@ export function Badge({ label, color }: { label: string; color: string }) {
   );
 }
 
-/** 진행 바 */
 export function ProgressBar({
   pct,
   color,
@@ -52,16 +50,20 @@ export function ProgressBar({
   label: string;
   valueLabel: string;
 }) {
+  const normalized = Math.max(0, Math.min(100, pct * 100));
+
   return (
     <div>
-      <div className="flex justify-between mb-1.5">
-        <span className="text-textSec text-[12px]">{label}</span>
-        <span className="text-textPri text-[12px] font-semibold">{valueLabel}</span>
-      </div>
+      {(label || valueLabel) && (
+        <div className="flex justify-between mb-1.5 gap-3">
+          <span className="text-textSec text-[12px] truncate">{label}</span>
+          <span className="text-textPri text-[12px] font-semibold shrink-0">{valueLabel}</span>
+        </div>
+      )}
       <div className="h-1.5 bg-surface rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${Math.min(pct * 100, 100)}%`, background: color }}
+          style={{ width: `${normalized}%`, background: color }}
         />
       </div>
     </div>

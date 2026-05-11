@@ -36,7 +36,12 @@
       "Bash(/d/shoealls/Shoealls/.venv/Scripts/pip.exe install *)",
       "Bash(winget install *)",
       "Bash(ollama *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\shoealls-0319\\\\Desktop\\\\Shoealls_Cursor\\\\Shoealls\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(pip list *)"
     ]
   }
 }
