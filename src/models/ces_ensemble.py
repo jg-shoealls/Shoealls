@@ -7,27 +7,28 @@ LSTM Autoencoder와 Transformer의 출력을 결합하고
 import torch
 import torch.nn as nn
 from src.models.gait_lstm import GaitLSTM
-from src.models.har_transformer import GaitTransformer # 기존 Transformer 활용 가정
+from src.models.gait_transformer import GaitTransformer, GaitTransformerConfig
 
 class ShoeallsEnsembleModel(nn.Module):
-    def __init__(self, 
-                 input_dim: int, 
-                 hidden_dim: int = 128, 
+    def __init__(self,
+                 input_dim: int,
+                 hidden_dim: int = 128,
                  num_classes: int = 3,
                  window_size: int = 30):
         super(ShoeallsEnsembleModel, self).__init__()
-        
+
         # 1. LSTM (단기 패턴 및 이상 감지)
         self.lstm_model = GaitLSTM(input_dim, hidden_dim, num_layers=2, num_classes=num_classes)
-        
-        # 2. Transformer (장기 추세 감지)
-        # Note: 실제 프로젝트의 GaitTransformer 파라미터에 맞춰 조정 필요
-        self.transformer_model = GaitTransformer(
+
+        # 2. Transformer (장기 추세 감지) — gait_transformer.GaitTransformer 사용
+        self.transformer_model = GaitTransformer(GaitTransformerConfig(
             input_dim=input_dim,
+            sequence_length=window_size,
+            num_classes=num_classes,
             num_heads=4,
             num_layers=2,
-            dim_feedforward=256
-        )
+            embed_dim=hidden_dim // 2,
+        ))
         
         # 3. 앙상블 헤드
         # LSTM 출력 + Transformer 출력 + Rule-based Feature 결합
@@ -47,8 +48,8 @@ class ShoeallsEnsembleModel(nn.Module):
         lstm_logits, _, _ = self.lstm_model(x)
         lstm_probs = torch.softmax(lstm_logits, dim=1)
         
-        # Transformer 예측
-        trans_logits = self.transformer_model(x)
+        # Transformer 예측 — GaitTransformer.forward() → (logits, fall_score, attn)
+        trans_logits, _fall_score, _attn = self.transformer_model(x)
         trans_probs = torch.softmax(trans_logits, dim=1)
         
         # 특징 결합

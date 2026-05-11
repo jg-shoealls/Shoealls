@@ -101,15 +101,15 @@ async def get_ensemble_model():
         try:
             import os
             from pathlib import Path
-            from src.models.ces_ensemble import ShoeallasCESEnsemble
+            from src.models.ces_ensemble import ShoeallsEnsembleModel
 
             ckpt_path = os.getenv("CES_MODEL_CHECKPOINT", "outputs/ces_ensemble.pt")
-            model = ShoeallasCESEnsemble(n_features=6)
+            model = ShoeallsEnsembleModel(input_dim=6)
 
             if Path(ckpt_path).exists():
                 ckpt = torch.load(ckpt_path, map_location="cpu")
-                model.load_state_dict(ckpt["model_state_dict"], strict=False)
-                logger.info("CES 앙상블 모델 로드: %s", ckpt_path)
+                model.load_state_dict(ckpt.get("model_state_dict", ckpt), strict=False)
+                logger.info("앙상블 모델 로드: %s", ckpt_path)
             else:
                 logger.warning("체크포인트 없음 — 미학습 모델로 데모 동작: %s", ckpt_path)
 
@@ -119,6 +119,56 @@ async def get_ensemble_model():
             logger.error("앙상블 모델 로드 실패: %s", e)
             _ensemble_model = None
     return _ensemble_model
+
+
+def _run_inference(model: Any, x: torch.Tensor, ev_enc: np.ndarray, speed_arr: np.ndarray,
+                   tilt_arr: np.ndarray, is_fall_rule: bool) -> dict:
+    """
+    ShoeallsEnsembleModel.predict_status() → websocket_stream 공통 result dict 변환.
+    모델 인터페이스 변경 시 이 함수만 수정하면 됩니다.
+    """
+    from src.models.ces_ensemble import RuleBasedScorer
+    # 임상 규칙 점수 → rule_features [batch, 1]
+    scorer = RuleBasedScorer()
+    rule_score, rule_labels = scorer.score(speed_arr, tilt_arr, ev_enc)
+    rule_tensor = torch.tensor([[rule_score]], dtype=torch.float32)
+
+    with torch.no_grad():
+        is_anomaly, score_t, details = model.predict_status(x, rule_tensor, threshold=0.65)
+
+    anomaly_score = float(score_t[0, 0].item())
+    lstm_probs = details["lstm_probs"][0].cpu().tolist()
+    label_names = ["normal", "waiting", "drag"]
+    label_idx = int(max(range(len(lstm_probs)), key=lambda i: lstm_probs[i]))
+
+    fall_alert = is_fall_rule or anomaly_score >= 0.80
+
+    if fall_alert:
+        recommendation = "낙상 이벤트 감지 — 보호자 즉각 확인 및 응급 의료 연락 권고"
+    elif anomaly_score >= 0.65:
+        recommendation = "보행 이상 징후 감지 — 전문 의료기관 방문을 권고합니다"
+    elif anomaly_score >= 0.40:
+        recommendation = "보행 변화 관찰 중 — 추세 모니터링 및 보호자 공유 권고"
+    else:
+        recommendation = "현재 보행 패턴은 안정적인 범주입니다"
+
+    soft_labels = list(rule_labels)
+    if not soft_labels and anomaly_score < 0.40:
+        soft_labels = ["정상 보행 범주"]
+
+    return {
+        "anomaly_score": round(anomaly_score, 4),
+        "gait_label": label_names[label_idx] if label_idx < len(label_names) else "normal",
+        "gait_probabilities": {label_names[i]: float(lstm_probs[i]) for i in range(len(label_names))},
+        "soft_labels": soft_labels,
+        "fall_alert": fall_alert,
+        "ae_reconstruction_loss": 0.0,
+        "rule_score": rule_score,
+        "lstm_risk_score": anomaly_score,
+        "inference_ms": 0.0,
+        "recommendation": recommendation,
+        "meta": {"is_rule_triggered": is_fall_rule},
+    }
 
 # ─── Pydantic 스키마 ──────────────────────────────────────────────────────────
 
@@ -268,16 +318,10 @@ async def websocket_stream(websocket: WebSocket, user_id: str):
 
             # 앙상블 추론
             is_demo = model is None
+            result_dict: dict = {}
             if model is not None:
                 try:
-                    output = model.infer(
-                        x,
-                        event_type_enc=ev_enc,
-                        speed=speed_arr,
-                        tilt=tilt_arr,
-                        is_fall_rule=is_fall_rule,
-                    )
-                    result_dict = asdict(output)
+                    result_dict = _run_inference(model, x, ev_enc, speed_arr, tilt_arr, is_fall_rule)
                 except Exception as e:
                     logger.exception("앙상블 추론 오류: %s", e)
                     result_dict = _mock_result(is_fall_rule)
@@ -321,23 +365,17 @@ async def websocket_stream(websocket: WebSocket, user_id: str):
                 )
 
             # InfluxDB 비동기 저장 (백그라운드 — 응답 지연 없음)
-            if _INFLUX_AVAILABLE and not is_demo and output is not None:
-                asyncio.create_task(async_write_gait_result(
-                    user_id=user_id,
-                    device_id=payload.device_id,
-                    session_id=session_id,
-                    ensemble_output=output,
-                    speed_mean=float(speed_arr.mean()) if len(speed_arr) else 0.0,
-                    tilt_mean=float(tilt_arr.mean()) if len(tilt_arr) else 0.0,
+            if _INFLUX_AVAILABLE and not is_demo and result_dict:
+                asyncio.create_task(_write_to_influx(
+                    user_id, payload.device_id, session_id,
+                    result_dict,
+                    float(speed_arr.mean()) if len(speed_arr) else 0.0,
+                    float(tilt_arr.mean()) if len(tilt_arr) else 0.0,
                 ))
 
             # FCM 푸시 알림 (낙상 또는 고위험 시)
-            if _FCM_AVAILABLE and not is_demo and output is not None:
-                asyncio.create_task(notify_if_needed(
-                    user_id=user_id,
-                    session_id=session_id,
-                    ensemble_output=output,
-                ))
+            if _FCM_AVAILABLE and not is_demo and result_dict:
+                asyncio.create_task(_send_fcm(user_id, session_id, result_dict))
 
     except WebSocketDisconnect:
         logger.info("WebSocket 종료: user_id=%s", user_id)
@@ -447,14 +485,11 @@ async def ingest_ces_batch(payload: CESStreamPayload) -> IngestResponse:
 
     model = await get_ensemble_model()
     is_demo = model is None
+    result: dict = {}
 
     if model is not None:
         try:
-            output = model.infer(
-                x, event_type_enc=ev_enc, speed=speed_arr,
-                tilt=tilt_arr, is_fall_rule=is_fall_rule,
-            )
-            result = asdict(output)
+            result = _run_inference(model, x, ev_enc, speed_arr, tilt_arr, is_fall_rule)
         except Exception as e:
             logger.exception("ingest 추론 오류: %s", e)
             result = _mock_result(is_fall_rule)
@@ -463,27 +498,72 @@ async def ingest_ces_batch(payload: CESStreamPayload) -> IngestResponse:
         result = _mock_result(is_fall_rule)
 
     subs = manager.active_subscribers(payload.user_id)
-    if result["fall_alert"]:
+
+    # SSE 브로드캐스트
+    if result.get("fall_alert"):
         await manager.broadcast(payload.user_id, {
             "event": "fall_alert",
             "data": {**result, "session_id": session_id, "user_id": payload.user_id},
             "timestamp": time.time(),
         })
 
+    # InfluxDB 저장 (백그라운드)
+    if _INFLUX_AVAILABLE and not is_demo:
+        asyncio.create_task(_write_to_influx(
+            payload.user_id, payload.device_id, session_id, result,
+            float(speed_arr.mean()) if len(speed_arr) else 0.0,
+            float(tilt_arr.mean()) if len(tilt_arr) else 0.0,
+        ))
+
+    # FCM 알림 (백그라운드)
+    if _FCM_AVAILABLE and not is_demo:
+        asyncio.create_task(_send_fcm(payload.user_id, session_id, result))
+
     return IngestResponse(
         session_id=session_id,
-        anomaly_score=result["anomaly_score"],
-        gait_label=result["gait_label"],
-        soft_labels=result["soft_labels"],
-        fall_alert=result["fall_alert"],
-        recommendation=result["recommendation"],
-        inference_ms=result["inference_ms"],
+        anomaly_score=result.get("anomaly_score", 0.0),
+        gait_label=result.get("gait_label", "normal"),
+        soft_labels=result.get("soft_labels", []),
+        fall_alert=result.get("fall_alert", False),
+        recommendation=result.get("recommendation", ""),
+        inference_ms=result.get("inference_ms", 0.0),
         subscribers_notified=subs,
         is_demo=is_demo,
     )
 
 
 # ─── 데모용 mock 결과 ────────────────────────────────────────────────────────
+
+async def _write_to_influx(
+    user_id: str, device_id: str, session_id: str,
+    result: dict, speed_mean: float, tilt_mean: float,
+) -> None:
+    """result dict → InfluxDB 호환 객체로 변환 후 쓰기"""
+    from types import SimpleNamespace
+    proxy = SimpleNamespace(
+        anomaly_score=result.get("anomaly_score", 0.0),
+        fall_alert=result.get("fall_alert", False),
+        ae_reconstruction_loss=result.get("ae_reconstruction_loss", 0.0),
+        rule_score=result.get("rule_score", 0.0),
+        lstm_risk_score=result.get("lstm_risk_score", 0.0),
+        gait_label=result.get("gait_label", "normal"),
+        inference_ms=result.get("inference_ms", 0.0),
+    )
+    await async_write_gait_result(user_id, device_id, session_id, proxy, speed_mean, tilt_mean)
+
+
+async def _send_fcm(user_id: str, session_id: str, result: dict) -> None:
+    """result dict → FCM notify_if_needed 호환 객체로 변환 후 전송"""
+    from types import SimpleNamespace
+    proxy = SimpleNamespace(
+        anomaly_score=result.get("anomaly_score", 0.0),
+        fall_alert=result.get("fall_alert", False),
+        recommendation=result.get("recommendation", ""),
+        soft_labels=result.get("soft_labels", []),
+        gait_label=result.get("gait_label", "normal"),
+    )
+    await notify_if_needed(user_id, session_id, proxy)
+
 
 def _mock_result(is_fall: bool) -> dict:
     """모델 미로드 시 안전한 기본값 반환"""

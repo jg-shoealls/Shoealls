@@ -48,6 +48,8 @@ async def lifespan(app: FastAPI):
     logger.info("shutdown")
 
 
+from .routers import trends
+
 app = FastAPI(
     title="Shoealls Gait Analysis API",
     description=(
@@ -262,3 +264,4 @@ def full_analysis(req: AnalyzeRequest):
     except Exception as e:
         logger.exception("full_analysis error")
         raise HTTPException(status_code=500, detail="Internal server error")
+or")

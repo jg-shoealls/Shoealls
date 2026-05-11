@@ -155,6 +155,10 @@ export default function Dashboard() {
             </ResultCard>
           </section>
 
+          <section className="grid grid-cols-1">
+             <GaitTrendChart data={trends} />
+          </section>
+
           {apiResult && (
             <section className="grid grid-cols-2 gap-5">
               <ResultCard
@@ -203,6 +207,22 @@ export default function Dashboard() {
                   ))}
                   <p className="text-textMuted text-[11px] leading-relaxed">
                     질병 확정 진단이 아니라 보행 이상 징후를 표시하며, 반복적으로 관찰되면 전문 의료기관 방문을 권고합니다.
+                  </p>
+                </div>
+              </ResultCard>
+            </section>
+          )}
+        </div>
+
+        <footer className="bg-surface border-t border-border px-8 py-2.5 text-textMuted text-[11px] flex justify-between shrink-0">
+          <span>Shoealls · POST /api/v1/analyze · mock data fallback 지원</span>
+          <span>2026 Shoealls</span>
+        </footer>
+      </main>
+    </div>
+  );
+}
+�� 권고합니다.
                   </p>
                 </div>
               </ResultCard>
