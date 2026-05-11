@@ -36,6 +36,7 @@ from .auth import APIKeyMiddleware, AUTH_ENABLED
 from .logging_config import setup_logging, RequestLoggingMiddleware
 from .routers.websocket_stream import router as realtime_router
 from .routers import trends
+from .routers import auth
 
 logger = setup_logging()
 
