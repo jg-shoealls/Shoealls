@@ -69,6 +69,36 @@ class DiseaseClassificationHead(nn.Module):
         }
 
 
+class ParkinsonsProdromeHead(nn.Module):
+    """4단계 전임상 파킨슨 분류기.
+
+    Input shape:  (batch, embed_dim)
+    Output dict:
+      stage_logits:    (batch, num_stages)   — 정상/전임상/프로드로말/발현
+      prodromal_risk:  (batch, 1)            — 연속 위험 점수 [0, 1]
+    """
+
+    def __init__(self, embed_dim: int = 128, num_stages: int = 4, dropout: float = 0.3):
+        super().__init__()
+        self.stage_clf = nn.Sequential(
+            nn.Linear(embed_dim, 64),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout),
+            nn.Linear(64, num_stages),
+        )
+        self.risk_score = nn.Sequential(
+            nn.Linear(embed_dim, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, fused: torch.Tensor) -> dict:
+        # fused: (B, embed_dim)
+        return {
+            "stage_logits":   self.stage_clf(fused),   # (B, num_stages)
+            "prodromal_risk": self.risk_score(fused),  # (B, 1)
+        }
+
+
 class FallRiskPredictionHead(nn.Module):
     """낙상 위험도 예측 헤드: 전역 + 시계열 GRU 기반 이중 분기."""
 

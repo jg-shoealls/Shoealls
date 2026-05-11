@@ -60,6 +60,10 @@ class InjuryRiskRequest(BaseModel):
     features: GaitFeatures
 
 
+class FallRiskRequest(BaseModel):
+    features: GaitFeatures
+
+
 class ReasoningRequest(BaseModel):
     sensor_data: SensorData
     checkpoint_path: Optional[str] = Field(default=None)
@@ -133,8 +137,19 @@ class ReasoningResponse(BaseModel):
     is_demo_mode: bool
 
 
+class FallRiskResponse(BaseModel):
+    risk_score: float
+    risk_level: str
+    stability_score: float
+    symmetry_score: float
+    rhythm_score: float
+    risk_factors: list[str]
+    recommendations: list[str]
+
+
 class AnalyzeResponse(BaseModel):
     classify: GaitClassifyResponse
     disease_risk: DiseaseRiskResponse
     injury_risk: InjuryRiskResponse
+    fall_risk: FallRiskResponse
     reasoning: ReasoningResponse

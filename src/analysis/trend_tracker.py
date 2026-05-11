@@ -1,250 +1,76 @@
-"""Longitudinal trend tracker: session-over-session gait analysis."""
-
+import pandas as pd
 import numpy as np
 from dataclasses import dataclass, field
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import List, Dict, Any, Optional
 
-from .config import TREND_THRESHOLD as _DEFAULT_TREND_THRESHOLD
+class GaitTrendAnalyzer:
+    """
+    InfluxDB 또는 전처리된 CSV 데이터를 기반으로 보행 패턴의 장기 추세를 분석합니다.
+    의료진이 사용자의 보행 능력 변화를 시각화할 수 있도록 데이터를 가공합니다.
+    """
+    
+    @staticmethod
+    def get_weekly_summary(df: pd.DataFrame) -> List[Dict[str, Any]]:
+        """
+        주간 보행 지표 요약 (최근 7일)
+        """
+        if df.empty:
+            return []
+            
+        # 타임스탬프 기준 정렬
+        df = df.sort_values('fe_timestamp')
+        
+        # 날짜별 그룹화
+        df['date'] = df['fe_timestamp'].dt.date
+        daily_avg = df.groupby('date').agg({
+            'speed': 'mean',
+            'tilt': 'mean',
+            'fe_event_value': 'mean'
+        }).reset_index()
+        
+        # 마지막 7일 데이터
+        summary = []
+        for _, row in daily_avg.tail(7).iterrows():
+            summary.append({
+                "date": row['date'].strftime("%m/%d"),
+                "speed": round(float(row['speed']), 3),
+                "stability": round(100 - (float(row['tilt']) * 10), 1), # 임의의 안정성 점수화
+                "activity": int(len(df[df['date'] == row['date']])) # 활동량 (로그 수)
+            })
+            
+        return summary
 
+    @staticmethod
+    def detect_anomalous_trends(df: pd.DataFrame) -> List[str]:
+        """
+        장기적인 보행 기능 저하 패턴 감지 (예: 속도 지속 감소)
+        """
+        findings = []
+        if len(df) < 100:
+            return findings
 
-@dataclass
-class TrendPoint:
-    """Single session data point for trend tracking."""
-    session_id: int
-    features: dict[str, float]
-    injury_risk: float
-    overall_deviation: float
+        # 이동 평균 계산
+        df['speed_ma'] = df['speed'].rolling(window=50).mean()
+        
+        recent_speed = df['speed_ma'].iloc[-1]
+        past_speed = df['speed_ma'].iloc[-50]
+        
+        if recent_speed < past_speed * 0.9:
+            findings.append("최근 보행 속도가 과거 대비 10% 이상 감소했습니다. (근감소증 또는 인지 저하 전조 가능성)")
+
+        return findings
 
 
 @dataclass
 class TrendAnalysis:
-    """Results of longitudinal trend analysis."""
-    metric_trends: dict[str, dict]   # metric -> {direction, slope, p_value_approx, summary_kr}
-    improving_metrics: list[str]
-    worsening_metrics: list[str]
-    stable_metrics: list[str]
-    sessions_analyzed: int
-    report_kr: str
+    """보행 추세 분석 결과."""
+    user_id: str
+    period_days: int
+    weekly_summary: List[Dict[str, Any]] = field(default_factory=list)
+    clinical_findings: List[str] = field(default_factory=list)
+    analyzed_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
 
-class LongitudinalTrendTracker:
-    """Tracks gait metrics across sessions and identifies trends.
-
-    Uses simple linear regression on metric time series to detect
-    improvement, worsening, or stability.
-    """
-
-    TREND_THRESHOLD = _DEFAULT_TREND_THRESHOLD
-
-    METRIC_LABELS = {
-        "ml_index": ("내외측 체중 분포", "lower_better"),
-        "ap_index": ("전후방 체중 분포", "neutral"),
-        "arch_index": ("아치 지수", "neutral"),
-        "cop_sway": ("체중심 흔들림", "lower_better"),
-        "cadence": ("보행 속도", "neutral"),
-        "stride_regularity": ("보폭 규칙성", "higher_better"),
-        "step_symmetry": ("좌우 대칭성", "higher_better"),
-        "acceleration_rms": ("가속도 크기", "neutral"),
-        "injury_risk": ("부상 위험도", "lower_better"),
-        "overall_deviation": ("개인 기준 편차", "lower_better"),
-    }
-
-    def __init__(self):
-        self.history: list[TrendPoint] = []
-
-    def add_session(
-        self,
-        features: dict[str, float],
-        injury_risk: float = 0.0,
-        overall_deviation: float = 0.0,
-    ):
-        """Record a new session's data."""
-        sid = len(self.history)
-        self.history.append(TrendPoint(
-            session_id=sid,
-            features=features,
-            injury_risk=injury_risk,
-            overall_deviation=overall_deviation,
-        ))
-
-    def analyze_trends(self, min_sessions: int = 3) -> TrendAnalysis:
-        """Analyze trends across recorded sessions.
-
-        Args:
-            min_sessions: Minimum sessions required for trend analysis.
-        """
-        n = len(self.history)
-        if n < min_sessions:
-            return TrendAnalysis(
-                metric_trends={},
-                improving_metrics=[],
-                worsening_metrics=[],
-                stable_metrics=[],
-                sessions_analyzed=n,
-                report_kr=f"트렌드 분석에는 최소 {min_sessions}세션이 필요합니다 (현재: {n}세션).",
-            )
-
-        # Collect all metrics
-        all_metrics = set()
-        for tp in self.history:
-            all_metrics.update(tp.features.keys())
-        all_metrics.add("injury_risk")
-        all_metrics.add("overall_deviation")
-
-        x = np.arange(n, dtype=float)
-        metric_trends = {}
-        improving = []
-        worsening = []
-        stable = []
-
-        for metric in sorted(all_metrics):
-            values = []
-            for tp in self.history:
-                if metric == "injury_risk":
-                    values.append(tp.injury_risk)
-                elif metric == "overall_deviation":
-                    values.append(tp.overall_deviation)
-                else:
-                    values.append(tp.features.get(metric, np.nan))
-
-            y = np.array(values)
-            valid = ~np.isnan(y)
-            if valid.sum() < min_sessions:
-                continue
-
-            xv, yv = x[valid], y[valid]
-            slope, intercept = self._linear_fit(xv, yv)
-            r_squared = self._r_squared(xv, yv, slope, intercept)
-
-            korean_name, direction = self.METRIC_LABELS.get(
-                metric, (metric, "neutral")
-            )
-
-            # Determine trend direction
-            norm_slope = slope / (np.std(yv) + 1e-8)
-            if abs(norm_slope) < self.TREND_THRESHOLD:
-                trend_dir = "stable"
-                summary = f"{korean_name}: 안정적"
-                stable.append(metric)
-            elif direction == "lower_better":
-                if slope < 0:
-                    trend_dir = "improving"
-                    summary = f"{korean_name}: 개선 추세 ↓"
-                    improving.append(metric)
-                else:
-                    trend_dir = "worsening"
-                    summary = f"{korean_name}: 악화 추세 ↑"
-                    worsening.append(metric)
-            elif direction == "higher_better":
-                if slope > 0:
-                    trend_dir = "improving"
-                    summary = f"{korean_name}: 개선 추세 ↑"
-                    improving.append(metric)
-                else:
-                    trend_dir = "worsening"
-                    summary = f"{korean_name}: 악화 추세 ↓"
-                    worsening.append(metric)
-            else:
-                # Neutral: just report direction
-                if abs(norm_slope) < self.TREND_THRESHOLD:
-                    trend_dir = "stable"
-                    summary = f"{korean_name}: 안정적"
-                    stable.append(metric)
-                else:
-                    trend_dir = "changing"
-                    arrow = "↑" if slope > 0 else "↓"
-                    summary = f"{korean_name}: 변화 추세 {arrow}"
-                    stable.append(metric)
-
-            metric_trends[metric] = {
-                "direction": trend_dir,
-                "slope": float(slope),
-                "normalized_slope": float(norm_slope),
-                "r_squared": float(r_squared),
-                "summary_kr": summary,
-                "values": yv.tolist(),
-            }
-
-        report = self._build_trend_report(metric_trends, improving, worsening, stable, n)
-
-        return TrendAnalysis(
-            metric_trends=metric_trends,
-            improving_metrics=improving,
-            worsening_metrics=worsening,
-            stable_metrics=stable,
-            sessions_analyzed=n,
-            report_kr=report,
-        )
-
-    def _linear_fit(self, x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
-        """Simple linear regression."""
-        n = len(x)
-        if n < 2:
-            return 0.0, float(y[0]) if n == 1 else 0.0
-        x_mean = x.mean()
-        y_mean = y.mean()
-        ss_xy = np.sum((x - x_mean) * (y - y_mean))
-        ss_xx = np.sum((x - x_mean) ** 2)
-        slope = ss_xy / (ss_xx + 1e-8)
-        intercept = y_mean - slope * x_mean
-        return float(slope), float(intercept)
-
-    def _r_squared(self, x: np.ndarray, y: np.ndarray, slope: float, intercept: float) -> float:
-        """Coefficient of determination."""
-        y_pred = slope * x + intercept
-        ss_res = np.sum((y - y_pred) ** 2)
-        ss_tot = np.sum((y - y.mean()) ** 2)
-        if ss_tot < 1e-8:
-            return 1.0
-        return float(1 - ss_res / ss_tot)
-
-    def _build_trend_report(
-        self,
-        trends: dict,
-        improving: list,
-        worsening: list,
-        stable: list,
-        n_sessions: int,
-    ) -> str:
-        """Build Korean trend report."""
-        lines = [
-            "=" * 60,
-            "  종단 보행 트렌드 분석",
-            "=" * 60,
-            f"  분석 세션 수: {n_sessions}",
-            "",
-        ]
-
-        if improving:
-            lines.append("  ✦ 개선 추세 항목:")
-            for m in improving:
-                t = trends[m]
-                lines.append(f"    → {t['summary_kr']} (R²={t['r_squared']:.2f})")
-            lines.append("")
-
-        if worsening:
-            lines.append("  ✦ 악화 추세 항목:")
-            for m in worsening:
-                t = trends[m]
-                lines.append(f"    → {t['summary_kr']} (R²={t['r_squared']:.2f})")
-            lines.append("")
-
-        if stable:
-            lines.append("  ✦ 안정 항목:")
-            for m in stable:
-                if m in trends:
-                    lines.append(f"    → {trends[m]['summary_kr']}")
-            lines.append("")
-
-        # Overall assessment
-        if worsening and not improving:
-            lines.append("  종합: 주의가 필요합니다. 악화 추세 항목에 대한 관리가 필요합니다.")
-        elif improving and not worsening:
-            lines.append("  종합: 좋은 추세입니다! 현재 관리 방향을 유지하세요.")
-        elif improving and worsening:
-            lines.append("  종합: 일부 개선, 일부 악화가 보입니다. 악화 항목에 집중 관리가 필요합니다.")
-        else:
-            lines.append("  종합: 전체적으로 안정적인 패턴을 유지하고 있습니다.")
-
-        lines.append("=" * 60)
-        return "\n".join(lines)
+# Alias for backward-compatibility with __init__.py
+LongitudinalTrendTracker = GaitTrendAnalyzer

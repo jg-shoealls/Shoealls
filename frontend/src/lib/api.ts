@@ -1,15 +1,8 @@
-/**
- * Shoealls API 클라이언트
- * FastAPI 백엔드와 통신하는 타입-안전 함수 모음
- */
+import type { GaitFeatures, MultimodalSensorPayload } from "@/types/sensor";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-export interface SensorData {
-  imu: number[][];       // [128, 6]
-  pressure: number[][];  // [16, 8]
-  skeleton: number[][][]; // [128, 17, 3]
-}
+export type SensorData = MultimodalSensorPayload;
 
 export interface ClassifyResponse {
   prediction: string;
@@ -62,7 +55,7 @@ export interface ReasoningResponse {
   final_prediction_kr: string;
   confidence: number;
   reasoning_trace: ReasoningStep[];
-  anomaly_findings: Record<string, string[]>;
+  anomaly_findings: Array<{ modality: string; anomalies: Array<{ type: string; score: number }> }>;
   modality_weights: Record<string, number>;
   uncertainty: number;
   evidence_strength: number;
@@ -80,52 +73,46 @@ export interface AnalyzeResponse {
 export interface SampleResponse {
   gait_profile: string;
   sensor_data: SensorData;
-  features: Record<string, number>;
+  features: GaitFeatures;
 }
 
-async function apiFetch<T>(
-  path: string,
-  options?: RequestInit,
-  apiKey?: string
-): Promise<T> {
+async function apiFetch<T>(path: string, options?: RequestInit, apiKey?: string): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(apiKey ? { "X-API-Key": apiKey } : {}),
   };
 
-  const res = await fetch(`${BASE}${path}`, {
+  const response = await fetch(`${BASE}${path}`, {
     ...options,
-    headers: { ...headers, ...(options?.headers as Record<string, string> ?? {}) },
+    headers: { ...headers, ...(options?.headers as Record<string, string> | undefined) },
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({ detail: response.statusText }));
     throw new Error(
-      typeof err.detail === "string"
-        ? err.detail
-        : JSON.stringify(err.detail)
+      typeof errorPayload.detail === "string" ? errorPayload.detail : JSON.stringify(errorPayload.detail),
     );
   }
-  return res.json();
+
+  return response.json() as Promise<T>;
 }
 
 export const api = {
   health: () => apiFetch<{ status: string; version: string }>("/health"),
 
-  sample: (profile = "normal") =>
-    apiFetch<SampleResponse>(`/api/v1/sample?gait_profile=${profile}`),
+  sample: (profile = "normal") => apiFetch<SampleResponse>(`/api/v1/sample?gait_profile=${profile}`),
 
   classify: (sensorData: SensorData, apiKey?: string) =>
     apiFetch<ClassifyResponse>(
       "/api/v1/classify",
       { method: "POST", body: JSON.stringify({ sensor_data: sensorData }) },
-      apiKey
+      apiKey,
     ),
 
-  analyze: (sensorData: SensorData, features: Record<string, number>, apiKey?: string) =>
+  analyze: (sensorData: SensorData, features: GaitFeatures, apiKey?: string) =>
     apiFetch<AnalyzeResponse>(
       "/api/v1/analyze",
       { method: "POST", body: JSON.stringify({ sensor_data: sensorData, features }) },
-      apiKey
+      apiKey,
     ),
 };

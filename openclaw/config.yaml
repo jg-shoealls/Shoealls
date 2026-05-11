@@ -1,0 +1,13 @@
+project: shoealls
+description: "Shoealls gait AI experiment automation"
+
+skills:
+  - name: shoealls_experiment
+    description: "Run and inspect Shoealls gait analysis experiments"
+    path: skills/shoealls_experiment.py
+    examples:
+      - '{"command": "list"}'
+      - '{"command": "status"}'
+      - '{"command": "run", "config": "default"}'
+      - '{"command": "run", "config": "weargait_loso", "kind": "weargait_loso"}'
+      - '{"command": "batch", "configs": ["weargait_smoke", "weargait_loso"], "kind": "weargait_loso"}'

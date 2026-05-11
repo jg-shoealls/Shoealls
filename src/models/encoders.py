@@ -4,6 +4,20 @@ import torch
 import torch.nn as nn
 
 
+def _build_1d_cnn(in_ch: int, channels: list, kernel_size: int, dropout: float) -> nn.Sequential:
+    layers = []
+    for ch_out in channels:
+        layers.extend([
+            nn.Conv1d(in_ch, ch_out, kernel_size, padding=kernel_size // 2),
+            nn.BatchNorm1d(ch_out),
+            nn.ReLU(inplace=True),
+            nn.MaxPool1d(2),
+            nn.Dropout(dropout),
+        ])
+        in_ch = ch_out
+    return nn.Sequential(*layers)
+
+
 class IMUEncoder(nn.Module):
     """1D-CNN + LSTM encoder for IMU time-series data.
 
@@ -22,20 +36,7 @@ class IMUEncoder(nn.Module):
     ):
         super().__init__()
         conv_channels = conv_channels or [32, 64, 128]
-
-        # Build 1D convolution layers
-        layers = []
-        ch_in = in_channels
-        for ch_out in conv_channels:
-            layers.extend([
-                nn.Conv1d(ch_in, ch_out, kernel_size, padding=kernel_size // 2),
-                nn.BatchNorm1d(ch_out),
-                nn.ReLU(inplace=True),
-                nn.MaxPool1d(2),
-                nn.Dropout(dropout),
-            ])
-            ch_in = ch_out
-        self.cnn = nn.Sequential(*layers)
+        self.cnn = _build_1d_cnn(in_channels, conv_channels, kernel_size, dropout)
 
         self.lstm = nn.LSTM(
             input_size=conv_channels[-1],
@@ -98,6 +99,43 @@ class PressureEncoder(nn.Module):
         features = features.flatten(1)          # (B*T, C)
         features = self.proj(features)          # (B*T, embed_dim)
         return features.reshape(B, T, -1)       # (B, T, embed_dim)
+
+
+class MagBaroEncoder(nn.Module):
+    """1D-CNN + LSTM encoder for magnetometer/barometer time-series data.
+
+    Input shape: (batch, channels=4, time)
+    Output shape: (batch, time', embed_dim)
+    """
+
+    def __init__(
+        self,
+        in_channels: int = 4,
+        conv_channels: list = None,
+        kernel_size: int = 5,
+        lstm_hidden: int = 128,
+        lstm_layers: int = 1,
+        dropout: float = 0.3,
+    ):
+        super().__init__()
+        conv_channels = conv_channels or [16, 32]
+        self.cnn = _build_1d_cnn(in_channels, conv_channels, kernel_size, dropout)
+        self.lstm = nn.LSTM(
+            input_size=conv_channels[-1],
+            hidden_size=lstm_hidden,
+            num_layers=lstm_layers,
+            batch_first=True,
+            dropout=dropout if lstm_layers > 1 else 0,
+            bidirectional=True,
+        )
+        self.proj = nn.Linear(lstm_hidden * 2, lstm_hidden)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, 4, T)
+        features = self.cnn(x)                # (B, C, T')
+        features = features.permute(0, 2, 1)  # (B, T', C)
+        lstm_out, _ = self.lstm(features)     # (B, T', 2*hidden)
+        return self.proj(lstm_out)            # (B, T', hidden)
 
 
 class SkeletonEncoder(nn.Module):

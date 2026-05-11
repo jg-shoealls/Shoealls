@@ -6,7 +6,7 @@ data:
   pressure_grid_size: [16, 8]  # pressure sensor grid (H x W)
   skeleton_joints: 17      # number of body keypoints
   skeleton_dims: 3         # x, y, z coordinates
-  num_classes: 4           # normal, antalgic, ataxic, parkinsonian
+  num_classes: 11          # 11 disease classes
   train_split: 0.7
   val_split: 0.15
   test_split: 0.15
@@ -54,3 +54,13 @@ training:
 
 validation:
   metrics: [accuracy, f1_macro, precision, recall, confusion_matrix]
+
+prodrome:
+  enabled: true
+  num_stages: 4
+  stage_labels: ["정상", "전임상", "프로드로말", "발현"]
+  severity_thresholds: [0.15, 0.35, 0.60]
+  weights:
+    olfactory: 0.40
+    rem_tremor: 0.30
+    variability: 0.30

@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Shoealls — 보행 분석 대시보드",
-  description: "멀티모달 AI 기반 보행 패턴 분석 서비스",
+  title: "Shoealls 보행 분석 대시보드",
+  description: "스마트슈즈 센서 기반 보행 위험 징후 모니터링 플랫폼",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

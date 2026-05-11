@@ -1,0 +1,66 @@
+data:
+  data_dir: data/daphnet/dataset_fog_release/dataset
+  imu_channels: 6
+  num_classes: 2
+  pressure_grid_size:
+  - 16
+  - 8
+  sequence_length: 128
+  skeleton_dims: 3
+  skeleton_joints: 17
+  stride: 64
+  train_split: 0.7
+  val_split: 0.15
+  window: 128
+model:
+  classifier:
+    dropout: 0.3
+    hidden_dims:
+    - 128
+    - 64
+  fusion:
+    dropout: 0.2
+    embed_dim: 128
+    ff_dim: 256
+    num_heads: 4
+    num_layers: 2
+  imu_encoder:
+    conv_channels:
+    - 32
+    - 64
+    - 128
+    dropout: 0.3
+    kernel_size: 5
+    lstm_hidden: 128
+    lstm_layers: 2
+  pressure_encoder:
+    conv_channels:
+    - 16
+    - 32
+    - 64
+    dropout: 0.3
+    kernel_size: 3
+  skeleton_encoder:
+    dropout: 0.3
+    gcn_channels:
+    - 64
+    - 128
+    temporal_kernel: 3
+training:
+  batch_size: 64
+  early_stopping:
+    min_delta: 0.005
+    patience: 5
+  epochs: 20
+  learning_rate: 0.0005
+  scheduler:
+    type: cosine
+    warmup_epochs: 3
+  weight_decay: 0.0001
+validation:
+  metrics:
+  - accuracy
+  - f1_macro
+  - precision
+  - recall
+  - confusion_matrix
