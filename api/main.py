@@ -22,17 +22,20 @@ from .schemas import (
     InjuryRiskRequest,
     ReasoningRequest,
     AnalyzeRequest,
+    FallRiskRequest,
     GaitClassifyResponse,
     DiseaseRiskResponse,
     InjuryRiskResponse,
     ReasoningResponse,
     AnalyzeResponse,
+    FallRiskResponse,
 )
 from .service import get_service
 from .examples import generate_sample_sensor_data, GAIT_PROFILES
 from .auth import APIKeyMiddleware, AUTH_ENABLED
 from .logging_config import setup_logging, RequestLoggingMiddleware
 from .routers.websocket_stream import router as realtime_router
+from .routers import trends
 
 logger = setup_logging()
 
@@ -46,9 +49,6 @@ async def lifespan(app: FastAPI):
     logger.info(f"startup complete — auth={auth_status}")
     yield
     logger.info("shutdown")
-
-
-from .routers import trends
 
 app = FastAPI(
     title="Shoealls Gait Analysis API",
@@ -69,6 +69,9 @@ app.add_middleware(RequestLoggingMiddleware, logger=logger)
 
 # CES 실시간 스트리밍 라우터 (WebSocket + SSE)
 app.include_router(realtime_router)
+
+# 보행 추세 분석 라우터
+app.include_router(trends.router)
 
 
 # ── Health ─────────────────────────────────────────────────────────────
@@ -264,4 +267,3 @@ def full_analysis(req: AnalyzeRequest):
     except Exception as e:
         logger.exception("full_analysis error")
         raise HTTPException(status_code=500, detail="Internal server error")
-or")

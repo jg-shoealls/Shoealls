@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class GaitTrendAnalyzer:
     """
@@ -57,5 +58,19 @@ class GaitTrendAnalyzer:
         
         if recent_speed < past_speed * 0.9:
             findings.append("최근 보행 속도가 과거 대비 10% 이상 감소했습니다. (근감소증 또는 인지 저하 전조 가능성)")
-            
+
         return findings
+
+
+@dataclass
+class TrendAnalysis:
+    """보행 추세 분석 결과."""
+    user_id: str
+    period_days: int
+    weekly_summary: List[Dict[str, Any]] = field(default_factory=list)
+    clinical_findings: List[str] = field(default_factory=list)
+    analyzed_at: str = field(default_factory=lambda: datetime.now().isoformat())
+
+
+# Alias for backward-compatibility with __init__.py
+LongitudinalTrendTracker = GaitTrendAnalyzer

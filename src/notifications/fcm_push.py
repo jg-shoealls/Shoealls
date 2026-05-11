@@ -1,7 +1,11 @@
 import logging
+import os
+from datetime import datetime
+from typing import List, Dict, Any
+
 import firebase_admin
 from firebase_admin import credentials, messaging
-from typing import List, Dict, Any
+
 from src.config import config
 
 logger = logging.getLogger(__name__)
@@ -65,6 +69,3 @@ class FCMNotificationService:
 
         for token in guardian_tokens:
             FCMNotificationService.send_push_notification(token, title, body, data)
-
-import os
-from datetime import datetime
