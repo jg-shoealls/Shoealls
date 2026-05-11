@@ -41,7 +41,11 @@
       "Bash(Select-Object Name, Mode)",
       "Bash(npx tsc *)",
       "Bash(echo \"EXIT_CODE: $?\")",
-      "Bash(pip list *)"
+      "Bash(pip list *)",
+      "Bash(uvicorn api.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 5)",
+      "Bash(Start-Sleep -Seconds 5)",
+      "Bash(Get-Content \"C:\\\\Users\\\\SHOEAL~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-shoealls-0319-Desktop-Shoealls-Cursor-Shoealls\\\\670c1da6-98da-4d6e-92ed-c218c09d9112\\\\tasks\\\\b5po103xp.output\")",
+      "Bash(git log *)"
     ]
   }
 }

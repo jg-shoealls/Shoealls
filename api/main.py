@@ -69,6 +69,7 @@ app.add_middleware(RequestLoggingMiddleware, logger=logger)
 
 # CES 실시간 스트리밍 라우터 (WebSocket + SSE)
 app.include_router(realtime_router)
+app.include_router(auth.router)
 
 # 보행 추세 분석 라우터
 app.include_router(trends.router)

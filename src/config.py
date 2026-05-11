@@ -16,6 +16,9 @@ class Config:
     
     # --- Security ---
     ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", None) # AES-256 Key
+    SECRET_KEY = os.getenv("SECRET_KEY", "shoealls-super-secret-key-2026")
+    ALGORITHM = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 Day
     
     # --- FCM (Firebase Cloud Messaging) ---
     FCM_CREDENTIAL_PATH = os.getenv("FCM_CREDENTIAL_PATH", "configs/firebase-adminsdk.json")
