@@ -1,0 +1,3 @@
+## 2024-05-12 - [PyTorch MultiheadAttention Memory Leak]
+**Learning:** In PyTorch, calling `nn.MultiheadAttention` calculates and returns attention weights by default. When the second return value (attention weights) is discarded (`_`), PyTorch still allocates memory and computes them, which prevents it from using optimized attention backends like FlashAttention, causing a memory and compute bottleneck.
+**Action:** Always add `need_weights=False` to `nn.MultiheadAttention` forward passes when the returned attention weights are discarded, ensuring optimized computation and preventing unnecessary memory allocation.
