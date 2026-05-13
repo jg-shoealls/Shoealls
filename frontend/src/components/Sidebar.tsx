@@ -9,6 +9,7 @@ const NAV = [
   { icon: "R", label: "위험 징후", href: "/disease" },
   { icon: "F", label: "낙상/부상", href: "/injury" },
   { icon: "A", label: "AI 추론", href: "/reasoning" },
+  { icon: "N", label: "노드 그래프", href: "/graph" },
   { icon: "H", label: "분석 이력", href: "/history" },
 ];
 
