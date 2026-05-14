@@ -12,6 +12,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
+      <head>
+        {/* Prevent flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('shoealls_theme');if(t==='light')document.documentElement.classList.add('light');}catch(e){}})();` }} />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );

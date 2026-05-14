@@ -2,16 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Dark theme (default) ── */
 :root {
   color-scheme: dark;
+  --bg:        15 23 42;
+  --surface:   30 41 64;
+  --card:      38 51 72;
+  --border:    50 66 91;
+  --blue:      59 130 246;
+  --green:     16 185 129;
+  --amber:     245 158 11;
+  --red:       239 68 68;
+  --purple:    175 101 250;
+  --textPri:   241 245 249;
+  --textSec:   148 163 184;
+  --textMuted: 96 112 133;
+}
+
+/* ── Light theme ── */
+html.light {
+  color-scheme: light;
+  --bg:        248 250 252;
+  --surface:   255 255 255;
+  --card:      241 245 249;
+  --border:    226 232 240;
+  --blue:      37 99 235;
+  --green:     5 150 105;
+  --amber:     180 83 9;
+  --red:       185 28 28;
+  --purple:    109 40 217;
+  --textPri:   15 23 42;
+  --textSec:   71 85 105;
+  --textMuted: 148 163 184;
 }
 
 body {
-  background-color: #0F172A;
-  color: #F1F5F9;
+  background-color: rgb(var(--bg));
+  color: rgb(var(--textPri));
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* 스크롤바 */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #1E2940; }
-::-webkit-scrollbar-thumb { background: #32425B; border-radius: 3px; }
+::-webkit-scrollbar-track { background: rgb(var(--surface)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--border)); border-radius: 3px; }
