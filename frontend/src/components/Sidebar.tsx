@@ -10,6 +10,7 @@ const NAV = [
   { icon: "F", label: "낙상/부상", href: "/injury" },
   { icon: "A", label: "AI 추론", href: "/reasoning" },
   { icon: "N", label: "노드 그래프", href: "/graph" },
+  { icon: "P", label: "파킨슨 진단", href: "/parkinson" },
   { icon: "H", label: "분석 이력", href: "/history" },
 ];
 
