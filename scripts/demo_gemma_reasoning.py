@@ -17,7 +17,7 @@ def run_gemma_ollama_demo():
     print("="*60)
 
     # 1. Load Configuration and Engine
-    with open("configs/default.yaml", "r") as f:
+    with open("configs/default.yaml", "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -64,7 +64,7 @@ def run_gemma_ollama_demo():
     }
 
     try:
-        response = requests.post(url, json=data, timeout=60)
+        response = requests.post(url, json=data, timeout=120)
         response.raise_for_status()
         result = response.json()
         professional_report = result.get("response", "응답을 생성하지 못했습니다.")

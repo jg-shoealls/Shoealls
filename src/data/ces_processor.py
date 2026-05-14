@@ -8,13 +8,15 @@ small time-series model. Outputs are monitoring signals, not medical diagnosis.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+os.environ.setdefault("PANDAS_STRING_STORAGE", "python")
+
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 
 
 CES_REQUIRED_COLUMNS = {
@@ -37,8 +39,31 @@ class CESPreprocessResult:
     features: np.ndarray
     labels: np.ndarray
     fall_flags: np.ndarray
-    event_encoder: LabelEncoder
-    label_encoder: LabelEncoder
+    event_encoder: "SimpleLabelEncoder"
+    label_encoder: "SimpleLabelEncoder"
+
+
+class SimpleLabelEncoder:
+    """Small sklearn-free label encoder with a compatible ``classes_`` field."""
+
+    def __init__(self) -> None:
+        self.classes_: np.ndarray = np.array([], dtype=object)
+        self._mapping: dict[str, int] = {}
+
+    def fit(self, values: pd.Series | list[str]) -> "SimpleLabelEncoder":
+        labels = sorted({str(value) for value in values})
+        self.classes_ = np.array(labels, dtype=object)
+        self._mapping = {label: idx for idx, label in enumerate(labels)}
+        return self
+
+    def transform(self, values: pd.Series | list[str]) -> np.ndarray:
+        if not self._mapping:
+            raise ValueError("encoder must be fit before transform")
+        return np.array([self._mapping.get(str(value), -1) for value in values], dtype=np.int64)
+
+    def fit_transform(self, values: pd.Series | list[str]) -> np.ndarray:
+        self.fit(values)
+        return self.transform(values)
 
 
 class CESDataProcessor:
@@ -51,8 +76,8 @@ class CESDataProcessor:
     def __init__(self, file_path: str | Path, sep: str = "\t") -> None:
         self.file_path = Path(file_path)
         self.sep = sep
-        self.event_encoder = LabelEncoder()
-        self.label_encoder = LabelEncoder()
+        self.event_encoder = SimpleLabelEncoder()
+        self.label_encoder = SimpleLabelEncoder()
         self.df: pd.DataFrame | None = None
 
     def load(self) -> pd.DataFrame:

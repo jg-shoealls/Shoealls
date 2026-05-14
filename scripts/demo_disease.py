@@ -16,7 +16,7 @@ from src.analysis.disease_classifier import GaitDiseaseClassifier, FEATURE_NAMES
 
 def main():
     print("=" * 70)
-    print("  슈올즈 AI — 보행 데이터 기반 질환 위험 예측 및 조기 진단 데모")
+    print("  슈올즈 AI - 보행 데이터 기반 질환 위험 예측 및 조기 진단 데모")
     print("  (신경계·뇌혈관계·근골격계 14개 질환)")
     print("=" * 70)
 
