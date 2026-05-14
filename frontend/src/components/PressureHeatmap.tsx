@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import type { MockProfile } from "@/lib/mockSensorData";
 
 const ROWS = 16;
@@ -85,7 +85,7 @@ function IsoChart({ grid }: { grid: Grid }) {
   const W = (COLS_S + ROWS_S) * ISO_X + 10;
   const H = (COLS_S + ROWS_S) * ISO_Y + MAX_H + 20;
 
-  const columns: JSX.Element[] = [];
+  const columns: ReactElement[] = [];
   // render back-to-front: row desc, col asc
   for (let r = ROWS_S - 1; r >= 0; r--) {
     for (let c = 0; c < COLS_S; c++) {
@@ -177,7 +177,7 @@ function FootHeatmap({ grid }: { grid: Grid }) {
   // map each cell in 16×8 grid to foot SVG space
   // row 0=toes (top, y~10), row 15=heel (bottom, y~260)
   // col 0=medial, col 7=lateral (x 60..180)
-  const cells: JSX.Element[] = [];
+  const cells: ReactElement[] = [];
   const cellW = 14;
   const cellH = 16;
 
