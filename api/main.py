@@ -10,11 +10,14 @@ Run:
     uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 """
 
+import json
+import requests as _requests
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field, ValidationError
 
 from .schemas import (
     ClassifyRequest,
@@ -269,3 +272,93 @@ def full_analysis(req: AnalyzeRequest):
     except Exception as e:
         logger.exception("full_analysis error")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# ── Gemma Report Generation (Ollama SSE) ─────────────────────────
+
+class ReportGenerateRequest(BaseModel):
+    profile: str
+    profile_label: str
+    score: int
+    symmetry: int
+    rhythm: int
+    stability: int
+    weight: int
+    speed: float
+    cadence: int
+    risk: str
+    risk_score: int
+    patterns: list[str]
+    date: str
+    ollama_url: str = Field(default="http://127.0.0.1:11434")
+    model: str = Field(default="gemma2:2b")
+
+
+@app.post(
+    "/api/v1/report/generate",
+    tags=["AI Report"],
+    summary="Gemma(Ollama) 보행 분석 AI 리포트 생성",
+    description=(
+        "보행 분석 결과를 Gemma2:2b에 전달하여 전문적인 한국어 의견서를 스트리밍 생성합니다.\n\n"
+        "**사전 조건**: `ollama serve` 실행 중, `ollama pull gemma2:2b` 완료\n\n"
+        "응답 형식: `text/event-stream` (SSE) — `data: {\"token\": \"...\"}` 토큰 단위 스트림"
+    ),
+)
+def generate_ai_report(req: ReportGenerateRequest):
+    prompt = f"""당신은 보행 분석 전문가입니다.
+아래 스마트슈즈 센서 기반 보행 분석 결과를 바탕으로, 환자나 보호자가 이해하기 쉬운 종합 보행 분석 의견서를 작성하세요.
+
+[분석 결과]
+- 보행 패턴: {req.profile_label} ({req.date})
+- 종합 점수: {req.score}/100
+- 좌우 대칭성: {req.symmetry}%
+- 보행 리듬: {req.rhythm}%
+- 동적 안정성: {req.stability}%
+- 체중 이동: {req.weight}%
+- 보행 속도: {req.speed:.2f} m/s
+- 케이던스: {req.cadence} steps/min
+- 낙상 위험도: {req.risk_score}% ({req.risk})
+- 이상 패턴: {", ".join(req.patterns) if req.patterns else "없음"}
+
+[작성 지침]
+1. 현재 보행 상태를 친근하고 명확하게 설명하세요.
+2. 발견된 이상 패턴이 어떤 의미인지 쉽게 해석하세요.
+3. 개선을 위한 구체적인 권고사항(운동, 생활습관)을 제시하세요.
+4. 전문의 상담이 필요한지 판단하세요.
+5. 반드시 한국어로만 작성하고, 3~4 단락으로 간결하게 작성하세요.
+
+종합 의견서:"""
+
+    url = f"{req.ollama_url}/api/generate"
+    payload = {"model": req.model, "prompt": prompt, "stream": True}
+
+    def stream():
+        try:
+            with _requests.post(url, json=payload, stream=True, timeout=120) as resp:
+                resp.raise_for_status()
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                        token = chunk.get("response", "")
+                        if token:
+                            yield f"data: {json.dumps({'token': token}, ensure_ascii=False)}\n\n"
+                        if chunk.get("done"):
+                            yield "data: [DONE]\n\n"
+                            return
+                    except json.JSONDecodeError:
+                        continue
+        except _requests.exceptions.ConnectionError:
+            msg = "Ollama 서비스에 연결할 수 없습니다. 'ollama serve'가 실행 중인지 확인하세요."
+            yield f"data: {json.dumps({'error': msg}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+        except Exception as exc:
+            yield f"data: {json.dumps({'error': str(exc)}, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

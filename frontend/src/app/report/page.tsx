@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Sidebar from "@/components/Sidebar";
 import { buildGaitReport } from "@/lib/gaitAnalysis";
@@ -8,6 +8,7 @@ import { generateMockSensorData, PROFILE_LABELS, type MockProfile } from "@/lib/
 import type { GaitFeatures, GaitReport } from "@/types/sensor";
 
 const PROFILES: MockProfile[] = ["normal", "parkinsons", "stroke", "fall_risk"];
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const RISK_COLORS: Record<string, string> = {
   low:      "#10b981",
@@ -65,7 +66,7 @@ function decode(b64: string): Snapshot | null {
   catch { return null; }
 }
 
-// ── Score ring ───────────────────────────────────────────────────
+// ── Score ring ──────────────────────────────────────────────────
 function ScoreRing({ score }: { score: number }) {
   const R = 52, SW = 9;
   const circ = 2 * Math.PI * R;
@@ -100,19 +101,79 @@ function Bar({ label, value, color }: { label: string; value: number; color: str
   );
 }
 
-// ── QR placeholder icon ─────────────────────────────────────────
-function QrPlaceholder() {
-  return (
-    <svg width={56} height={56} viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth={1.5} className="text-textMuted">
-      <rect x={4} y={4} width={20} height={20} rx={2} />
-      <rect x={32} y={4} width={20} height={20} rx={2} />
-      <rect x={4} y={32} width={20} height={20} rx={2} />
-      <rect x={9} y={9} width={10} height={10} fill="currentColor" stroke="none" />
-      <rect x={37} y={9} width={10} height={10} fill="currentColor" stroke="none" />
-      <rect x={9} y={37} width={10} height={10} fill="currentColor" stroke="none" />
-      <path d="M32 32h6v6h-6z M44 32h6v6h-6z M32 44h6v6h-6z M44 44h6v6h-6z" fill="currentColor" stroke="none" />
-    </svg>
-  );
+// ── Gemma streaming hook ────────────────────────────────────────
+function useGemmaReport() {
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const generate = useCallback(async (snap: Snapshot) => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    setText("");
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/report/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          profile: snap.profile,
+          profile_label: snap.label,
+          score: snap.score,
+          symmetry: snap.symmetry,
+          rhythm: snap.rhythm,
+          stability: snap.stability,
+          weight: snap.weight,
+          speed: snap.speed,
+          cadence: snap.cadence,
+          risk: snap.risk,
+          risk_score: snap.riskScore,
+          patterns: snap.patterns,
+          date: snap.date,
+        }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        setError("API 응답 오류");
+        setLoading(false);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6);
+          if (raw === "[DONE]") { setLoading(false); return; }
+          try {
+            const parsed = JSON.parse(raw) as { token?: string; error?: string };
+            if (parsed.error) { setError(parsed.error); setLoading(false); return; }
+            if (parsed.token) setText((p) => p + parsed.token);
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") {
+        setError("Ollama 연결 실패 — 로컬 서버가 실행 중인지 확인하세요 (ollama serve)");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { text, loading, error, generate };
 }
 
 // ── Main ────────────────────────────────────────────────────────
@@ -121,7 +182,9 @@ export default function ReportPage() {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [qrUrl, setQrUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const { text: aiText, loading: aiLoading, error: aiError, generate: generateAi } = useGemmaReport();
 
+  // Load from URL ?d= param (shared report)
   useEffect(() => {
     const d = new URLSearchParams(window.location.search).get("d");
     if (d) {
@@ -157,7 +220,7 @@ export default function ReportPage() {
         <header className="bg-surface border-b border-border px-8 py-4 flex items-center justify-between shrink-0">
           <div>
             <h1 className="text-textPri font-semibold text-xl">보행패턴 결과 보고서</h1>
-            <p className="text-textMuted text-[12px] mt-0.5">생성 후 QR코드로 즉시 공유</p>
+            <p className="text-textMuted text-[12px] mt-0.5">생성 후 QR코드로 즉시 공유 · Gemma AI 의견서 포함</p>
           </div>
           <div className="flex items-center gap-3">
             <select value={profile} onChange={(e) => setProfile(e.target.value as MockProfile)}
@@ -175,7 +238,15 @@ export default function ReportPage() {
         <div className="flex-1 overflow-y-auto p-8">
           {!snap ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 text-textMuted">
-              <QrPlaceholder />
+              <svg width={56} height={56} viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <rect x={4} y={4} width={20} height={20} rx={2} />
+                <rect x={32} y={4} width={20} height={20} rx={2} />
+                <rect x={4} y={32} width={20} height={20} rx={2} />
+                <rect x={9} y={9} width={10} height={10} fill="currentColor" stroke="none" />
+                <rect x={37} y={9} width={10} height={10} fill="currentColor" stroke="none" />
+                <rect x={9} y={37} width={10} height={10} fill="currentColor" stroke="none" />
+                <path d="M32 32h6v6h-6z M44 32h6v6h-6z M32 44h6v6h-6z M44 44h6v6h-6z" fill="currentColor" stroke="none" />
+              </svg>
               <p className="text-[14px]">프로파일을 선택하고 보고서를 생성하세요</p>
             </div>
           ) : (
@@ -193,10 +264,10 @@ export default function ReportPage() {
                       <div className="text-textSec text-[13px] mt-1">{snap.date} · 스마트슈즈 센서 기반</div>
                       <div className="flex gap-2 mt-3">
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue/10 text-blue border border-blue/20">
-                          보행속도 {snap.speed.toFixed(2)} m/s
+                          {snap.speed.toFixed(2)} m/s
                         </span>
                         <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple/10 text-purple border border-purple/20">
-                          케이던스 {snap.cadence} spm
+                          {snap.cadence} spm
                         </span>
                       </div>
                     </div>
@@ -208,20 +279,20 @@ export default function ReportPage() {
                 <div className="bg-card rounded-xl border border-border p-5 space-y-4">
                   <div className="text-textPri font-semibold text-[13px]">세부 지표</div>
                   <Bar label="좌우 대칭성" value={snap.symmetry} color="#3b82f6" />
-                  <Bar label="보행 리듬" value={snap.rhythm}   color="#8b5cf6" />
+                  <Bar label="보행 리듬"   value={snap.rhythm}   color="#8b5cf6" />
                   <Bar label="동적 안정성" value={snap.stability} color="#10b981" />
-                  <Bar label="체중 이동" value={snap.weight}   color="#f59e0b" />
+                  <Bar label="체중 이동"   value={snap.weight}   color="#f59e0b" />
                 </div>
 
-                {/* Key values grid */}
+                {/* Key values */}
                 <div className="bg-card rounded-xl border border-border p-5">
                   <div className="text-textPri font-semibold text-[13px] mb-3">주요 수치</div>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { label: "보행 속도", value: `${snap.speed.toFixed(2)} m/s`,       sub: snap.speed >= 1.0 ? "정상 범위" : "저하 감지" },
-                      { label: "케이던스",  value: `${snap.cadence} steps/min`,           sub: snap.cadence >= 100 && snap.cadence <= 130 ? "정상 범위" : "범위 이탈" },
-                      { label: "낙상 위험", value: `${snap.riskScore}%`,                  sub: RISK_KR[snap.risk] },
-                      { label: "이상 패턴", value: `${snap.patterns.length}건 감지`,      sub: snap.patterns.length === 0 ? "이상 없음" : "주의 필요" },
+                      { label: "보행 속도", value: `${snap.speed.toFixed(2)} m/s`,    sub: snap.speed >= 1.0 ? "정상 범위" : "저하 감지" },
+                      { label: "케이던스",  value: `${snap.cadence} steps/min`,        sub: snap.cadence >= 100 && snap.cadence <= 130 ? "정상 범위" : "범위 이탈" },
+                      { label: "낙상 위험", value: `${snap.riskScore}%`,               sub: RISK_KR[snap.risk] },
+                      { label: "이상 패턴", value: `${snap.patterns.length}건 감지`,   sub: snap.patterns.length === 0 ? "이상 없음" : "주의 필요" },
                     ].map((item) => (
                       <div key={item.label} className="bg-bg/50 rounded-lg p-3">
                         <div className="text-textMuted text-[11px]">{item.label}</div>
@@ -247,7 +318,7 @@ export default function ReportPage() {
                   </div>
                 )}
 
-                {/* Risk + recommendation */}
+                {/* Risk */}
                 <div className="rounded-xl border p-5" style={{ background: `${rc}0d`, borderColor: `${rc}30` }}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: rc }} />
@@ -256,10 +327,67 @@ export default function ReportPage() {
                     </span>
                   </div>
                   <p className="text-textSec text-[13px] leading-relaxed">{snap.recommendation}</p>
-                  <p className="text-textMuted text-[11px] mt-3">
-                    ※ 본 보고서는 스마트슈즈 센서 데이터 기반 참고 지표이며 의학적 진단이 아닙니다.
+                </div>
+
+                {/* ── Gemma AI Report section ── */}
+                <div className="bg-card rounded-xl border border-border p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple" />
+                      <span className="text-textPri font-semibold text-[13px]">Gemma AI 종합 의견서</span>
+                      <span className="text-textMuted text-[10px] px-1.5 py-0.5 rounded bg-purple/10 border border-purple/20 text-purple">gemma2:2b · Ollama</span>
+                    </div>
+                    <button
+                      onClick={() => generateAi(snap)}
+                      disabled={aiLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple/10 border border-purple/20 text-purple hover:bg-purple/20 disabled:opacity-50 transition-colors text-[12px] font-semibold"
+                    >
+                      {aiLoading ? (
+                        <>
+                          <svg className="animate-spin" width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                            <circle cx={12} cy={12} r={10} strokeOpacity={0.25} />
+                            <path d="M12 2a10 10 0 0 1 10 10" />
+                          </svg>
+                          생성 중…
+                        </>
+                      ) : (
+                        <>
+                          <svg width={12} height={12} viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                            <path d="M7.5 1.5 L7.5 5 M7.5 10 L7.5 13.5 M1.5 7.5 L5 7.5 M10 7.5 L13.5 7.5" strokeLinecap="round" />
+                            <circle cx={7.5} cy={7.5} r={3} />
+                          </svg>
+                          AI 리포트 생성
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {aiError && (
+                    <div className="text-[12px] text-red bg-red/8 rounded-lg px-3 py-2 border border-red/20">
+                      {aiError}
+                    </div>
+                  )}
+
+                  {!aiText && !aiLoading && !aiError && (
+                    <p className="text-textMuted text-[13px]">
+                      위 버튼을 클릭하면 로컬 Gemma 모델이 보행 분석 결과를 바탕으로 전문 의견서를 생성합니다.
+                    </p>
+                  )}
+
+                  {(aiText || aiLoading) && (
+                    <div className="text-textSec text-[13px] leading-7 whitespace-pre-wrap font-sans">
+                      {aiText}
+                      {aiLoading && (
+                        <span className="inline-block w-0.5 h-4 bg-purple ml-0.5 align-middle animate-pulse" />
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-textMuted text-[10px] mt-3 pt-3 border-t border-border/60">
+                    ※ Gemma AI 의견서는 참고용이며 의학적 진단이 아닙니다. 로컬 Ollama 서버 필요.
                   </p>
                 </div>
+
               </div>
 
               {/* ── QR (1/3) ── */}
@@ -267,7 +395,6 @@ export default function ReportPage() {
                 <div className="bg-card rounded-xl border border-border p-5 flex flex-col items-center gap-4 sticky top-0">
                   <div className="text-textPri font-semibold text-[13px] self-start">QR 코드 공유</div>
 
-                  {/* QR code */}
                   <div className="bg-white rounded-2xl p-3.5 shadow-lg ring-1 ring-border/20">
                     <QRCodeSVG
                       value={qrUrl}
