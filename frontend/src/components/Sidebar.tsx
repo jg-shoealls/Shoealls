@@ -13,6 +13,7 @@ const NAV = [
   { icon: "N", label: "노드 그래프", href: "/graph" },
   { icon: "P", label: "파킨슨 진단", href: "/parkinson" },
   { icon: "H", label: "분석 이력",   href: "/history" },
+  { icon: "Q", label: "QR 보고서",  href: "/report" },
 ];
 
 function SunIcon() {
