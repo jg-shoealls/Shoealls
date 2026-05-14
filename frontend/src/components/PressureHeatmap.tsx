@@ -45,7 +45,6 @@ function makeGrid(profile: MockProfile, phase: number): Grid {
   );
 }
 
-// Downsample 16×8 → 8×4 for isometric view
 function downsample(grid: Grid): number[][] {
   return Array.from({ length: 8 }, (_, r) =>
     Array.from({ length: 4 }, (_, c) => {
@@ -73,62 +72,36 @@ function contourColor(v: number): string {
   return "#ef4444";
 }
 
-// Isometric 3D column chart (left panel)
+// ── Isometric 3D chart ──────────────────────────────────────────
 function IsoChart({ grid }: { grid: Grid }) {
   const small = downsample(grid);
-  const ROWS_S = 8;
-  const COLS_S = 4;
-  const CW = 18; // cell width
-  const MAX_H = 40;
-  const ISO_X = CW / 2;
-  const ISO_Y = CW / 4;
-  const W = (COLS_S + ROWS_S) * ISO_X + 10;
-  const H = (COLS_S + ROWS_S) * ISO_Y + MAX_H + 20;
+  const RS = 8, CS = 4;
+  const CW = 18, MAX_H = 40;
+  const IX = CW / 2, IY = CW / 4;
+  const W = (CS + RS) * IX + 10;
+  const H = (CS + RS) * IY + MAX_H + 20;
 
   const columns: ReactElement[] = [];
-  // render back-to-front: row desc, col asc
-  for (let r = ROWS_S - 1; r >= 0; r--) {
-    for (let c = 0; c < COLS_S; c++) {
+  for (let r = RS - 1; r >= 0; r--) {
+    for (let c = 0; c < CS; c++) {
       const v = small[r][c];
       const h = Math.max(2, v * MAX_H);
-      // isometric screen position
-      const sx = (c - r) * ISO_X + W / 2 - ISO_X;
-      const sy = (c + r) * ISO_Y + 10;
-      const color = valToHSL(v);
-      const dark = `hsl(${((1 - v) * 240).toFixed(0)}, 70%, 35%)`;
-      const mid = `hsl(${((1 - v) * 240).toFixed(0)}, 80%, 45%)`;
-      // top face
-      const top = [
-        [sx, sy - h],
-        [sx + ISO_X, sy - h + ISO_Y],
-        [sx, sy - h + ISO_Y * 2],
-        [sx - ISO_X, sy - h + ISO_Y],
-      ].map((p) => p.join(",")).join(" ");
-      // right face
-      const right = [
-        [sx + ISO_X, sy - h + ISO_Y],
-        [sx, sy - h + ISO_Y * 2],
-        [sx, sy + ISO_Y * 2],
-        [sx + ISO_X, sy + ISO_Y],
-      ].map((p) => p.join(",")).join(" ");
-      // left face
-      const left = [
-        [sx - ISO_X, sy - h + ISO_Y],
-        [sx, sy - h + ISO_Y * 2],
-        [sx, sy + ISO_Y * 2],
-        [sx - ISO_X, sy + ISO_Y],
-      ].map((p) => p.join(",")).join(" ");
-
+      const sx = (c - r) * IX + W / 2 - IX;
+      const sy = (c + r) * IY + 10;
+      const hue = ((1 - v) * 240).toFixed(0);
+      const top  = `hsl(${hue},90%,55%)`;
+      const mid  = `hsl(${hue},80%,45%)`;
+      const dark = `hsl(${hue},70%,30%)`;
+      const pts = (pts: [number, number][]) => pts.map((p) => p.join(",")).join(" ");
       columns.push(
         <g key={`${r}-${c}`}>
-          <polygon points={left} fill={dark} />
-          <polygon points={right} fill={mid} />
-          <polygon points={top} fill={color} />
+          <polygon points={pts([[sx - IX, sy - h + IY],[sx, sy - h + IY * 2],[sx, sy + IY * 2],[sx - IX, sy + IY]])} fill={dark} />
+          <polygon points={pts([[sx + IX, sy - h + IY],[sx, sy - h + IY * 2],[sx, sy + IY * 2],[sx + IX, sy + IY]])} fill={mid} />
+          <polygon points={pts([[sx, sy - h],[sx + IX, sy - h + IY],[sx, sy - h + IY * 2],[sx - IX, sy - h + IY]])} fill={top} />
         </g>
       );
     }
   }
-
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
       {columns}
@@ -136,109 +109,165 @@ function IsoChart({ grid }: { grid: Grid }) {
   );
 }
 
-// Foot-shaped heatmap with contour coloring (right panel)
-// plantar view, toes at top (row 0)
-const FOOT_PATH =
-  "M 60 10 C 70 8, 80 12, 82 22 C 84 30, 78 35, 72 32 " +
-  "C 68 30, 64 28, 60 26 " +
-  // pinky toe
-  "C 54 24, 50 20, 52 14 C 53 10, 57 9, 60 10 Z " +
-  "M 82 22 C 88 18, 96 20, 98 30 C 100 38, 94 44, 88 40 " +
-  "C 84 37, 80 33, 78 30 C 79 27, 81 25, 82 22 Z " +
-  "M 98 30 C 104 26, 112 28, 114 38 C 116 48, 110 54, 104 50 " +
-  "C 100 47, 96 43, 94 40 C 96 37, 97 34, 98 30 Z " +
-  "M 114 38 C 120 34, 128 36, 130 46 C 132 56, 126 62, 120 58 " +
-  "C 116 55, 112 51, 110 48 C 112 45, 113 42, 114 38 Z " +
-  "M 130 46 C 136 40, 144 42, 148 52 C 152 62, 146 70, 138 66 " +
-  "C 132 63, 128 58, 126 54 C 128 51, 129 49, 130 46 Z";
+// ── Foot shape (right foot, plantar view, toes at top) ──────────
+// viewBox: 0 0 172 278  —  rendered at 148×239 (86%)
 
-// Simple plantar foot outline (blob shape)
-const FOOT_OUTLINE =
-  "M 90 8 C 110 6, 148 10, 158 28 C 168 46, 162 70, 148 86 " +
-  "C 140 96, 130 104, 118 120 C 106 136, 98 155, 94 172 " +
-  "C 90 188, 88 205, 86 218 C 84 230, 82 245, 88 258 " +
-  "C 94 268, 110 275, 128 272 C 145 269, 158 258, 162 245 " +
-  "C 166 232, 160 216, 154 202 C 148 188, 140 176, 134 162 " +
-  "C 128 148, 124 134, 124 118 C 124 102, 130 88, 136 74 " +
-  "C 142 60, 148 48, 144 34 C 140 20, 126 10, 110 8 C 102 7, 95 8, 90 8 Z";
+// Main foot body: smooth bezier, anatomical proportions
+// Medial arch on left, wide heel at bottom, ball widest at ~y=80
+const FOOT_BODY =
+  "M 40 78 " +
+  // medial side up toward big toe
+  "C 35 62, 31 46, 37 32 " +
+  "C 42 20, 56 15, 66 21 " +
+  // top of foot (concave dip between toe bases)
+  "C 73 16, 83 11, 90 12 " +
+  "C 97 11, 107 14, 115 20 " +
+  "C 121 24, 128 32, 134 42 " +
+  // lateral ball
+  "C 140 54, 144 68, 146 84 " +
+  // lateral side down
+  "C 150 100, 151 120, 149 142 " +
+  "C 147 164, 143 186, 137 208 " +
+  "C 129 230, 117 250, 101 260 " +
+  // heel bottom
+  "C 91 268, 77 268, 64 261 " +
+  // medial heel
+  "C 51 254, 40 240, 36 224 " +
+  // medial arch (concave — the arch!)
+  "C 32 208, 31 191, 32 174 " +
+  "C 33 157, 34 140, 35 122 " +
+  "C 36 105, 37 91, 40 78 Z";
 
-// Toe bumps
+// Toe ellipses: big toe largest, cascade to little toe
 const TOES = [
-  "M 90 8 C 84 2, 76 2, 74 10 C 72 18, 78 24, 86 20 C 90 18, 92 14, 90 8 Z",
-  "M 110 7 C 104 1, 96 1, 94 9 C 92 17, 98 23, 106 19 C 110 17, 112 13, 110 7 Z",
-  "M 130 10 C 124 4, 116 4, 114 12 C 112 20, 118 26, 126 22 C 130 20, 132 16, 130 10 Z",
-  "M 148 16 C 143 10, 135 10, 133 18 C 131 26, 136 32, 144 28 C 148 26, 150 22, 148 16 Z",
-  "M 158 28 C 154 22, 147 23, 146 31 C 145 38, 150 44, 157 40 C 161 37, 162 33, 158 28 Z",
+  { cx: 50,  cy: 26, rx: 20, ry: 24 }, // hallux (big)
+  { cx: 76,  cy: 16, rx: 13, ry: 17 }, // 2nd
+  { cx: 96,  cy: 15, rx: 11, ry: 15 }, // 3rd
+  { cx: 113, cy: 22, rx: 10, ry: 13 }, // 4th
+  { cx: 127, cy: 36, rx: 8,  ry: 11 }, // 5th (little)
 ];
 
-function FootHeatmap({ grid }: { grid: Grid }) {
-  const W = 200;
-  const H = 290;
-  // map each cell in 16×8 grid to foot SVG space
-  // row 0=toes (top, y~10), row 15=heel (bottom, y~260)
-  // col 0=medial, col 7=lateral (x 60..180)
-  const cells: ReactElement[] = [];
-  const cellW = 14;
-  const cellH = 16;
+// Pressure grid: row 0 = forefoot/toes, row 15 = heel
+const GX0 = 38, GW = 12.5;   // col 0..7 → x 38..125
+const GY0 = 4,  GH = 17;     // row 0..15 → y 4..272
 
+function FootHeatmap({ grid }: { grid: Grid }) {
+  const cells: ReactElement[] = [];
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const v = grid[r][c];
-      const x = 70 + c * (cellW - 1.5);
-      const y = 18 + r * (cellH - 0.5);
       cells.push(
         <rect
           key={`${r}-${c}`}
-          x={x - cellW / 2}
-          y={y - cellH / 2}
-          width={cellW}
-          height={cellH}
+          x={GX0 + c * GW}
+          y={GY0 + r * GH}
+          width={GW + 0.8}
+          height={GH + 0.8}
           fill={contourColor(v)}
-          opacity={0.85 + v * 0.15}
         />
       );
     }
   }
 
   return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+    // viewBox 172×278, rendered 148×239
+    <svg width={148} height={239} viewBox="0 0 172 278" style={{ display: "block" }}>
       <defs>
+        {/* Clip path = body + all 5 toes */}
         <clipPath id="foot-clip">
-          <path d={FOOT_OUTLINE} />
-          {TOES.map((d, i) => <path key={i} d={d} />)}
+          <path d={FOOT_BODY} />
+          {TOES.map((t, i) => (
+            <ellipse key={i} cx={t.cx} cy={t.cy} rx={t.rx} ry={t.ry} />
+          ))}
         </clipPath>
-        {/* glow filter */}
-        <filter id="foot-glow" x="-10%" y="-10%" width="120%" height="120%">
-          <feGaussianBlur stdDeviation="3" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+
+        {/* Subtle inner glow filter */}
+        <filter id="foot-glow" x="-8%" y="-4%" width="116%" height="108%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
         </filter>
       </defs>
-      {/* cells clipped to foot */}
-      <g clipPath="url(#foot-clip)">{cells}</g>
-      {/* foot outline */}
-      <path d={FOOT_OUTLINE} fill="none" stroke="rgba(148,163,184,0.5)" strokeWidth={1.5} />
-      {TOES.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke="rgba(148,163,184,0.4)" strokeWidth={1} />
+
+      {/* Pressure data clipped to foot shape */}
+      <g clipPath="url(#foot-clip)" filter="url(#foot-glow)">
+        {cells}
+      </g>
+
+      {/* Dark edge vignette on foot (visual polish) */}
+      <path
+        d={FOOT_BODY}
+        fill="none"
+        stroke="rgba(0,0,0,0.35)"
+        strokeWidth={6}
+        clipPath="url(#foot-clip)"
+      />
+
+      {/* Foot body outline */}
+      <path
+        d={FOOT_BODY}
+        fill="none"
+        stroke="rgba(148,163,184,0.55)"
+        strokeWidth={1.4}
+        strokeLinejoin="round"
+      />
+
+      {/* Toe outlines */}
+      {TOES.map((t, i) => (
+        <ellipse
+          key={i}
+          cx={t.cx} cy={t.cy} rx={t.rx} ry={t.ry}
+          fill="none"
+          stroke="rgba(148,163,184,0.45)"
+          strokeWidth={1}
+        />
       ))}
+
+      {/* Toenail highlights — small bright ellipse near top of each toe */}
+      {TOES.map((t, i) => (
+        <ellipse
+          key={`nl-${i}`}
+          cx={t.cx}
+          cy={t.cy - t.ry * 0.38}
+          rx={t.rx * 0.46}
+          ry={t.ry * 0.26}
+          fill="rgba(255,255,255,0.11)"
+          stroke="rgba(255,255,255,0.22)"
+          strokeWidth={0.6}
+        />
+      ))}
+
+      {/* Medial arch indicator line (subtle anatomical landmark) */}
+      <path
+        d="M 34 174 C 33 158, 34 141, 35 122"
+        fill="none"
+        stroke="rgba(148,163,184,0.2)"
+        strokeWidth={2}
+        strokeDasharray="3 3"
+      />
     </svg>
   );
 }
 
+// ── Labels & legend ─────────────────────────────────────────────
 const LABELS: Record<MockProfile, string> = {
-  normal: "균형 분포",
-  parkinsons: "전족부 과부하 (발 끌림)",
-  stroke: "편측 비대칭 하중",
+  normal:    "균형 분포",
+  parkinsons:"전족부 과부하 (발 끌림)",
+  stroke:    "편측 비대칭 하중",
   fall_risk: "외측 불안정",
 };
 
-const CONTOUR_LEGEND = [
-  { color: "#1e3a5f", label: "0–20%" },
-  { color: "#1d4ed8", label: "20–40%" },
-  { color: "#10b981", label: "40–60%" },
-  { color: "#f59e0b", label: "60–80%" },
+const LEGEND = [
   { color: "#ef4444", label: "80–100%" },
+  { color: "#f59e0b", label: "60–80%" },
+  { color: "#10b981", label: "40–60%" },
+  { color: "#1d4ed8", label: "20–40%" },
+  { color: "#1e3a5f", label: "0–20%"  },
 ];
 
+// ── Main component ───────────────────────────────────────────────
 export default function PressureHeatmap({ profile }: { profile: MockProfile }) {
   const [grid, setGrid] = useState<Grid>(() => makeGrid(profile, 0));
   const [phase, setPhase] = useState(0);
@@ -261,9 +290,9 @@ export default function PressureHeatmap({ profile }: { profile: MockProfile }) {
         <span className="text-[11px] text-amber font-medium">{LABELS[profile]}</span>
       </div>
 
-      <div className="flex gap-4 items-start">
+      <div className="flex gap-3 items-start">
         {/* 3D Isometric */}
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1 shrink-0">
           <span className="text-textMuted text-[10px]">3D 등각투영</span>
           <div className="overflow-hidden" style={{ width: 160, height: 160 }}>
             <IsoChart grid={grid} />
@@ -271,17 +300,17 @@ export default function PressureHeatmap({ profile }: { profile: MockProfile }) {
         </div>
 
         {/* Foot heatmap */}
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1 shrink-0">
           <span className="text-textMuted text-[10px]">족저압 등고선</span>
           <FootHeatmap grid={grid} />
         </div>
 
         {/* Legend */}
-        <div className="flex flex-col gap-1 mt-5 ml-1">
-          {[...CONTOUR_LEGEND].reverse().map((l) => (
+        <div className="flex flex-col gap-1.5 mt-6 ml-auto">
+          {LEGEND.map((l) => (
             <div key={l.label} className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: l.color }} />
-              <span className="text-textMuted text-[9px]">{l.label}</span>
+              <span className="text-textMuted text-[9px] tabular-nums">{l.label}</span>
             </div>
           ))}
         </div>
