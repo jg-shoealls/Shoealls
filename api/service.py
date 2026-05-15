@@ -29,6 +29,10 @@ GAIT_CLASS_NAMES = {
     3: ("parkinsonian", "파킨슨"),
 }
 
+# Ensure GAIT_CLASS_NAMES covers all 11 classes required by configs/default.yaml
+for i in range(4, 11):
+    GAIT_CLASS_NAMES[i] = (f"class_{i}", f"질환 {i}")
+
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
 ANOMALY_NAMES = [
@@ -74,7 +78,27 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
     skeleton_proc = preprocess_skeleton(skeleton_np, seq_len, n_joints)  # (3, T, J)
     skeleton_t = torch.from_numpy(skeleton_proc).unsqueeze(0)            # (1, 3, T, J)
 
-    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t}
+    # MagBaro (optional): API input [T, 5]
+    if data.mag_baro is not None:
+        mb_np = np.array(data.mag_baro, dtype=np.float32)
+        # Using same generic interpolation approach as IMU for time series if preprocessing isn't strict
+        # Simple fallback logic since preprocess_magbaro might not be implemented
+        if mb_np.shape[0] != seq_len:
+            # Basic interpolation
+            orig_t = np.linspace(0, 1, mb_np.shape[0])
+            new_t = np.linspace(0, 1, seq_len)
+            mb_proc = np.zeros((mb_np.shape[1], seq_len), dtype=np.float32)
+            for ch in range(mb_np.shape[1]):
+                mb_proc[ch] = np.interp(new_t, orig_t, mb_np[:, ch])
+        else:
+            mb_proc = mb_np.T # (Channels, T)
+        mb_t = torch.from_numpy(mb_proc).unsqueeze(0) # (1, 5, T)
+    else:
+        # Provide zero tensor if missing, default channels=5
+        mb_channels = data_cfg.get("mag_baro_channels", 5)
+        mb_t = torch.zeros((1, mb_channels, seq_len), dtype=torch.float32)
+
+    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t, "mag_baro": mb_t}
 
 
 def _features_to_dict(features: GaitFeatures) -> dict:
