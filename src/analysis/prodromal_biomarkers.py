@@ -11,6 +11,7 @@ MDS 전임상 기준 (Berg et al. 2015) 기반 복합 점수 산출.
 from __future__ import annotations
 
 import numpy as np
+from scipy.signal import find_peaks, welch
 from dataclasses import dataclass, field
 
 
@@ -80,23 +81,22 @@ def _coefficient_of_variation(arr: np.ndarray) -> float:
     return float(np.std(arr) / m) if abs(m) > 1e-9 else 0.0
 
 
-def _find_peaks_simple(signal: np.ndarray, min_distance: int = 10) -> np.ndarray:
-    """최소 간격 조건을 만족하는 극대값 인덱스 반환."""
-    peaks = []
-    for i in range(1, len(signal) - 1):
-        if signal[i] > signal[i - 1] and signal[i] > signal[i + 1]:
-            if not peaks or (i - peaks[-1]) >= min_distance:
-                peaks.append(i)
-    return np.array(peaks, dtype=int)
+def _find_peaks_robust(signal: np.ndarray, fs: float, min_dist_sec: float = 0.3) -> np.ndarray:
+    """scipy.signal.find_peaks를 사용한 강건한 피크 탐지."""
+    if len(signal) < 3:
+        return np.array([], dtype=int)
+    distance = max(1, int(fs * min_dist_sec))
+    prominence = 0.2 * np.std(signal) if np.std(signal) > 1e-6 else None
+    peaks, _ = find_peaks(signal, distance=distance, prominence=prominence)
+    return peaks
 
 
 def _bandpower(signal: np.ndarray, fs: float, f_low: float, f_high: float) -> float:
-    """신호에서 [f_low, f_high] Hz 대역 파워 비율을 반환한다."""
-    n = len(signal)
-    if n < 8:
+    """Welch 방법을 사용한 [f_low, f_high] Hz 대역 파워 비율 계산."""
+    if len(signal) < 8:
         return 0.0
-    freqs = np.fft.rfftfreq(n, d=1.0 / fs)
-    psd = np.abs(np.fft.rfft(signal)) ** 2
+    nperseg = min(len(signal), 256)
+    freqs, psd = welch(signal, fs=fs, nperseg=nperseg)
     total = float(psd.sum())
     if total < 1e-12:
         return 0.0
@@ -116,7 +116,7 @@ def _stride_time_cv(imu: np.ndarray, fs: float = 100.0) -> float:
     """
     accel_z = imu[2] if imu.shape[0] > 2 else imu[0]
     accel_z = accel_z - float(np.mean(accel_z))
-    peaks = _find_peaks_simple(accel_z, min_distance=int(fs * 0.3))
+    peaks = _find_peaks_robust(accel_z, fs, min_dist_sec=0.3)
     if len(peaks) < 3:
         return 0.0
     intervals = np.diff(peaks) / fs   # 초 단위
@@ -131,7 +131,7 @@ def _step_width_cv(imu: np.ndarray, fs: float = 100.0) -> float:
     """
     accel_x = imu[0] if imu.shape[0] > 0 else imu[0]
     accel_x = accel_x - float(np.mean(accel_x))
-    peaks = _find_peaks_simple(accel_x, min_distance=int(fs * 0.25))
+    peaks = _find_peaks_robust(accel_x, fs, min_dist_sec=0.25)
     if len(peaks) < 3:
         return 0.0
     return _coefficient_of_variation(np.abs(accel_x[peaks]))
@@ -144,7 +144,7 @@ def _cadence_variability(imu: np.ndarray, fs: float = 100.0) -> float:
     """
     accel_z = imu[2] if imu.shape[0] > 2 else imu[0]
     accel_z = accel_z - float(np.mean(accel_z))
-    peaks = _find_peaks_simple(accel_z, min_distance=int(fs * 0.3))
+    peaks = _find_peaks_robust(accel_z, fs, min_dist_sec=0.3)
     if len(peaks) < 3:
         return 0.0
     intervals = np.diff(peaks) / fs

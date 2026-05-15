@@ -7,19 +7,21 @@ Only SelfPace task files are loaded.
 
 import time
 import pathlib
+import json
 import yaml
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from src.analysis.weargait_biomarkers import BIOMARKER_NAMES
 from src.data.weargait_dataset import WearGaitDataset, load_weargait_by_subject
 from src.models.imu_pressure_net import IMUPressureGaitNet
 from src.utils.metrics import compute_metrics
 
 
-def _make_dataset(imu_wins, pres_wins, labels):
-    return WearGaitDataset(imu_wins, pres_wins, labels)
+def _make_dataset(imu_wins, pres_wins, labels, biomarker_wins=None):
+    return WearGaitDataset(imu_wins, pres_wins, labels, biomarker_wins)
 
 
 def _train_fold(train_ds, val_ds, test_ds, config, device, out_path):
@@ -120,9 +122,12 @@ def _train_fold(train_ds, val_ds, test_ds, config, device, out_path):
     return compute_metrics(np.concatenate(all_lbls), np.concatenate(all_preds))
 
 
-def run(config_path="configs/weargait_loso.yaml", output_dir="outputs/weargait_loso"):
+def run(config_path="configs/weargait_loso.yaml", output_dir="outputs/weargait_loso", target_accuracy=0.70):
     with open(config_path) as f:
         config = yaml.safe_load(f)
+    config.setdefault("model", {}).setdefault("biomarkers", {})
+    config["model"]["biomarkers"].setdefault("enabled", True)
+    config["model"]["biomarkers"].setdefault("input_dim", len(BIOMARKER_NAMES))
 
     out = pathlib.Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -154,15 +159,16 @@ def run(config_path="configs/weargait_loso.yaml", output_dir="outputs/weargait_l
         print("=" * 70)
 
         # Gather train subjects (all except test)
-        train_imu, train_pres, train_lbl = [], [], []
+        train_imu, train_pres, train_lbl, train_bio = [], [], [], []
         for s in subject_ids:
             if s == test_subj:
                 continue
             train_imu.extend(subjects[s][0])
             train_pres.extend(subjects[s][1])
             train_lbl.extend(subjects[s][2])
+            train_bio.extend(subjects[s][3])
 
-        test_imu, test_pres, test_lbl = subjects[test_subj]
+        test_imu, test_pres, test_lbl, test_bio = subjects[test_subj]
 
         if not train_imu:
             print(f"  [skip] No training data for fold {test_subj}")
@@ -177,13 +183,15 @@ def run(config_path="configs/weargait_loso.yaml", output_dir="outputs/weargait_l
         val_imu  = [train_imu[i]  for i in val_idx]
         val_pres = [train_pres[i] for i in val_idx]
         val_lbl  = [train_lbl[i]  for i in val_idx]
+        val_bio  = [train_bio[i]  for i in val_idx]
         tr_imu   = [train_imu[i]  for i in tr_idx]
         tr_pres  = [train_pres[i] for i in tr_idx]
         tr_lbl   = [train_lbl[i]  for i in tr_idx]
+        tr_bio   = [train_bio[i]  for i in tr_idx]
 
-        train_ds = _make_dataset(tr_imu,   tr_pres,  tr_lbl)
-        val_ds   = _make_dataset(val_imu,  val_pres, val_lbl)
-        test_ds  = _make_dataset(test_imu, test_pres, test_lbl)
+        train_ds = _make_dataset(tr_imu,   tr_pres,  tr_lbl,  tr_bio)
+        val_ds   = _make_dataset(val_imu,  val_pres, val_lbl, val_bio)
+        test_ds  = _make_dataset(test_imu, test_pres, test_lbl, test_bio)
 
         n_pos = sum(test_lbl)
         print(
@@ -237,11 +245,31 @@ def run(config_path="configs/weargait_loso.yaml", output_dir="outputs/weargait_l
     )
 
     np.save(out / "loso_results.npy", {s: m for s, m in fold_results})
+    summary = {
+        "dataset": "WearGait-PD",
+        "protocol": "leave-one-subject-out",
+        "subjects": [s for s, _ in fold_results],
+        "target_accuracy": float(target_accuracy),
+        "mean_accuracy": float(np.mean(accs)),
+        "std_accuracy": float(np.std(accs)),
+        "mean_f1_macro": float(np.mean(f1s)),
+        "std_f1_macro": float(np.std(f1s)),
+        "mean_precision": float(np.mean(precs)),
+        "mean_recall": float(np.mean(recs)),
+        "target_met": bool(np.mean(accs) >= target_accuracy),
+        "model_inputs": ["imu", "pressure", "weargait_biomarkers"],
+    }
+    with open(out / "benchmark_summary.json", "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+    status = "PASS" if summary["target_met"] else "NEEDS_IMPROVEMENT"
+    print(f"Target accuracy {target_accuracy:.2%}: {status}")
     print(f"\nResults saved: {out}/loso_results.npy")
+    print(f"Benchmark summary saved: {out}/benchmark_summary.json")
 
 
 if __name__ == "__main__":
     import sys
     cfg = sys.argv[1] if len(sys.argv) > 1 else "configs/weargait_loso.yaml"
     out = sys.argv[2] if len(sys.argv) > 2 else "outputs/weargait_loso"
-    run(cfg, out)
+    target = float(sys.argv[3]) if len(sys.argv) > 3 else 0.70
+    run(cfg, out, target)

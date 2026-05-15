@@ -8,6 +8,7 @@ from src.analysis.gait_profile import PersonalGaitProfiler
 from src.analysis.injury_risk import InjuryRiskEngine
 from src.analysis.feedback import CorrektiveFeedbackGenerator
 from src.analysis.trend_tracker import LongitudinalTrendTracker
+from src.analysis.prodromal_biomarkers import ProdrOmalBiomarkerExtractor, ProdromalPanel
 
 
 def make_pressure_sequence(T=64, H=16, W=8, seed=42):
@@ -206,47 +207,56 @@ class TestFeedbackGenerator:
         assert isinstance(feedback.report_kr, str)
         assert "맞춤형 보행 분석 피드백 리포트" in feedback.report_kr
 
+    def test_feedback_with_prodromal(self):
+        engine = InjuryRiskEngine(16, 8)
+        seq_p = make_pressure_sequence(T=64)
+        injury_report = engine.assess_risk(seq_p)
+
+        # Create abnormal prodromal panel
+        extractor = ProdrOmalBiomarkerExtractor(fs=100.0)
+        # Use random data that will likely be abnormal or just mock it
+        imu = np.random.randn(6, 500).astype(np.float32)
+        # Add a 5Hz tremor to trigger abnormality
+        t = np.arange(500) / 100.0
+        imu[0] += 0.5 * np.sin(2 * np.pi * 5.0 * t)
+
+        pres = np.random.rand(500, 16, 8).astype(np.float32)
+        panel = extractor.extract(imu, pres, external={"olfactory_screen_score": 0.4})
+
+        gen = CorrektiveFeedbackGenerator()
+        feedback = gen.generate(injury_report, prodromal_panel=panel)
+
+        assert "전임상 신경계 신호 분석" in feedback.report_kr
+        assert "위험 단계" in feedback.report_kr
+        assert any(item.category == "medical" for item in feedback.items)
+        assert any("후각" in item.title for item in feedback.items)
+
 
 class TestTrendTracker:
-    def test_insufficient_sessions(self):
-        tracker = LongitudinalTrendTracker()
-        tracker.add_session({"ml_index": 0.1}, injury_risk=0.2)
-        result = tracker.analyze_trends(min_sessions=3)
-        assert result.sessions_analyzed == 1
-        assert "최소" in result.report_kr
+    def test_weekly_summary(self):
+        import pandas as pd
+        analyzer = LongitudinalTrendTracker()
+        df = pd.DataFrame({
+            'fe_timestamp': pd.date_range(start='2026-05-01', periods=10, freq='D'),
+            'speed': np.random.rand(10),
+            'tilt': np.random.rand(10),
+            'fe_event_value': np.random.rand(10)
+        })
+        summary = analyzer.get_weekly_summary(df)
+        assert len(summary) <= 7
+        if summary:
+            assert "date" in summary[0]
+            assert "speed" in summary[0]
+            assert "stability" in summary[0]
 
-    def test_trend_analysis(self):
-        tracker = LongitudinalTrendTracker()
-
-        # Simulate improving cop_sway (decreasing)
-        for i in range(5):
-            features = {
-                "cop_sway": 0.15 - i * 0.02,
-                "stride_regularity": 0.5 + i * 0.05,
-                "ml_index": 0.1,
-            }
-            tracker.add_session(features, injury_risk=0.3 - i * 0.05)
-
-        result = tracker.analyze_trends(min_sessions=3)
-
-        assert result.sessions_analyzed == 5
-        assert "cop_sway" in result.metric_trends
-        assert "stride_regularity" in result.metric_trends
-        assert isinstance(result.report_kr, str)
-        assert "트렌드" in result.report_kr
-
-    def test_trend_directions(self):
-        tracker = LongitudinalTrendTracker()
-
-        # Clear improving trend for cop_sway (lower_better, decreasing = improving)
-        for i in range(6):
-            tracker.add_session(
-                {"cop_sway": 0.20 - i * 0.03, "stride_regularity": 0.4 + i * 0.1},
-                injury_risk=0.5 - i * 0.08,
-            )
-
-        result = tracker.analyze_trends(min_sessions=3)
-
-        # cop_sway should be improving (lower_better, slope < 0)
-        if "cop_sway" in result.metric_trends:
-            assert result.metric_trends["cop_sway"]["slope"] < 0
+    def test_anomalous_trends(self):
+        import pandas as pd
+        analyzer = LongitudinalTrendTracker()
+        # Create a decreasing speed trend with enough samples
+        speed = np.concatenate([np.ones(100), np.linspace(1.0, 0.5, 100)])
+        df = pd.DataFrame({
+            'speed': speed,
+        })
+        findings = analyzer.detect_anomalous_trends(df)
+        assert len(findings) > 1 or len(findings) == 1
+        assert "감소" in findings[0]

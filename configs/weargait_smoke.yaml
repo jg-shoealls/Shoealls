@@ -18,6 +18,11 @@ model:
     ff_dim: 128
     num_heads: 4
     num_layers: 1
+  biomarkers:
+    enabled: true
+    input_dim: 12
+    embed_dim: 16
+    dropout: 0.1
   imu_encoder:
     conv_channels:
     - 16

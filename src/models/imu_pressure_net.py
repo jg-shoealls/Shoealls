@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from .encoders import IMUEncoder, PressureEncoder
+from src.analysis.weargait_biomarkers import BIOMARKER_NAMES
 
 
 class IMUPressureGaitNet(nn.Module):
@@ -42,10 +43,25 @@ class IMUPressureGaitNet(nn.Module):
             dropout=pressure_cfg["dropout"],
         )
 
-        # Classifier: [imu_embed, pressure_embed] concatenated -> MLP
+        biomarker_cfg = model_cfg.get("biomarkers", {})
+        self.use_biomarkers = bool(biomarker_cfg.get("enabled", False))
+        self.biomarker_dim = int(biomarker_cfg.get("input_dim", len(BIOMARKER_NAMES)))
+        biomarker_embed_dim = int(biomarker_cfg.get("embed_dim", max(16, embed_dim // 4)))
+        if self.use_biomarkers:
+            self.biomarker_encoder = nn.Sequential(
+                nn.LayerNorm(self.biomarker_dim),
+                nn.Linear(self.biomarker_dim, biomarker_embed_dim),
+                nn.ReLU(inplace=True),
+                nn.Dropout(float(biomarker_cfg.get("dropout", 0.1))),
+            )
+        else:
+            self.biomarker_encoder = None
+            biomarker_embed_dim = 0
+
+        # Classifier: [imu_embed, pressure_embed, optional biomarkers] -> MLP
         cls_cfg = model_cfg["classifier"]
         layers = []
-        in_dim = embed_dim * 2
+        in_dim = embed_dim * 2 + biomarker_embed_dim
         for h_dim in cls_cfg["hidden_dims"]:
             layers.extend([
                 nn.Linear(in_dim, h_dim),
@@ -61,7 +77,8 @@ class IMUPressureGaitNet(nn.Module):
         Args:
             batch: dict with keys:
                 'imu':      (B, 12, T)
-                'pressure': (B, T, 1, 4, 8)
+                'pressure':   (B, T, 1, 4, 8)
+                'biomarkers': (B, N), optional explicit gait biomarkers
 
         Returns:
             logits: (B, num_classes)
@@ -72,6 +89,18 @@ class IMUPressureGaitNet(nn.Module):
         # Pressure: (B, T, 1, H, W) -> (B, T, embed_dim) -> mean -> (B, embed_dim)
         pres_feat = self.pressure_encoder(batch["pressure"]).mean(dim=1)
 
+        features = [imu_feat, pres_feat]
+        if self.use_biomarkers:
+            biomarkers = batch.get("biomarkers")
+            if biomarkers is None:
+                biomarkers = torch.zeros(
+                    imu_feat.shape[0],
+                    self.biomarker_dim,
+                    device=imu_feat.device,
+                    dtype=imu_feat.dtype,
+                )
+            features.append(self.biomarker_encoder(biomarkers.to(device=imu_feat.device, dtype=imu_feat.dtype)))
+
         # Concatenate and classify
-        fused = torch.cat([imu_feat, pres_feat], dim=1)  # (B, embed_dim * 2)
+        fused = torch.cat(features, dim=1)
         return self.classifier(fused)

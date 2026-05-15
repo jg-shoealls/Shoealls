@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from .foot_zones import FootAnalysisResult
 from .gait_profile import PersonalGaitProfiler, DeviationReport, GaitBaseline
 from .injury_risk import InjuryRiskReport, InjuryRisk
+from .prodromal_biomarkers import ProdromalPanel
 
 
 @dataclass
@@ -39,6 +40,8 @@ class CorrektiveFeedbackGenerator:
         injury_report: InjuryRiskReport,
         deviation_report: DeviationReport | None = None,
         baseline: GaitBaseline | None = None,
+        prodromal_panel: ProdromalPanel | None = None,
+        feedback_context: dict | None = None,
     ) -> PersonalizedFeedback:
         """Generate personalized feedback.
 
@@ -46,11 +49,19 @@ class CorrektiveFeedbackGenerator:
             injury_report: Current injury risk assessment.
             deviation_report: Optional deviation from personal baseline.
             baseline: Optional personal baseline data.
+            prodromal_panel: Optional preclinical Parkinson's panel.
+            feedback_context: Optional additional context.
         """
         items = []
         priority = 1
 
-        # 1. Injury-based recommendations
+        # 1. Prodromal-based recommendations (Highest priority if abnormal)
+        if prodromal_panel and prodromal_panel.abnormal_count > 0:
+            prod_items = self._prodromal_to_feedback(prodromal_panel, priority)
+            items.extend(prod_items)
+            priority += len(prod_items)
+
+        # 2. Injury-based recommendations
         high_risks = [r for r in injury_report.risks if r.risk_score >= 0.5]
         moderate_risks = [r for r in injury_report.risks if 0.25 <= r.risk_score < 0.5]
 
@@ -64,7 +75,7 @@ class CorrektiveFeedbackGenerator:
             items.append(item)
             priority += 1
 
-        # 2. Deviation-based recommendations
+        # 3. Deviation-based recommendations
         if deviation_report and deviation_report.alerts:
             for alert in deviation_report.alerts:
                 item = self._deviation_to_feedback(alert, priority)
@@ -72,16 +83,23 @@ class CorrektiveFeedbackGenerator:
                     items.append(item)
                     priority += 1
 
-        # 3. General gait improvement tips based on baseline
+        # 4. General gait improvement tips based on baseline
         if baseline and baseline.num_sessions >= 1:
             general = self._baseline_tips(baseline, priority)
             items.extend(general)
+            priority += len(general)
+
+        # 5. Additional feedback loop items
+        if feedback_context:
+            for item in self._feedback_loop_items(feedback_context, priority):
+                items.append(item)
+                priority += 1
 
         # Overall status
-        if injury_report.overall_risk >= 0.75:
+        if injury_report.overall_risk >= 0.75 or (prodromal_panel and prodromal_panel.composite_score >= 0.3):
             status = "주의 필요"
-            encouragement = "부상 위험이 높습니다. 아래 권장사항을 꼭 확인해주세요."
-        elif injury_report.overall_risk >= 0.5:
+            encouragement = "정밀 보행 분석 결과 주의가 필요한 소견이 있습니다. 아래 권장사항을 확인해주세요."
+        elif injury_report.overall_risk >= 0.5 or (prodromal_panel and prodromal_panel.abnormal_count > 0):
             status = "개선 권장"
             encouragement = "몇 가지 개선이 필요하지만, 꾸준한 관리로 충분히 좋아질 수 있습니다!"
         elif injury_report.overall_risk >= 0.25:
@@ -91,7 +109,7 @@ class CorrektiveFeedbackGenerator:
             status = "매우 양호"
             encouragement = "훌륭한 보행 패턴을 유지하고 있습니다! 계속 이대로 유지하세요."
 
-        report = self._build_report(items, status, encouragement, injury_report, deviation_report)
+        report = self._build_report(items, status, encouragement, injury_report, deviation_report, prodromal_panel)
 
         return PersonalizedFeedback(
             items=items,
@@ -99,6 +117,132 @@ class CorrektiveFeedbackGenerator:
             encouragement=encouragement,
             report_kr=report,
         )
+
+    def _prodromal_to_feedback(self, panel: ProdromalPanel, start_priority: int) -> list[FeedbackItem]:
+        """Convert prodromal biomarkers to actionable feedback items."""
+        items = []
+        p = start_priority
+
+        for b in panel.biomarkers:
+            if not b.is_abnormal:
+                continue
+
+            if b.name in {"stride_time_cv", "cadence_variability"}:
+                items.append(FeedbackItem(
+                    category="exercise",
+                    priority=p,
+                    title="보행 리듬 및 규칙성 강화",
+                    description=f"{b.korean_name}이 높게 측정되었습니다. 이는 보행 제어의 일관성이 저하되었음을 의미하며, 리듬 훈련이 도움이 됩니다.",
+                    exercises=[
+                        "메트로놈 보행 훈련 (분당 100-110회 박자에 맞춰 일정하게 걷기)",
+                        "장애물 넘기 운동 (일정한 간격으로 놓인 선이나 장애물을 의식하며 걷기)",
+                        "뒤로 걷기 (안전한 장소에서 천천히, 1분씩 3세트)",
+                    ]
+                ))
+                p += 1
+            elif b.name in {"rest_tremor_index", "nocturnal_movement_regularity"}:
+                items.append(FeedbackItem(
+                    category="medical",
+                    priority=p,
+                    title="신경계 전조 신호 관리",
+                    description=f"{b.korean_name}에서 이상 소견이 보입니다. 이는 렘수면 행동 장애(RBD)와 연관된 미세 떨림이나 움직임 불규칙성일 수 있습니다.",
+                    exercises=[
+                        "수면 위생 개선 (암막 커튼 사용, 규칙적인 수면 시간)",
+                        "취침 전 스트레칭 및 이완 요법 (10분)",
+                        "신경과 전문의 상담 권장 (전임상 파킨슨 스크리닝 목적)",
+                    ]
+                ))
+                p += 1
+            elif b.name == "olfactory_screen_score":
+                items.append(FeedbackItem(
+                    category="medical",
+                    priority=p,
+                    title="후각 기능 자극 및 추적",
+                    description="후각 기능 저하는 신경계 퇴행의 아주 이른 전조 증상 중 하나입니다.",
+                    exercises=[
+                        "후각 자극 훈련 (레몬, 장미, 유칼립투스 등 강한 향을 하루 2회 20초씩 맡기)",
+                        "주기적인 보행 모니터링 및 인지 기능 체크",
+                    ]
+                ))
+                p += 1
+
+        return items
+
+    def _feedback_loop_items(self, context: dict, start_priority: int) -> list[FeedbackItem]:
+        """Map analysis outputs to correction actions and follow-up metrics.
+
+        Expected context keys are intentionally simple so API/reporting layers can
+        pass either raw biomarker dictionaries or summarized model outputs:
+            biomarkers: dict[str, float]
+            prodromal_stage: str
+            prodromal_score: float
+            target_accuracy: float
+        """
+        biomarkers = context.get("biomarkers") or {}
+        items: list[FeedbackItem] = []
+        p = start_priority
+
+        def add(category: str, title: str, description: str, exercises: list[str]) -> None:
+            nonlocal p
+            items.append(FeedbackItem(category, p, title, description, exercises))
+            p += 1
+
+        stride_cv = float(biomarkers.get("stride_time_cv", biomarkers.get("acc_variability", 0.0)) or 0.0)
+        cadence_var = float(biomarkers.get("cadence_variability", biomarkers.get("gyro_variability", 0.0)) or 0.0)
+        asymmetry = float(biomarkers.get("pressure_asymmetry", biomarkers.get("right_left_acc_asymmetry", 0.0)) or 0.0)
+        double_support = float(biomarkers.get("double_support_ratio", 0.0) or 0.0)
+        prodromal_score = float(context.get("prodromal_score", 0.0) or 0.0)
+        prodromal_stage = str(context.get("prodromal_stage", ""))
+
+        if stride_cv >= 0.08 or cadence_var >= 0.10:
+            add(
+                "posture",
+                "보행 리듬 안정화",
+                "보폭 시간 또는 발목 회전 변동성이 높습니다. 다음 측정에서는 stride_time_cv와 cadence_variability 감소를 확인합니다.",
+                [
+                    "메트로놈 90-110 BPM 보행 10분",
+                    "바닥 표식 간격에 맞춰 일정 보폭 걷기 5분",
+                    "피로 시 세션을 중단하고 회복 후 재측정",
+                ],
+            )
+
+        if asymmetry >= 0.12:
+            add(
+                "posture",
+                "좌우 하중 대칭 교정",
+                "좌우 발목 움직임 또는 족저압 비대칭이 큽니다. 다음 측정에서는 pressure_asymmetry와 right_left_acc_asymmetry를 추적합니다.",
+                [
+                    "거울 앞 체중 이동 좌우 10회씩 3세트",
+                    "약한 쪽 다리 스텝업 10회씩 3세트",
+                    "양발 지면 접촉 시간을 의식하며 천천히 걷기",
+                ],
+            )
+
+        if double_support >= 0.32:
+            add(
+                "exercise",
+                "이중 지지 시간 감소 훈련",
+                "양발이 동시에 지면에 머무는 시간이 길어 안정성 보상 패턴이 의심됩니다. 다음 측정에서는 double_support_ratio를 확인합니다.",
+                [
+                    "보폭을 무리하게 늘리지 않고 발 구름을 부드럽게 연결",
+                    "평지에서 5분 단위로 짧게 반복 보행",
+                    "균형 불안이 지속되면 보호자 또는 전문가와 함께 훈련",
+                ],
+            )
+
+        if prodromal_score >= 0.30 or prodromal_stage in {"prodromal", "전구기", "발현"}:
+            add(
+                "medical",
+                "전조 신호 추적 강화",
+                "전조 위험 점수가 높습니다. 보행 교정보다는 반복 측정과 전문 평가 연계를 우선합니다.",
+                [
+                    "동일 시간대, 동일 신발 조건으로 주 2회 이상 재측정",
+                    "후각 선별, 안정 시 떨림, 보행 변동성 지표를 함께 기록",
+                    "점수가 2주 이상 상승하면 신경과 상담 권장",
+                ],
+            )
+
+        return items
 
     def _injury_to_feedback(self, risk: InjuryRisk, priority: int) -> FeedbackItem:
         """Convert injury risk to actionable feedback."""
@@ -262,6 +406,7 @@ class CorrektiveFeedbackGenerator:
         encouragement: str,
         injury_report: InjuryRiskReport,
         deviation_report: DeviationReport | None,
+        prodromal_panel: ProdromalPanel | None = None,
     ) -> str:
         """Build full Korean report text."""
         lines = [
@@ -273,6 +418,21 @@ class CorrektiveFeedbackGenerator:
             f"  {encouragement}",
             "",
         ]
+
+        # Prodromal summary
+        if prodromal_panel:
+            lines.append("─" * 60)
+            lines.append("  [전임상 신경계 신호 분석]")
+            lines.append("")
+            lines.append(f"  위험 단계: {prodromal_panel.prodrome_stage} (위험 지수: {prodromal_panel.composite_score:.2f})")
+            abnormal_biomarkers = [b for b in prodromal_panel.biomarkers if b.is_abnormal]
+            if abnormal_biomarkers:
+                lines.append("  감지된 이상 징후:")
+                for b in abnormal_biomarkers:
+                    lines.append(f"    ⚠ {b.korean_name}: {b.value:.4f} {b.unit} (정상: {b.normal_range[0]}~{b.normal_range[1]})")
+            else:
+                lines.append("  특이 사항 없음: 모든 전임상 바이오마커가 정상 범위 내에 있습니다.")
+            lines.append("")
 
         # Injury risk summary
         lines.append("─" * 60)
