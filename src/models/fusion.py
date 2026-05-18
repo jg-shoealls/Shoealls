@@ -56,11 +56,12 @@ class CrossModalAttentionFusion(nn.Module):
             enriched.append(feat + mod_emb.expand(feat.size(0), feat.size(1), -1))
 
         # Cross-modal attention: each modality attends to concatenation of others
+        n_mods = len(enriched)
         for layer in self.cross_attention_layers:
             updated = []
-            for i in range(self.num_modalities):
+            for i in range(n_mods):
                 # Concatenate all other modalities as context
-                context_parts = [enriched[j] for j in range(self.num_modalities) if j != i]
+                context_parts = [enriched[j] for j in range(n_mods) if j != i]
                 context = torch.cat(context_parts, dim=1)
                 updated.append(layer(enriched[i], context))
             enriched = updated
