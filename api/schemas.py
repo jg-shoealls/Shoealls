@@ -14,6 +14,9 @@ class SensorData(BaseModel):
     pressure: list[list[float]] = Field(
         description="Foot pressure grid [H, W], default 16×8"
     )
+    mag_baro: Optional[list[list[float]]] = Field(
+        default=None, description="Mag & Baro data [seq_len, 5]"
+    )
     skeleton: list[list[list[float]]] = Field(
         description="Skeleton joint data [seq_len, 17, 3] — (x,y,z) per joint"
     )

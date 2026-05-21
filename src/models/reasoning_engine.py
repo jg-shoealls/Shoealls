@@ -386,7 +386,12 @@ class GaitReasoningEngine(nn.Module):
         "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
     ]
 
-    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+    @property
+    def CLASS_NAMES_KR(self):
+        base = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+        if self.num_classes > len(base):
+            base.extend([f"클래스 {i}" for i in range(len(base), self.num_classes)])
+        return base
 
     MODALITY_NAMES_KR = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
@@ -396,6 +401,7 @@ class GaitReasoningEngine(nn.Module):
         data_cfg = config["data"]
         embed_dim = model_cfg["fusion"]["embed_dim"]
         num_classes = data_cfg["num_classes"]
+        self.num_classes = num_classes
 
         reasoning_cfg = config.get("reasoning", {})
         num_reasoning_steps = reasoning_cfg.get("num_steps", 3)

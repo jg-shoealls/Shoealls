@@ -22,12 +22,17 @@ from .schemas import (
 
 _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"
 
-GAIT_CLASS_NAMES = {
-    0: ("normal", "정상 보행"),
-    1: ("antalgic", "절뚝거림"),
-    2: ("ataxic", "운동실조"),
-    3: ("parkinsonian", "파킨슨"),
-}
+# We dynamically build GAIT_CLASS_NAMES from config to prevent KeyErrors
+def _get_gait_class_names(num_classes):
+    base_names = {
+        0: ("normal", "정상 보행"),
+        1: ("antalgic", "절뚝거림"),
+        2: ("ataxic", "운동실조"),
+        3: ("parkinsonian", "파킨슨"),
+    }
+    for i in range(4, num_classes):
+        base_names[i] = (f"class_{i}", f"클래스 {i}")
+    return base_names
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
@@ -156,14 +161,15 @@ class GaitMLService:
             probs = torch.softmax(logits, dim=-1)[0].numpy()
 
         pred_idx = int(probs.argmax())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        gait_names = _get_gait_class_names(self._config['data']['num_classes'])
+        pred_en, pred_kr = gait_names[pred_idx]
 
         return GaitClassifyResponse(
             prediction=pred_en,
             prediction_kr=pred_kr,
             confidence=float(probs[pred_idx]),
             class_probabilities={
-                GAIT_CLASS_NAMES[i][0]: float(probs[i])
+                gait_names[i][0]: float(probs[i])
                 for i in range(len(probs))
             },
             is_demo_mode=is_demo,
@@ -234,7 +240,8 @@ class GaitMLService:
         pred_idx = int(result["prediction"][0].item())
         probs = result["calibrated_probs"][0].cpu().numpy()
         uncertainty = float(result["uncertainty"][0].item())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        gait_names = _get_gait_class_names(self._config['data']['num_classes'])
+        pred_en, pred_kr = gait_names[pred_idx]
 
         # Anomaly findings
         anomaly_findings = []
@@ -260,7 +267,8 @@ class GaitMLService:
             step_probs = F.softmax(step_logits[0], dim=-1).cpu().numpy()
             top_cls = int(step_probs.argmax())
             label = "초기 가설" if step_idx == 0 else f"추론 {step_idx}단계"
-            en, kr = GAIT_CLASS_NAMES[top_cls]
+            gait_names = _get_gait_class_names(self._config['data']['num_classes'])
+            en, kr = gait_names[top_cls]
             reasoning_trace.append(ReasoningStep(
                 step=step_idx,
                 label=label,
