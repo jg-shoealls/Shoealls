@@ -1,0 +1,21 @@
+--- tests/test_api.py
++++ tests/test_api.py
+@@ -85,9 +85,9 @@
+         assert r.status_code == 200
+         body = r.json()
+-        assert body["prediction"] in {"normal", "antalgic", "ataxic", "parkinsonian"}
++        assert body["prediction"] in {"normal", "antalgic", "ataxic", "parkinsonian", "spastic", "steppage", "waddling", "choreic", "crouch", "scissoring", "festinating"}
+         assert 0.0 <= body["confidence"] <= 1.0
+         assert body["is_demo_mode"] is True  # 체크포인트 없음
+         probs = body["class_probabilities"]
+-        assert set(probs.keys()) == {"normal", "antalgic", "ataxic", "parkinsonian"}
++        assert set(probs.keys()) == {"normal", "antalgic", "ataxic", "parkinsonian", "spastic", "steppage", "waddling", "choreic", "crouch", "scissoring", "festinating"}
+         assert len(probs) == 4
+
+@@ -165,5 +165,5 @@
+         assert r.status_code == 200
+         body = r.json()
+-        assert body["final_prediction"] in {"normal", "antalgic", "ataxic", "parkinsonian"}
++        assert body["final_prediction"] in {"normal", "antalgic", "ataxic", "parkinsonian", "spastic", "steppage", "waddling", "choreic", "crouch", "scissoring", "festinating"}
+         assert 0.0 <= body["confidence"] <= 1.0
+         assert "reasoning_steps" in body

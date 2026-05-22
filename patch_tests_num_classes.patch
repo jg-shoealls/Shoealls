@@ -1,0 +1,28 @@
+--- tests/test_model.py
++++ tests/test_model.py
+@@ -98,7 +98,7 @@
+         }
+
+         logits = model(batch)
+-        assert logits.shape == (2, 4)
++        assert logits.shape == (2, 11)
+
+
+     def test_dataset_to_model(self):
+@@ -123,7 +123,7 @@
+
+         model = MultimodalGaitNet(config)
+         logits = model(batch)
+-        assert logits.shape == (1, 4)
++        assert logits.shape == (1, 11)
+--- tests/test_reasoning.py
++++ tests/test_reasoning.py
+@@ -148,7 +148,7 @@
+         assert "diagnosis" in result
+
+         assert result["prediction"].shape == (2,)
+-        assert result["calibrated_probs"].shape == (2, 4)
++        assert result["calibrated_probs"].shape == (2, 11)
+
+     def test_explain_output(self):
+         config = load_config()

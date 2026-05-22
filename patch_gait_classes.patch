@@ -1,0 +1,16 @@
+--- api/service.py
++++ api/service.py
+@@ -27,6 +27,13 @@
+     1: ("antalgic", "절뚝거림"),
+     2: ("ataxic", "운동실조"),
+     3: ("parkinsonian", "파킨슨"),
++    4: ("spastic", "경직성 보행"),
++    5: ("steppage", "계단성 보행"),
++    6: ("waddling", "발처짐 보행"),
++    7: ("choreic", "무도병 보행"),
++    8: ("crouch", "웅크림 보행"),
++    9: ("scissoring", "가위 보행"),
++    10: ("festinating", "종종걸음"),
+ }
+
+ MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
