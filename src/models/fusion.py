@@ -58,9 +58,10 @@ class CrossModalAttentionFusion(nn.Module):
         # Cross-modal attention: each modality attends to concatenation of others
         for layer in self.cross_attention_layers:
             updated = []
-            for i in range(self.num_modalities):
+            num_current_modalities = len(modality_features)
+            for i in range(num_current_modalities):
                 # Concatenate all other modalities as context
-                context_parts = [enriched[j] for j in range(self.num_modalities) if j != i]
+                context_parts = [enriched[j] for j in range(num_current_modalities) if j != i]
                 context = torch.cat(context_parts, dim=1)
                 updated.append(layer(enriched[i], context))
             enriched = updated
@@ -69,7 +70,11 @@ class CrossModalAttentionFusion(nn.Module):
         combined = torch.cat(enriched, dim=1)  # (B, sum(T_i), D)
 
         # Self-attention over combined
-        attn_out, _ = self.self_attention(combined, combined, combined)
+        # Optimization: need_weights=False skips calculating attention weights
+        # to save memory/computation and enable optimized backends like FlashAttention.
+        attn_out, _ = self.self_attention(
+            combined, combined, combined, need_weights=False
+        )
         combined = self.norm(combined + attn_out)
 
         # Global average pooling
@@ -102,7 +107,11 @@ class CrossAttentionBlock(nn.Module):
 
     def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         # Cross-attention: query attends to context
-        attn_out, _ = self.cross_attn(query, context, context)
+        # Optimization: need_weights=False skips calculating attention weights
+        # to save memory/computation and enable optimized backends like FlashAttention.
+        attn_out, _ = self.cross_attn(
+            query, context, context, need_weights=False
+        )
         query = self.norm1(query + attn_out)
 
         # Feed-forward

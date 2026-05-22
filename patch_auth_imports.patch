@@ -1,0 +1,7 @@
+--- tests/test_auth.py
++++ tests/test_auth.py
+@@ -10,2 +10,4 @@
+ import argparse
++import importlib
++import os
+ import tempfile

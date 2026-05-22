@@ -1,0 +1,15 @@
+--- src/models/fusion.py
++++ src/models/fusion.py
+@@ -58,9 +58,10 @@
+         # Cross-modal attention: each modality attends to concatenation of others
+         for layer in self.cross_attention_layers:
+             updated = []
+-            for i in range(self.num_modalities):
++            num_current_modalities = len(modality_features)
++            for i in range(num_current_modalities):
+                 # Concatenate all other modalities as context
+-                context_parts = [enriched[j] for j in range(self.num_modalities) if j != i]
++                context_parts = [enriched[j] for j in range(num_current_modalities) if j != i]
+                 context = torch.cat(context_parts, dim=1)
+                 updated.append(layer(enriched[i], context))
+             enriched = updated
