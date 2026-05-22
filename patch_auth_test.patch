@@ -1,0 +1,21 @@
+--- tests/test_auth.py
++++ tests/test_auth.py
+@@ -244,11 +244,11 @@
+
+             with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}):
+-                with patch("googleapiclient.discovery.build", return_value=mock_service) as mock_build:
++                with patch("googleapiclient.discovery.build", return_value=mock_service):
+                     # Build the patched environment so drive_service can import
+                     with patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()),
+                                     "Credentials", create=True) as mock_creds:
+
+                         mock_creds.from_service_account_file.return_value = MagicMock()
+
+-                        result = self.m.drive_service(args)
++                        self.m.drive_service(args)
+
+             mock_creds.from_service_account_file.assert_called_once_with(
+@@ -387,3 +387,3 @@
+         }):
+-            result = self.m.drive_service(args)
++            self.m.drive_service(args)

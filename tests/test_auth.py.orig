@@ -8,8 +8,6 @@ Covers pure-logic functions and mocked external-service auth flows in:
 from __future__ import annotations
 
 import sys
-import importlib
-import os
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
