@@ -3,7 +3,7 @@
 import numpy as np
 from dataclasses import dataclass
 
-from .foot_zones import FootZoneAnalyzer, FootAnalysisResult
+from .foot_zones import FootZoneAnalyzer, FootAnalysisResult, REGION_GROUPS
 from .common import severity_label_4level, linear_risk_score
 
 

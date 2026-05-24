@@ -1,8 +1,10 @@
 """Corrective feedback generator: personalized Korean gait improvement recommendations."""
 
+import numpy as np
 from dataclasses import dataclass
 
-from .gait_profile import DeviationReport, GaitBaseline
+from .foot_zones import FootAnalysisResult
+from .gait_profile import PersonalGaitProfiler, DeviationReport, GaitBaseline
 from .injury_risk import InjuryRiskReport, InjuryRisk
 
 

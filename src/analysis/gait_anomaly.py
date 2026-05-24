@@ -14,7 +14,7 @@
 """
 
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .common import severity_label, get_feature_korean, compute_derived_features
 from .report_formatter import header, section, marker_line, risk_line, HEADER_DIVIDER

@@ -1,5 +1,6 @@
 """센서 레이어 단위 테스트 — BLE 프로토콜 + 특성 추출 + 펌웨어 시뮬레이터."""
 
+import struct
 import pytest
 import numpy as np
 
