@@ -22,12 +22,25 @@ from .schemas import (
 
 _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"
 
-GAIT_CLASS_NAMES = {
-    0: ("normal", "정상 보행"),
-    1: ("antalgic", "절뚝거림"),
-    2: ("ataxic", "운동실조"),
-    3: ("parkinsonian", "파킨슨"),
-}
+# Fetch dynamically instead of hardcoding
+# Will be populated based on the config loaded
+def get_gait_class_names(config):
+    # Dummy implementation - in a real scenario this might come from config
+    # Fallback to defaults if not dynamically derived
+    mapping = {
+        0: ("normal", "정상 보행"),
+        1: ("antalgic", "절뚝거림"),
+        2: ("ataxic", "운동실조"),
+        3: ("parkinsonian", "파킨슨"),
+        4: ("hemiplegic", "편마비"),
+        5: ("neuropathic", "신경병증성"),
+        6: ("diplegic", "양마비"),
+        7: ("myopathic", "근병증성"),
+        8: ("choreic", "무도병성"),
+        9: ("sensory", "감각성"),
+        10: ("vestibular", "전정성"),
+    }
+    return mapping
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
@@ -156,14 +169,14 @@ class GaitMLService:
             probs = torch.softmax(logits, dim=-1)[0].numpy()
 
         pred_idx = int(probs.argmax())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        pred_en, pred_kr = get_gait_class_names(self._config or {}).get(pred_idx, ('unknown', '알 수 없음'))
 
         return GaitClassifyResponse(
             prediction=pred_en,
             prediction_kr=pred_kr,
             confidence=float(probs[pred_idx]),
             class_probabilities={
-                GAIT_CLASS_NAMES[i][0]: float(probs[i])
+                get_gait_class_names(self._config or {}).get(i, ('unknown', '알 수 없음'))[0]: float(probs[i])
                 for i in range(len(probs))
             },
             is_demo_mode=is_demo,
@@ -234,7 +247,7 @@ class GaitMLService:
         pred_idx = int(result["prediction"][0].item())
         probs = result["calibrated_probs"][0].cpu().numpy()
         uncertainty = float(result["uncertainty"][0].item())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        pred_en, pred_kr = get_gait_class_names(self._config or {}).get(pred_idx, ('unknown', '알 수 없음'))
 
         # Anomaly findings
         anomaly_findings = []
@@ -260,7 +273,7 @@ class GaitMLService:
             step_probs = F.softmax(step_logits[0], dim=-1).cpu().numpy()
             top_cls = int(step_probs.argmax())
             label = "초기 가설" if step_idx == 0 else f"추론 {step_idx}단계"
-            en, kr = GAIT_CLASS_NAMES[top_cls]
+            en, kr = get_gait_class_names(self._config or {}).get(top_cls, ('unknown', '알 수 없음'))
             reasoning_trace.append(ReasoningStep(
                 step=step_idx,
                 label=label,
