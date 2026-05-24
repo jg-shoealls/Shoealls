@@ -386,7 +386,7 @@ class GaitReasoningEngine(nn.Module):
         "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
     ]
 
-    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+
 
     MODALITY_NAMES_KR = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
@@ -440,6 +440,22 @@ class GaitReasoningEngine(nn.Module):
         self.confidence_calibrator = ConfidenceCalibrator(
             num_classes, num_reasoning_steps,
         )
+
+        # Populate dynamic names list for explaining
+        mapping = {
+            0: ("normal", "정상 보행"),
+            1: ("antalgic", "절뚝거림"),
+            2: ("ataxic", "운동실조"),
+            3: ("parkinsonian", "파킨슨"),
+            4: ("hemiplegic", "편마비"),
+            5: ("neuropathic", "신경병증성"),
+            6: ("diplegic", "양마비"),
+            7: ("myopathic", "근병증성"),
+            8: ("choreic", "무도병성"),
+            9: ("sensory", "감각성"),
+            10: ("vestibular", "전정성"),
+        }
+        self.CLASS_NAMES_KR = [mapping.get(i, ("unknown", f"알 수 없음({i})"))[1] for i in range(num_classes)]
 
     def forward(self, batch: dict) -> dict:
         """기본 forward (학습용)."""
@@ -516,7 +532,7 @@ class GaitReasoningEngine(nn.Module):
 
         # ── 최종 판정 ──
         lines.append("")
-        lines.append(f"  최종 판정: {self.CLASS_NAMES_KR[pred]}")
+        lines.append(f"  최종 판정: {self.CLASS_NAMES_KR[pred] if pred < len(self.CLASS_NAMES_KR) else '알 수 없음'}")
         lines.append(f"  확신도:    {probs[pred]:.1%}")
         lines.append(f"  불확실성:  {uncertainty:.1%}")
         lines.append("")
@@ -578,7 +594,7 @@ class GaitReasoningEngine(nn.Module):
             label = "초기 가설" if step_idx == 0 else f"추론 {step_idx}단계"
             lines.append(
                 f"  {label}: "
-                f"{self.CLASS_NAMES_KR[top_cls]} ({step_probs[top_cls]:.0%})"
+                f"{self.CLASS_NAMES_KR[top_cls] if top_cls < len(self.CLASS_NAMES_KR) else '알 수 없음'} ({step_probs[top_cls]:.0%})"
             )
 
         lines.append("")
@@ -587,7 +603,7 @@ class GaitReasoningEngine(nn.Module):
         for cls_idx in ranked:
             marker = ">>" if cls_idx == pred else "  "
             lines.append(
-                f"  {marker} {self.CLASS_NAMES_KR[cls_idx]:10s} "
+                f"  {marker} {(self.CLASS_NAMES_KR[cls_idx] if cls_idx < len(self.CLASS_NAMES_KR) else '알 수 없음'):10s} "
                 f"확률 {probs[cls_idx]:5.1%} | "
                 f"찬성 {pro[cls_idx]:.0%} | "
                 f"반대 {con[cls_idx]:.0%}"
@@ -615,7 +631,7 @@ class GaitReasoningEngine(nn.Module):
             curr_top = F.softmax(trace[s][i], dim=-1).argmax().item()
             if prev_top != curr_top:
                 changes.append(
-                    f"  단계{s}: {self.CLASS_NAMES_KR[prev_top]} → {self.CLASS_NAMES_KR[curr_top]}"
+                    f"  단계{s}: {self.CLASS_NAMES_KR[prev_top] if prev_top < len(self.CLASS_NAMES_KR) else '알 수 없음'} → {self.CLASS_NAMES_KR[curr_top] if curr_top < len(self.CLASS_NAMES_KR) else '알 수 없음'}"
                 )
 
         if changes:
