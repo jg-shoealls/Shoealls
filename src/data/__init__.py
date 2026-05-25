@@ -1,4 +1,4 @@
-from .dataset import MultimodalGaitDataset
-from .har_dataset import HARWindowDataset, synthetic_har_dataset
-from .preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
-from .synthetic import generate_synthetic_dataset
+from .dataset import MultimodalGaitDataset as MultimodalGaitDataset
+from .har_dataset import HARWindowDataset as HARWindowDataset, synthetic_har_dataset as synthetic_har_dataset
+from .preprocessing import preprocess_imu as preprocess_imu, preprocess_pressure as preprocess_pressure, preprocess_skeleton as preprocess_skeleton
+from .synthetic import generate_synthetic_dataset as generate_synthetic_dataset
