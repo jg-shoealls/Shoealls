@@ -1,0 +1,3 @@
+## 2026-05-27 - [Optimize PyTorch nn.MultiheadAttention]
+**Learning:** PyTorch `nn.MultiheadAttention` computes attention weights by default even if unused, which incurs computation and memory allocation overheads, blocking optimized backends like FlashAttention. However, changing it where weights are unpacked into a named variable (even if locally unused) can cause regressions due to strict tuple unpacking expectations in Python.
+**Action:** Always set `need_weights=False` in PyTorch `nn.MultiheadAttention` calls when the attention weights are explicitly discarded with `_`, but avoid applying it blindly if the weights are unpacked into a named variable without careful verification of downstream usage.
