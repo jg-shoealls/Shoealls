@@ -1,0 +1,3 @@
+## 2025-05-30 - [PyTorch MultiheadAttention Memory Opt]
+**Learning:** PyTorch's `nn.MultiheadAttention` calculates and returns attention weights by default, which can cause significant memory allocation and computation overhead. In this codebase's CrossModalAttentionFusion and CrossAttentionBlock architectures, these attention weights are discarded (the second return value `_` is ignored).
+**Action:** Always set `need_weights=False` when using `nn.MultiheadAttention` and discarding the returned attention weights to allow PyTorch to use optimized attention backends like FlashAttention and save memory/computation.
