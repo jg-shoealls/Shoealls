@@ -16,10 +16,10 @@ from matplotlib import font_manager as fm
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
-from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
+from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS, REGION_GROUPS
 from .gait_profile import PersonalGaitProfiler, DeviationReport
 from .injury_risk import InjuryRiskEngine, InjuryRiskReport
-from .feedback import CorrektiveFeedbackGenerator
+from .feedback import CorrektiveFeedbackGenerator, PersonalizedFeedback
 from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
 from .common import get_feature_korean
 
@@ -186,9 +186,9 @@ def plot_zone_temporal(
 
     x = np.arange(len(zones))
     w = 0.35
-    ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
+    bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
                      edgecolor="white", label="평균 최고 압력")
-    ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
+    bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
                      edgecolor="white", label="최대 최고 압력")
 
     ax.set_yticks(range(len(zones)))
@@ -379,8 +379,6 @@ def plot_gait_profile_deviation(
     plot_metrics = []
     plot_labels = []
 
-    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
-
     for m in metrics:
         if m in session_features and m in baseline_means:
             plot_metrics.append(m)
@@ -447,7 +445,7 @@ def plot_trend_dashboard(
                            left=0.06, right=0.94, top=0.90, bottom=0.06,
                            hspace=0.4, wspace=0.3)
 
-    METRIC_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
+    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
 
     for idx, metric in enumerate(available):
         row = idx // ncols

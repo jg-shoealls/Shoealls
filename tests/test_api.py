@@ -4,6 +4,7 @@ FastAPI TestClient를 사용하여 실제 HTTP 레이어까지 검증합니다.
 """
 
 import pytest
+import numpy as np
 from fastapi.testclient import TestClient
 
 import sys

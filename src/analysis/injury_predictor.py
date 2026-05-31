@@ -9,7 +9,7 @@
 """
 
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .base_classifier import BaseGaitClassifier, TrainingMetrics
 from .common import severity_label, compute_derived_features
