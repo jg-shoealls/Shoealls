@@ -1,0 +1,3 @@
+## 2024-06-25 - FlashAttention Enabling in CrossModalAttentionFusion
+**Learning:** PyTorch's `nn.MultiheadAttention` computes attention weights by default, but this codebase frequently discards them (`attn_out, _ = ...`). If `need_weights=True`, PyTorch allocates memory for these weights and cannot use memory-efficient or FlashAttention backends.
+**Action:** When working with PyTorch attention, verify if the attention weights are actually consumed. If they are unused, add `need_weights=False` to the call to enable optimized fast-path SDPA, preventing unnecessary memory allocation and increasing compute efficiency. Do not apply this optimization when attention weights are explicitly unpacked into named variables like `cross_attn_weights` downstream.
