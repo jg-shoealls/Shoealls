@@ -13,7 +13,7 @@
 import torch
 import torch.nn as nn
 
-from .encoders import IMUEncoder, PressureEncoder, MagBaroEncoder
+from .encoders import IMUEncoder, PressureEncoder
 from .fusion import CrossModalAttentionFusion
 
 
@@ -85,15 +85,15 @@ class MultimodalGaitNet(nn.Module):
             dropout=pres_cfg["dropout"],
         )
 
-        # 지자기+기압 인코더 (mx,my,mz,heading,altitude — 5채널)
-        mb_cfg = model_cfg.get("mag_baro_encoder", {})
-        self.mag_baro_encoder = MagBaroEncoder(
-            in_channels=data_cfg.get("mag_baro_channels", 5),
-            conv_channels=mb_cfg.get("conv_channels"),
-            kernel_size=mb_cfg.get("kernel_size", 5),
-            lstm_hidden=embed_dim,
-            lstm_layers=mb_cfg.get("lstm_layers", 1),
-            dropout=mb_cfg.get("dropout", 0.1),
+        # 스켈레톤 인코더 (GCN)
+        skel_cfg = model_cfg.get("skeleton_encoder", {})
+        from .encoders import SkeletonEncoder
+        self.skel_encoder = SkeletonEncoder(
+            num_joints=data_cfg.get("skeleton_joints", 17),
+            in_channels=3,
+            embed_dim=embed_dim,
+            gcn_channels=skel_cfg.get("gcn_channels", [32, 64]),
+            dropout=skel_cfg.get("dropout", 0.1),
         )
 
         # 크로스 모달 어텐션 융합 (3 모달리티)
@@ -124,9 +124,9 @@ class MultimodalGaitNet(nn.Module):
         """분류기 직전의 융합된 특징 벡터를 추출합니다."""
         imu_feat  = self.imu_encoder(batch["imu"])
         pres_feat = self.pressure_encoder(batch["pressure"])
-        mb_feat   = self.mag_baro_encoder(batch["mag_baro"])
+        skel_feat = self.skel_encoder(batch["skeleton"])
 
-        return self.fusion([imu_feat, pres_feat, mb_feat])
+        return self.fusion([imu_feat, pres_feat, skel_feat])
 
     def get_num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())

@@ -127,7 +127,6 @@ class CrossModalEvidenceCollector(nn.Module):
             cross_support: (B, 3) 교차 검증 지지도
         """
         B = modality_features[0].size(0)
-        D = modality_features[0].size(2)
 
         # 모달리티별 요약
         summaries = torch.stack([f.mean(dim=1) for f in modality_features], dim=1)  # (B, 3, D)
@@ -221,7 +220,6 @@ class DifferentialDiagnosisChain(nn.Module):
             pro_scores: (B, num_classes) 찬성 근거 강도
             con_scores: (B, num_classes) 반대 근거 강도
         """
-        B = evidence_embedding.size(0)
 
         # 초기 가설: 프로토타입과의 유사도
         similarity = F.cosine_similarity(
@@ -381,12 +379,13 @@ class GaitReasoningEngine(nn.Module):
         report = engine.explain(result)  # 한글 추론 리포트 생성
     """
 
+    from src.analysis.disease_classifier import DISEASE_LABELS
     ANOMALY_NAMES_KR = [
         "좌우 비대칭", "리듬 불규칙", "진폭 이상", "주파수 이상",
         "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
     ]
 
-    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+    CLASS_NAMES_KR = {k: v[1] for k, v in DISEASE_LABELS.items()}
 
     MODALITY_NAMES_KR = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 

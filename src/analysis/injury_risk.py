@@ -3,7 +3,7 @@
 import numpy as np
 from dataclasses import dataclass
 
-from .foot_zones import FootZoneAnalyzer, FootAnalysisResult, REGION_GROUPS
+from .foot_zones import FootZoneAnalyzer, FootAnalysisResult
 from .common import severity_label_4level, linear_risk_score
 
 
@@ -93,7 +93,6 @@ class InjuryRiskEngine:
     def _compute_aggregate_metrics(self, frames: list[FootAnalysisResult], analysis: dict) -> dict:
         """Compute aggregate metrics across all frames."""
         total_pressures = [f.total_pressure for f in frames]
-        avg_total = np.mean(total_pressures) if total_pressures else 1.0
 
         # Zone pressure ratios
         zone_totals = {}
