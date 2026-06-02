@@ -12,9 +12,7 @@ Run:
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from fastapi import FastAPI, HTTPException
 
 from .schemas import (
     ClassifyRequest,
