@@ -69,43 +69,43 @@ class TestCrossModalEvidence:
 
 class TestDifferentialDiagnosis:
     def test_output_shapes(self):
-        module = DifferentialDiagnosisChain(embed_dim=128, num_classes=4, num_reasoning_steps=3)
+        module = DifferentialDiagnosisChain(embed_dim=128, num_classes=11, num_reasoning_steps=3)
         evidence = torch.randn(2, 128)
         context = torch.randn(2, 128)
 
         out = module(evidence, context)
-        assert out["hypothesis_logits"].shape == (2, 4)
+        assert out["hypothesis_logits"].shape == (2, 11)
         assert len(out["reasoning_trace"]) == 4  # initial + 3 steps
-        assert out["pro_scores"].shape == (2, 4)
-        assert out["con_scores"].shape == (2, 4)
+        assert out["pro_scores"].shape == (2, 11)
+        assert out["con_scores"].shape == (2, 11)
 
 
 class TestConfidenceCalibrator:
     def test_output_shapes(self):
-        module = ConfidenceCalibrator(num_classes=4, num_reasoning_steps=3)
-        trace = [torch.randn(2, 4) for _ in range(4)]
+        module = ConfidenceCalibrator(num_classes=11, num_reasoning_steps=3)
+        trace = [torch.randn(2, 11) for _ in range(4)]
 
         out = module(
-            hypothesis_logits=torch.randn(2, 4),
-            pro_scores=torch.rand(2, 4),
-            con_scores=torch.rand(2, 4),
+            hypothesis_logits=torch.randn(2, 11),
+            pro_scores=torch.rand(2, 11),
+            con_scores=torch.rand(2, 11),
             evidence_strength=torch.rand(2),
             reasoning_trace=trace,
             cross_support_mean=torch.rand(2),
         )
 
-        assert out["calibrated_logits"].shape == (2, 4)
-        assert out["calibrated_probs"].shape == (2, 4)
+        assert out["calibrated_logits"].shape == (2, 11)
+        assert out["calibrated_probs"].shape == (2, 11)
         assert out["uncertainty"].shape == (2,)
 
     def test_probs_sum_to_one(self):
-        module = ConfidenceCalibrator(num_classes=4, num_reasoning_steps=3)
-        trace = [torch.randn(2, 4) for _ in range(4)]
+        module = ConfidenceCalibrator(num_classes=11, num_reasoning_steps=3)
+        trace = [torch.randn(2, 11) for _ in range(4)]
 
         out = module(
-            hypothesis_logits=torch.randn(2, 4),
-            pro_scores=torch.rand(2, 4),
-            con_scores=torch.rand(2, 4),
+            hypothesis_logits=torch.randn(2, 11),
+            pro_scores=torch.rand(2, 11),
+            con_scores=torch.rand(2, 11),
             evidence_strength=torch.rand(2),
             reasoning_trace=trace,
             cross_support_mean=torch.rand(2),
@@ -115,13 +115,13 @@ class TestConfidenceCalibrator:
         assert torch.allclose(sums, torch.ones(2), atol=1e-5)
 
     def test_uncertainty_bounded(self):
-        module = ConfidenceCalibrator(num_classes=4, num_reasoning_steps=3)
-        trace = [torch.randn(2, 4) for _ in range(4)]
+        module = ConfidenceCalibrator(num_classes=11, num_reasoning_steps=3)
+        trace = [torch.randn(2, 11) for _ in range(4)]
 
         out = module(
-            hypothesis_logits=torch.randn(2, 4),
-            pro_scores=torch.rand(2, 4),
-            con_scores=torch.rand(2, 4),
+            hypothesis_logits=torch.randn(2, 11),
+            pro_scores=torch.rand(2, 11),
+            con_scores=torch.rand(2, 11),
             evidence_strength=torch.rand(2),
             reasoning_trace=trace,
             cross_support_mean=torch.rand(2),
@@ -147,7 +147,7 @@ class TestGaitReasoningEngine:
         assert "diagnosis" in result
 
         assert result["prediction"].shape == (2,)
-        assert result["calibrated_probs"].shape == (2, 4)
+        assert result["calibrated_probs"].shape == (2, 11)
 
     def test_explain_output(self):
         config = load_config()

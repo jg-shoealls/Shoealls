@@ -22,12 +22,9 @@ from .schemas import (
 
 _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"
 
-GAIT_CLASS_NAMES = {
-    0: ("normal", "정상 보행"),
-    1: ("antalgic", "절뚝거림"),
-    2: ("ataxic", "운동실조"),
-    3: ("parkinsonian", "파킨슨"),
-}
+from src.analysis.disease_classifier import DISEASE_LABELS
+
+GAIT_CLASS_NAMES = DISEASE_LABELS
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 

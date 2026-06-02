@@ -381,12 +381,13 @@ class GaitReasoningEngine(nn.Module):
         report = engine.explain(result)  # 한글 추론 리포트 생성
     """
 
+    from src.analysis.disease_classifier import DISEASE_LABELS
     ANOMALY_NAMES_KR = [
         "좌우 비대칭", "리듬 불규칙", "진폭 이상", "주파수 이상",
         "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
     ]
 
-    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+    CLASS_NAMES_KR = {k: v[1] for k, v in DISEASE_LABELS.items()}
 
     MODALITY_NAMES_KR = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
