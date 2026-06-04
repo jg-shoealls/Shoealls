@@ -69,6 +69,8 @@ class CrossModalAttentionFusion(nn.Module):
         combined = torch.cat(enriched, dim=1)  # (B, sum(T_i), D)
 
         # Self-attention over combined
+        # Bolt Optimization: need_weights=False to save memory/computation
+        # and enable FlashAttention since weights are discarded.
         attn_out, _ = self.self_attention(
             combined, combined, combined, need_weights=False
         )
@@ -104,6 +106,8 @@ class CrossAttentionBlock(nn.Module):
 
     def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         # Cross-attention: query attends to context
+        # Bolt Optimization: need_weights=False to save memory/computation
+        # and enable FlashAttention since weights are discarded.
         attn_out, _ = self.cross_attn(
             query, context, context, need_weights=False
         )
