@@ -1,0 +1,3 @@
+## 2024-06-25 - Avoid Computing Unused Attention Weights
+**Learning:** PyTorch's `nn.MultiheadAttention` computes attention weights by default (`need_weights=True`), which consumes unnecessary computation and memory allocation. When the returned attention weights are discarded (unpacked to `_`), computing them provides no value and prevents the use of optimized attention backends like FlashAttention. However, we must be careful not to unpack a `None` value if the output weights are actually named and used elsewhere.
+**Action:** Always set `need_weights=False` on `nn.MultiheadAttention` calls in this codebase when the resulting weights are explicitly unpacked to `_` and ignored, but be extremely careful to verify they are truly discarded.
