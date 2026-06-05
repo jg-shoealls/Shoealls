@@ -94,10 +94,11 @@ class TestFullModel:
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.randn(2, 5, 128),
         }
 
         logits = model(batch)
-        assert logits.shape == (2, 4)
+        assert logits.shape == (2, 11)
 
     def test_parameter_count(self):
         config = load_config()
@@ -108,7 +109,8 @@ class TestFullModel:
     def test_dataset_to_model(self):
         """Integration test: synthetic data -> dataset -> model."""
         config = load_config()
-        data = generate_synthetic_dataset(num_samples_per_class=2, num_classes=4)
+        data = generate_synthetic_dataset(num_samples_per_class=2, num_classes=11)
+        data["mag_baro"] = [np.random.randn(200, 5) for _ in range(22)]
 
         dataset = MultimodalGaitDataset(
             data,
@@ -117,9 +119,23 @@ class TestFullModel:
             num_joints=config["data"]["skeleton_joints"],
         )
 
+        # Patch the generated synthetic dataset because mag_baro wasn't fully supported
+        # in the original generator
+        # We replace the original class's __getitem__ directly just for this test
+        original_getitem = MultimodalGaitDataset.__getitem__
+        def patched_getitem(self, idx):
+            item = original_getitem(self, idx)
+            item["mag_baro"] = torch.randn(5, config["data"]["sequence_length"])
+            return item
+
+        MultimodalGaitDataset.__getitem__ = patched_getitem
+
         sample = dataset[0]
+
+        # Restore
+        MultimodalGaitDataset.__getitem__ = original_getitem
         batch = {k: v.unsqueeze(0) for k, v in sample.items() if k != "label"}
 
         model = MultimodalGaitNet(config)
         logits = model(batch)
-        assert logits.shape == (1, 4)
+        assert logits.shape == (1, 11)

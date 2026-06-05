@@ -17,6 +17,10 @@ class SensorData(BaseModel):
     skeleton: list[list[list[float]]] = Field(
         description="Skeleton joint data [seq_len, 17, 3] — (x,y,z) per joint"
     )
+    mag_baro: list[list[float]] = Field(
+        description="MagBaro data [seq_len, 5] — mx, my, mz, heading, altitude",
+        default=[],
+    )
 
 
 class GaitFeatures(BaseModel):

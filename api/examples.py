@@ -102,7 +102,7 @@ def generate_sample_sensor_data(
         seed: 랜덤 시드
 
     Returns:
-        {"imu": [...], "pressure": [...], "skeleton": [...]}
+        {"imu": [...], "pressure": [...], "skeleton": [...], "mag_baro": [...]}
     """
     rng = np.random.default_rng(seed + gait_class)
     t = np.linspace(0, seq_len / 30.0, seq_len)
