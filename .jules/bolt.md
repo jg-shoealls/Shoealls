@@ -1,0 +1,3 @@
+## 2024-05-24 - PyTorch MultiheadAttention Optimization
+**Learning:** By default, PyTorch's `nn.MultiheadAttention` computes and returns attention weights, which prevents the usage of highly optimized kernels like FlashAttention or memory-efficient SDPA under the hood if those weights are then discarded.
+**Action:** When calling `nn.MultiheadAttention.forward()` where the returned attention weights are discarded (assigned to `_`), explicitly set `need_weights=False` in the function call to prevent unnecessary computation, memory allocation, and to unlock optimized attention backends. Always be careful to inspect the assignment logic to ensure the weights are truly discarded and not saved to a variable.
