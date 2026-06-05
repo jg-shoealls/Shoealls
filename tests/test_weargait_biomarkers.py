@@ -73,7 +73,7 @@ def test_summarize_biomarkers():
 
 
 def test_dataset_returns_biomarker_tensor():
-    vector = biomarker_vector(_imu_window(), _pressure_window())
+    biomarker_vector(_imu_window(), _pressure_window())
     # WearGaitDataset currently only takes 3 parameters (imu, pressure, labels).
     # If the user intends for biomarkers to be a feature of the dataset in the future,
     # they would add it. For now, testing the vector generation separately suffices,

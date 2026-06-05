@@ -304,7 +304,7 @@ def plot_summary_dashboard(
     ax = fig.add_subplot(gs[0, 2])
     cm = confusion_matrix(y_true, y_pred)
     cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
-    im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
+    ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
     ax.set_xticks(range(len(class_names)))
     ax.set_yticks(range(len(class_names)))
     ax.set_xticklabels([n[:6] for n in class_names], rotation=45, ha="right")
