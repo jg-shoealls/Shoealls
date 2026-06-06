@@ -1,0 +1,3 @@
+## 2024-06-06 - [PyTorch Attention Optimization]
+**Learning:** In PyTorch's `nn.MultiheadAttention`, calculating and returning attention weights incurs unnecessary computation and memory allocation when the returned weights are just discarded (unpacked as `_`).
+**Action:** Always set `need_weights=False` when calling `nn.MultiheadAttention` unless the attention weights are explicitly required for downstream tasks. This enables optimized backends like FlashAttention to be used by PyTorch under the hood.
