@@ -1,0 +1,3 @@
+## 2025-05-18 - Optimize PyTorch MultiheadAttention for FlashAttention
+**Learning:** PyTorch's `nn.MultiheadAttention` calculates and returns attention weights by default, which prevents the use of optimized backends like FlashAttention and increases computation/memory allocation.
+**Action:** Always set `need_weights=False` when calling `nn.MultiheadAttention` if the attention weights are not explicitly used (discarded into `_`), to enable hardware-accelerated memory-efficient attention paths.
