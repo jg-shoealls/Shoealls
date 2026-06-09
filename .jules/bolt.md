@@ -1,0 +1,3 @@
+## 2024-05-18 - [Optimize PyTorch MultiheadAttention for FlashAttention compatibility]
+**Learning:** By default, `nn.MultiheadAttention` computes and returns attention weights, which prevents PyTorch from using highly optimized backends like FlashAttention. If the code discards the weights (e.g., `attn_out, _ = ...`), this is pure overhead.
+**Action:** Always set `need_weights=False` in `nn.MultiheadAttention` forward calls when the attention weights are explicitly discarded (`_`). Ensure, however, that you do NOT apply this if the returned weights are actually captured into a variable, to avoid hidden regressions from a `None` return.
