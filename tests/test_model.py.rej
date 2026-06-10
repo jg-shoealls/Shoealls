@@ -1,0 +1,8 @@
+--- tests/test_model.py
++++ tests/test_model.py
+@@ -122,5 +122,5 @@
+
+         model = MultimodalGaitNet(config)
+         logits = model(batch)
+-        assert logits.shape == (1, 4)
++        assert logits.shape == (1, 11)
