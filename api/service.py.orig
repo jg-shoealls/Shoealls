@@ -27,13 +27,6 @@ GAIT_CLASS_NAMES = {
     1: ("antalgic", "절뚝거림"),
     2: ("ataxic", "운동실조"),
     3: ("parkinsonian", "파킨슨"),
-    4: ("dementia", "치매성 보행"),
-    5: ("stroke", "뇌졸중 후유증"),
-    6: ("neuropathy", "말초신경병증"),
-    7: ("orthopedic", "정형외과적 이상"),
-    8: ("vestibular", "전정기관 이상"),
-    9: ("cerebellar", "소뇌성 운동실조"),
-    10: ("other", "기타 이상 보행")
 }
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]

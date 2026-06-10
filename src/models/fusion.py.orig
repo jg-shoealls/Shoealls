@@ -56,15 +56,11 @@ class CrossModalAttentionFusion(nn.Module):
             enriched.append(feat + mod_emb.expand(feat.size(0), feat.size(1), -1))
 
         # Cross-modal attention: each modality attends to concatenation of others
-        actual_modalities = len(enriched)
         for layer in self.cross_attention_layers:
             updated = []
-            for i in range(actual_modalities):
+            for i in range(self.num_modalities):
                 # Concatenate all other modalities as context
-                context_parts = [enriched[j] for j in range(actual_modalities) if j != i]
-                if not context_parts:
-                    # Fallback if there is only 1 modality provided (e.g. mag_baro missing)
-                    context_parts = [enriched[i]]
+                context_parts = [enriched[j] for j in range(self.num_modalities) if j != i]
                 context = torch.cat(context_parts, dim=1)
                 updated.append(layer(enriched[i], context))
             enriched = updated
