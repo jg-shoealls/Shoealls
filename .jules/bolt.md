@@ -5,3 +5,7 @@
 ## 2024-05-24 - [API mag_baro KeyError in MultimodalGaitNet]
 **Learning:** A `KeyError: 'mag_baro'` inside `src/models/multimodal_gait_net.py` was causing CI failures because the API and tests did not supply the `mag_baro` feature but supplied `skeleton` instead. This was because `mag_baro_encoder` was incorrectly put where `skeleton_encoder` was expected in `MultimodalGaitNet`.
 **Action:** Replaced `mag_baro_encoder` with `skeleton_encoder` in `MultimodalGaitNet` to align with the expected 3 modalities (IMU, pressure, skeleton). Also updated the `GAIT_CLASS_NAMES` mappings to handle 11 target classes as specified in the configurations.
+
+## 2024-05-24 - [Linting errors fixed]
+**Learning:** Some files had unused variables and imports, causing the `ruff` lint check to fail in CI.
+**Action:** Used `ruff check` and manually fixed unused variables `total_weight`, `avg_total`, `bars1`, `bars2`, and fixed undefined names `_EXTRA_KR` and `METRIC_KR` using `get_feature_korean`.
