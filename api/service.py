@@ -27,6 +27,13 @@ GAIT_CLASS_NAMES = {
     1: ("antalgic", "절뚝거림"),
     2: ("ataxic", "운동실조"),
     3: ("parkinsonian", "파킨슨"),
+    4: ("spastic", "경직성 보행"),
+    5: ("steppage", "계단 보행"),
+    6: ("waddling", "발처짐 보행"),
+    7: ("trendelenburg", "오리걸음"),
+    8: ("hemiplegic", "편마비성 보행"),
+    9: ("diplegic", "양마비성 보행"),
+    10: ("neuropathic", "신경병증 보행"),
 }
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]

@@ -3,7 +3,7 @@
 신발에서만 추출 가능한 3개 모달리티:
     IMU (발목)     -> IMUEncoder (1D-CNN + BiLSTM)   -> 발 키네마틱스
     족저압 (인솔)  -> PressureEncoder (2D-CNN)        -> 압력 분포
-    지자기+기압    -> MagBaroEncoder (1D-CNN + LSTM)  -> FOG/발지상고
+    지자기+기압    -> SkeletonEncoder (1D-CNN + LSTM)  -> FOG/발지상고
                                                           |
                           Cross-Modal Attention Fusion <--+
                                     |
@@ -13,7 +13,7 @@
 import torch
 import torch.nn as nn
 
-from .encoders import IMUEncoder, PressureEncoder, MagBaroEncoder
+from .encoders import IMUEncoder, PressureEncoder, SkeletonEncoder
 from .fusion import CrossModalAttentionFusion
 
 
@@ -86,14 +86,12 @@ class MultimodalGaitNet(nn.Module):
         )
 
         # 지자기+기압 인코더 (mx,my,mz,heading,altitude — 5채널)
-        mb_cfg = model_cfg.get("mag_baro_encoder", {})
-        self.mag_baro_encoder = MagBaroEncoder(
-            in_channels=data_cfg.get("mag_baro_channels", 5),
-            conv_channels=mb_cfg.get("conv_channels"),
-            kernel_size=mb_cfg.get("kernel_size", 5),
-            lstm_hidden=embed_dim,
-            lstm_layers=mb_cfg.get("lstm_layers", 1),
-            dropout=mb_cfg.get("dropout", 0.1),
+        sk_cfg = model_cfg.get("skeleton_encoder", {})
+        self.skeleton_encoder = SkeletonEncoder(
+            in_channels=data_cfg.get("skeleton_channels", 3),
+            num_joints=data_cfg.get("skeleton_joints", 17),
+            embed_dim=embed_dim,
+            dropout=sk_cfg.get("dropout", 0.1),
         )
 
         # 크로스 모달 어텐션 융합 (3 모달리티)
@@ -124,9 +122,9 @@ class MultimodalGaitNet(nn.Module):
         """분류기 직전의 융합된 특징 벡터를 추출합니다."""
         imu_feat  = self.imu_encoder(batch["imu"])
         pres_feat = self.pressure_encoder(batch["pressure"])
-        mb_feat   = self.mag_baro_encoder(batch["mag_baro"])
+        sk_feat   = self.skeleton_encoder(batch["skeleton"])
 
-        return self.fusion([imu_feat, pres_feat, mb_feat])
+        return self.fusion([imu_feat, pres_feat, sk_feat])
 
     def get_num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
