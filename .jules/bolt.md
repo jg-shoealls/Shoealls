@@ -1,0 +1,3 @@
+## 2024-05-24 - [PyTorch nn.MultiheadAttention Optimization]
+**Learning:** Adding `need_weights=False` to `nn.MultiheadAttention` calls significantly reduces compute and memory overhead (observed drop from ~1.9s to ~1.2s for 100 iterations on CPU) when attention weights are discarded (assigned to `_`). However, care must be taken not to apply this optimization if the weights are unpacked into named variables, as returning `None` can cause unexpected regressions down the line.
+**Action:** Always check how the second return value of `nn.MultiheadAttention` is used. If it's explicitly ignored with `_`, append `need_weights=False`.
