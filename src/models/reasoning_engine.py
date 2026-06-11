@@ -183,7 +183,7 @@ class DifferentialDiagnosisChain(nn.Module):
     def __init__(
         self,
         embed_dim: int = 128,
-        num_classes: int = 4,
+        num_classes: int = 11,
         num_reasoning_steps: int = 3,
     ):
         super().__init__()
@@ -386,7 +386,12 @@ class GaitReasoningEngine(nn.Module):
         "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
     ]
 
-    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+    CLASS_NAMES_KR = [
+        "정상 보행", "절뚝거림", "운동실조", "파킨슨",
+        "경직성 보행", "계단 보행", "발처짐 보행",
+        "오리걸음", "편마비성 보행", "양마비성 보행",
+        "신경병증 보행"
+    ]
 
     MODALITY_NAMES_KR = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
