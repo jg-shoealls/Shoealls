@@ -1,0 +1,3 @@
+## 2024-06-16 - [FlashAttention Enablement]
+**Learning:** PyTorch `nn.MultiheadAttention` calls in models like `CrossModalAttentionFusion` and `CrossModalEvidenceCollector` calculate and return attention weights by default (`need_weights=True`), which forces an O(N^2) memory allocation. If the weights are discarded (`attn_out, _ = ...`), this prevents PyTorch from using optimized attention backends (like FlashAttention or Memory Efficient Attention).
+**Action:** When working with `nn.MultiheadAttention`, always set `need_weights=False` if the second return value is unused, and update any unused named assignments (e.g. `cross_attn_weights`) to `_` to be safe and clear.
