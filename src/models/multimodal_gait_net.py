@@ -86,24 +86,27 @@ class MultimodalGaitNet(nn.Module):
         )
 
         # 지자기+기압 인코더 (mx,my,mz,heading,altitude — 5채널)
-        mb_cfg = model_cfg.get("mag_baro_encoder", {})
-        self.mag_baro_encoder = MagBaroEncoder(
-            in_channels=data_cfg.get("mag_baro_channels", 5),
-            conv_channels=mb_cfg.get("conv_channels"),
-            kernel_size=mb_cfg.get("kernel_size", 5),
-            lstm_hidden=embed_dim,
-            lstm_layers=mb_cfg.get("lstm_layers", 1),
-            dropout=mb_cfg.get("dropout", 0.1),
-        )
+        self.use_mag_baro = "mag_baro_encoder" in model_cfg
+        if self.use_mag_baro:
+            mb_cfg = model_cfg.get("mag_baro_encoder", {})
+            self.mag_baro_encoder = MagBaroEncoder(
+                in_channels=data_cfg.get("mag_baro_channels", 5),
+                conv_channels=mb_cfg.get("conv_channels"),
+                kernel_size=mb_cfg.get("kernel_size", 5),
+                lstm_hidden=embed_dim,
+                lstm_layers=mb_cfg.get("lstm_layers", 1),
+                dropout=mb_cfg.get("dropout", 0.1),
+            )
 
-        # 크로스 모달 어텐션 융합 (3 모달리티)
+        # 크로스 모달 어텐션 융합
         fusion_cfg = model_cfg["fusion"]
+        num_modalities = 3 if self.use_mag_baro else 2
         self.fusion = CrossModalAttentionFusion(
             embed_dim=embed_dim,
             num_heads=fusion_cfg["num_heads"],
             ff_dim=fusion_cfg["ff_dim"],
             num_layers=fusion_cfg["num_layers"],
-            num_modalities=3,
+            num_modalities=num_modalities,
             dropout=fusion_cfg["dropout"],
         )
 
@@ -124,9 +127,12 @@ class MultimodalGaitNet(nn.Module):
         """분류기 직전의 융합된 특징 벡터를 추출합니다."""
         imu_feat  = self.imu_encoder(batch["imu"])
         pres_feat = self.pressure_encoder(batch["pressure"])
-        mb_feat   = self.mag_baro_encoder(batch["mag_baro"])
 
-        return self.fusion([imu_feat, pres_feat, mb_feat])
+        if self.use_mag_baro and "mag_baro" in batch:
+            mb_feat = self.mag_baro_encoder(batch["mag_baro"])
+            return self.fusion([imu_feat, pres_feat, mb_feat])
+
+        return self.fusion([imu_feat, pres_feat])
 
     def get_num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
