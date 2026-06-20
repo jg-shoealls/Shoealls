@@ -24,9 +24,16 @@ _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"
 
 GAIT_CLASS_NAMES = {
     0: ("normal", "정상 보행"),
-    1: ("antalgic", "절뚝거림"),
-    2: ("ataxic", "운동실조"),
-    3: ("parkinsonian", "파킨슨"),
+    1: ("parkinsons", "파킨슨병"),
+    2: ("stroke", "뇌졸중"),
+    3: ("diabetic_neuropathy", "당뇨 신경병증"),
+    4: ("cerebellar_ataxia", "소뇌 실조증"),
+    5: ("osteoarthritis", "골관절염"),
+    6: ("dementia", "치매 (알츠하이머)"),
+    7: ("cerebral_hemorrhage", "뇌출혈"),
+    8: ("cerebral_infarction", "뇌경색"),
+    9: ("disc_herniation", "추간판 탈출증"),
+    10: ("rheumatoid_arthritis", "류마티스 관절염"),
 }
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
