@@ -1,0 +1,3 @@
+## 2024-05-18 - Avoid Memory Allocation in MultiheadAttention
+**Learning:** PyTorch's `nn.MultiheadAttention` allocates memory for and computes attention weights by default. If the outputs are unused and just assigned to `_` or an unused variable, setting `need_weights=False` is an effective optimization that explicitly signals to PyTorch to use faster, fused attention implementations under the hood without materializing the matrix.
+**Action:** Always verify if attention weights are used downstream in this repository, and default to `need_weights=False` when calling `MultiheadAttention` unless explicitly needed.

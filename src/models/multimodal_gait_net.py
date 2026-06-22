@@ -124,7 +124,17 @@ class MultimodalGaitNet(nn.Module):
         """분류기 직전의 융합된 특징 벡터를 추출합니다."""
         imu_feat  = self.imu_encoder(batch["imu"])
         pres_feat = self.pressure_encoder(batch["pressure"])
-        mb_feat   = self.mag_baro_encoder(batch["mag_baro"])
+
+        # mag_baro가 없는 경우 0으로 채운 텐서 생성
+        if "mag_baro" in batch:
+            mb_feat = self.mag_baro_encoder(batch["mag_baro"])
+        else:
+            B = imu_feat.size(0)
+            device = imu_feat.device
+            T = batch["imu"].size(2) if len(batch["imu"].shape) > 2 else 128
+            in_channels = self.mag_baro_encoder.cnn[0].in_channels if hasattr(self.mag_baro_encoder, "cnn") else 5
+            dummy_mb = torch.zeros(B, in_channels, T, device=device)
+            mb_feat = self.mag_baro_encoder(dummy_mb)
 
         return self.fusion([imu_feat, pres_feat, mb_feat])
 
