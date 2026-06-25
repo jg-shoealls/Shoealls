@@ -16,10 +16,10 @@ from matplotlib import font_manager as fm
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
-from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS, REGION_GROUPS
+from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
 from .gait_profile import PersonalGaitProfiler, DeviationReport
 from .injury_risk import InjuryRiskEngine, InjuryRiskReport
-from .feedback import CorrektiveFeedbackGenerator, PersonalizedFeedback
+from .feedback import CorrektiveFeedbackGenerator
 from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
 from .common import get_feature_korean
 
@@ -382,7 +382,7 @@ def plot_gait_profile_deviation(
     for m in metrics:
         if m in session_features and m in baseline_means:
             plot_metrics.append(m)
-            plot_labels.append(_EXTRA_KR.get(m, get_feature_korean(m)))
+            plot_labels.append(get_feature_korean(m))
             current_vals.append(session_features[m])
             baseline_vals.append(baseline_means[m])
 
@@ -479,7 +479,7 @@ def plot_trend_dashboard(
         ax.plot(x_fit, y_fit, "--", color=color, linewidth=1.5, alpha=0.5)
 
         # Annotation
-        kr_name = METRIC_KR.get(metric, metric)
+        kr_name = get_feature_korean(metric)
         direction_kr = {"improving": "개선", "worsening": "악화", "stable": "안정", "changing": "변화"}.get(direction, "")
         r2 = t["r_squared"]
 

@@ -133,6 +133,7 @@ class CrossModalEvidenceCollector(nn.Module):
         summaries = torch.stack([f.mean(dim=1) for f in modality_features], dim=1)  # (B, 3, D)
 
         # 교차 검증: 각 모달리티가 다른 모달리티를 참조
+        # Optimization: set need_weights=False to prevent unnecessary memory allocation for attention weights
         cross_out, _ = self.cross_verify(
             summaries, summaries, summaries, need_weights=False
         )
@@ -386,7 +387,7 @@ class GaitReasoningEngine(nn.Module):
         "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
     ]
 
-    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨", "클래스 4", "클래스 5", "클래스 6", "클래스 7", "클래스 8", "클래스 9", "클래스 10"]
 
     MODALITY_NAMES_KR = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
 
