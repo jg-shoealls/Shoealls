@@ -4,17 +4,17 @@ import numpy as np
 
 
 def preprocess_imu(data: np.ndarray, target_length: int = 128) -> np.ndarray:
-    """Preprocess IMU sensor data (accelerometer + gyroscope).
+    """Preprocess 1D time-series data like IMU or Mag/Baro.
 
     Args:
-        data: Raw IMU data of shape (T, 6) - [ax, ay, az, gx, gy, gz]
+        data: Raw data of shape (T, C).
         target_length: Target sequence length after resampling.
 
     Returns:
-        Preprocessed IMU data of shape (6, target_length).
+        Preprocessed data of shape (C, target_length).
     """
-    if data.ndim != 2 or data.shape[1] != 6:
-        raise ValueError(f"Expected IMU data shape (T, 6), got {data.shape}")
+    if data.ndim != 2:
+        raise ValueError(f"Expected 1D time-series data shape (T, C), got {data.shape}")
 
     # Resample to target length
     from scipy.signal import resample

@@ -26,6 +26,7 @@ class MultimodalGaitDataset(Dataset):
         self.imu_data = data_dict["imu"]
         self.pressure_data = data_dict["pressure"]
         self.skeleton_data = data_dict["skeleton"]
+        self.mag_baro_data = data_dict.get("mag_baro", None)
         self.labels = data_dict["labels"]
         self.sequence_length = sequence_length
         self.grid_size = grid_size
@@ -44,9 +45,17 @@ class MultimodalGaitDataset(Dataset):
         )
         label = self.labels[idx]
 
-        return {
+        item = {
             "imu": torch.from_numpy(imu),
             "pressure": torch.from_numpy(pressure),
             "skeleton": torch.from_numpy(skeleton),
             "label": torch.tensor(label, dtype=torch.long),
         }
+
+        if self.mag_baro_data is not None:
+            mb = preprocess_imu(self.mag_baro_data[idx], self.sequence_length)
+            item["mag_baro"] = torch.from_numpy(mb)
+        else:
+            item["mag_baro"] = torch.zeros((5, self.sequence_length), dtype=torch.float32)
+
+        return item
