@@ -222,10 +222,14 @@ def generate_synthetic_dataset(
             skeleton_list.append(generate_synthetic_skeleton(n, class_idx, num_joints, rng))
             labels.append(class_idx)
 
+    # Generate dummy mag_baro data (5 channels: mx, my, mz, heading, altitude)
+    mag_baro_list = [np.zeros((len(imu), 5), dtype=np.float32) for imu in imu_list]
+
     return {
         "imu": imu_list,
         "pressure": pressure_list,
         "skeleton": skeleton_list,
+        "mag_baro": mag_baro_list,
         "labels": np.array(labels, dtype=np.int64),
         "class_names": CLASS_NAMES[:num_classes],
     }
