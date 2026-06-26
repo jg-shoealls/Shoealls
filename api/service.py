@@ -27,6 +27,13 @@ GAIT_CLASS_NAMES = {
     1: ("antalgic", "절뚝거림"),
     2: ("ataxic", "운동실조"),
     3: ("parkinsonian", "파킨슨"),
+    4: ("class_4", "클래스 4"),
+    5: ("class_5", "클래스 5"),
+    6: ("class_6", "클래스 6"),
+    7: ("class_7", "클래스 7"),
+    8: ("class_8", "클래스 8"),
+    9: ("class_9", "클래스 9"),
+    10: ("class_10", "클래스 10"),
 }
 
 MODALITY_NAMES = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
@@ -74,7 +81,9 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
     skeleton_proc = preprocess_skeleton(skeleton_np, seq_len, n_joints)  # (3, T, J)
     skeleton_t = torch.from_numpy(skeleton_proc).unsqueeze(0)            # (1, 3, T, J)
 
-    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t}
+    # mag_baro dummy injection to satisfy MultimodalGaitNet
+    mag_baro_t = torch.zeros(1, 5, seq_len)
+    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t, "mag_baro": mag_baro_t}
 
 
 def _features_to_dict(features: GaitFeatures) -> dict:
