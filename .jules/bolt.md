@@ -1,0 +1,3 @@
+## 2025-02-28 - PyTorch MultiheadAttention Optimization
+**Learning:** PyTorch's `nn.MultiheadAttention` inherently computes and returns attention weights alongside the output. In this repository's multi-modal fusion architecture (e.g., `src/models/fusion.py`, `src/models/reasoning_engine.py`), these returned weights are often explicitly unpacked into variables (like `cross_attn_weights` or `_`) but never actually used downstream.
+**Action:** Always check downstream usage of attention weights when reviewing PyTorch models. Set `need_weights=False` if they are truly unused, as it prevents unnecessary calculation and memory allocation, enabling faster and leaner execution (and unlocking optimized attention backends if applicable).
