@@ -22,6 +22,12 @@ from api.examples import (
 @pytest.fixture(scope="module")
 def client():
     """TestClient는 lifespan(warmup)까지 실행합니다."""
+    # Ensure mock models have expected number of classes to prevent KeyError in GAIT_CLASS_NAMES
+    from api.main import get_service
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
     with TestClient(app) as c:
         yield c
 
