@@ -16,10 +16,10 @@ from matplotlib import font_manager as fm
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
-from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS, REGION_GROUPS
+from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
 from .gait_profile import PersonalGaitProfiler, DeviationReport
 from .injury_risk import InjuryRiskEngine, InjuryRiskReport
-from .feedback import CorrektiveFeedbackGenerator, PersonalizedFeedback
+from .feedback import CorrektiveFeedbackGenerator
 from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
 from .common import get_feature_korean
 
@@ -186,9 +186,9 @@ def plot_zone_temporal(
 
     x = np.arange(len(zones))
     w = 0.35
-    bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
+    ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
                      edgecolor="white", label="평균 최고 압력")
-    bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
+    ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
                      edgecolor="white", label="최대 최고 압력")
 
     ax.set_yticks(range(len(zones)))

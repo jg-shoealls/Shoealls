@@ -94,10 +94,11 @@ class TestFullModel:
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.randn(2, 5, 128), # dummy injection
         }
 
         logits = model(batch)
-        assert logits.shape == (2, 4)
+        assert logits.shape == (2, config["data"]["num_classes"])
 
     def test_parameter_count(self):
         config = load_config()
@@ -119,7 +120,9 @@ class TestFullModel:
 
         sample = dataset[0]
         batch = {k: v.unsqueeze(0) for k, v in sample.items() if k != "label"}
+        if "mag_baro" not in batch:
+            batch["mag_baro"] = torch.randn(1, 5, config["data"]["sequence_length"])
 
         model = MultimodalGaitNet(config)
         logits = model(batch)
-        assert logits.shape == (1, 4)
+        assert logits.shape == (1, config["data"]["num_classes"])
