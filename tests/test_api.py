@@ -19,9 +19,16 @@ from api.examples import (
 )
 
 
+from api.service import get_service
+
 @pytest.fixture(scope="module")
 def client():
-    """TestClient는 lifespan(warmup)까지 실행합니다."""
+    """TestClient는 lifespan(warmup)까지 실행합니다. dummy fallback 방지."""
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
+
     with TestClient(app) as c:
         yield c
 

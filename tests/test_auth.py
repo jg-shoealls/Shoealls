@@ -768,6 +768,8 @@ def _classify_body():
     }
 
 
+from api.service import get_service
+
 def _reload_app(api_keys: str | None = None):
     """환경변수를 적용하고 앱을 재로드해 TestClient를 반환."""
     if api_keys is None:
@@ -779,6 +781,13 @@ def _reload_app(api_keys: str | None = None):
     import api.main as m_main
     importlib.reload(m_auth)
     importlib.reload(m_main)
+
+    # dummy fallback 방지
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
+
     return TestClient(m_main.app, raise_server_exceptions=False)
 
 
