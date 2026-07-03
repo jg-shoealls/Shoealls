@@ -1,7 +1,6 @@
 """Validation and initial verification of the multimodal gait model."""
 
 import argparse
-from pathlib import Path
 
 import numpy as np
 import torch

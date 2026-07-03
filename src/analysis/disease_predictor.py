@@ -13,11 +13,10 @@
 """
 
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from .biomarkers import GaitBiomarkerExtractor, BiomarkerProfile, BIOMARKER_DEFINITIONS
-from .common import get_feature_korean, severity_label
+from .common import get_feature_korean
 from .report_formatter import header, section, risk_bar, HEADER_DIVIDER, overall_summary_line
 
 

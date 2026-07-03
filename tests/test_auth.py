@@ -7,12 +7,10 @@ Covers pure-logic functions and mocked external-service auth flows in:
 
 from __future__ import annotations
 
-import argparse
 import sys
-import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch, call, mock_open
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -241,7 +239,6 @@ class TestDriveServiceServiceAccount:
         }):
             with patch("googleapiclient.discovery.build", return_value=mock_service):
                 # Patch the imports inside the function
-                import importlib
                 import types
                 google_oauth2_sa = types.ModuleType("google.oauth2.service_account")
                 google_oauth2_sa.Credentials = MagicMock()
@@ -684,7 +681,6 @@ class TestDownloadSynapseAuth:
         }):
             # Re-import to pick up patched modules
             import importlib.util
-            import types
             spec = importlib.util.spec_from_file_location(
                 "download_weargait2",
                 Path(__file__).parent.parent / "scripts" / "download_weargait.py",
@@ -747,7 +743,6 @@ class TestDownloadSynapseAuth:
 API_KEYS 환경변수를 통한 API 키 인증 동작을 검증합니다.
 """
 import os
-import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import importlib
