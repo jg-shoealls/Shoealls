@@ -18,10 +18,13 @@ def load_config():
 
 
 def make_batch(batch_size=2):
+    config = load_config()
+    mb_channels = config["data"].get("mag_baro_channels", 5)
     return {
         "imu": torch.randn(batch_size, 6, 128),
         "pressure": torch.randn(batch_size, 128, 1, 16, 8),
         "skeleton": torch.randn(batch_size, 3, 128, 17),
+        "mag_baro": torch.randn(batch_size, mb_channels, 128),
     }
 
 
@@ -134,6 +137,7 @@ class TestConfidenceCalibrator:
 class TestGaitReasoningEngine:
     def test_full_reasoning(self):
         config = load_config()
+        config["data"]["num_classes"] = 11  # or length of CLASS_NAMES_KR
         engine = GaitReasoningEngine(config)
         batch = make_batch(2)
 
@@ -147,10 +151,11 @@ class TestGaitReasoningEngine:
         assert "diagnosis" in result
 
         assert result["prediction"].shape == (2,)
-        assert result["calibrated_probs"].shape == (2, 4)
+        assert result["calibrated_probs"].shape == (2, 11)
 
     def test_explain_output(self):
         config = load_config()
+        config["data"]["num_classes"] = len(GaitReasoningEngine.CLASS_NAMES_KR)
         engine = GaitReasoningEngine(config)
         batch = make_batch(1)
 
