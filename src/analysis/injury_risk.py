@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from .foot_zones import FootZoneAnalyzer, FootAnalysisResult
 from .common import severity_label_4level, linear_risk_score
+from .config import INJURY_NORMAL_RANGES
 
 
 @dataclass
@@ -26,8 +27,6 @@ class InjuryRiskReport:
     top_risk: str           # name of highest risk
     summary_kr: str         # Korean summary
 
-
-from .config import INJURY_NORMAL_RANGES
 
 # Normal reference ranges (from biomechanics literature)
 NORMAL_RANGES = {
