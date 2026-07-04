@@ -88,16 +88,19 @@ class TestFusion:
 class TestFullModel:
     def test_forward_pass(self):
         config = load_config()
+        num_classes = config["data"]["num_classes"]
         model = MultimodalGaitNet(config)
 
+        mb_channels = config["data"].get("mag_baro_channels", 5)
         batch = {
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.randn(2, mb_channels, 128),
         }
 
         logits = model(batch)
-        assert logits.shape == (2, 4)
+        assert logits.shape == (2, num_classes)
 
     def test_parameter_count(self):
         config = load_config()
@@ -108,7 +111,8 @@ class TestFullModel:
     def test_dataset_to_model(self):
         """Integration test: synthetic data -> dataset -> model."""
         config = load_config()
-        data = generate_synthetic_dataset(num_samples_per_class=2, num_classes=4)
+        num_classes = config["data"]["num_classes"]
+        data = generate_synthetic_dataset(num_samples_per_class=2, num_classes=num_classes)
 
         dataset = MultimodalGaitDataset(
             data,
@@ -119,7 +123,9 @@ class TestFullModel:
 
         sample = dataset[0]
         batch = {k: v.unsqueeze(0) for k, v in sample.items() if k != "label"}
+        mb_channels = config["data"].get("mag_baro_channels", 5)
+        batch["mag_baro"] = torch.randn(1, mb_channels, config["data"]["sequence_length"])
 
         model = MultimodalGaitNet(config)
         logits = model(batch)
-        assert logits.shape == (1, 4)
+        assert logits.shape == (1, num_classes)
