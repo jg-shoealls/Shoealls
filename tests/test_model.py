@@ -88,6 +88,7 @@ class TestFusion:
 class TestFullModel:
     def test_forward_pass(self):
         config = load_config()
+        config["data"]["num_classes"] = 4
         model = MultimodalGaitNet(config)
 
         batch = {
@@ -108,6 +109,7 @@ class TestFullModel:
     def test_dataset_to_model(self):
         """Integration test: synthetic data -> dataset -> model."""
         config = load_config()
+        config["data"]["num_classes"] = 4
         data = generate_synthetic_dataset(num_samples_per_class=2, num_classes=4)
 
         dataset = MultimodalGaitDataset(
