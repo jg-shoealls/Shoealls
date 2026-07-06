@@ -1,0 +1,3 @@
+## 2024-05-18 - PyTorch MultiheadAttention Memory Leak/Computation Bottleneck
+**Learning:** In PyTorch, using `nn.MultiheadAttention` without setting `need_weights=False` forces the computation and allocation of attention weights matrices. When these weights are simply unpacked into `_` or unused variables like `cross_attn_weights`, it represents a pure loss in memory and performance, and prevents PyTorch from using optimized fused attention backends (like FlashAttention).
+**Action:** Always check `nn.MultiheadAttention` call sites. If the attention weights are explicitly unpacked to `_` or an unused variable, explicitly rename them to `_` and pass `need_weights=False` to unlock significant memory savings and backend optimizations.
