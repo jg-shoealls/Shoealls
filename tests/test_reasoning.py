@@ -134,7 +134,6 @@ class TestConfidenceCalibrator:
 class TestGaitReasoningEngine:
     def test_full_reasoning(self):
         config = load_config()
-        config["data"]["num_classes"] = 4
         engine = GaitReasoningEngine(config)
         batch = make_batch(2)
 
@@ -152,7 +151,6 @@ class TestGaitReasoningEngine:
 
     def test_explain_output(self):
         config = load_config()
-        config["data"]["num_classes"] = 4
         engine = GaitReasoningEngine(config)
         batch = make_batch(1)
 
