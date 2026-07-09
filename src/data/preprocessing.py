@@ -18,6 +18,7 @@ def preprocess_imu(data: np.ndarray, target_length: int = 128) -> np.ndarray:
 
     # Resample to target length
     from scipy.signal import resample
+
     resampled = resample(data, target_length, axis=0)
 
     # Normalize per channel (z-score)
@@ -54,6 +55,7 @@ def preprocess_pressure(
 
     # Resample temporal dimension
     from scipy.signal import resample
+
     resampled = resample(data, target_length, axis=0)
 
     # Min-max normalization per frame
@@ -87,6 +89,7 @@ def preprocess_skeleton(
 
     # Resample temporal dimension
     from scipy.signal import resample
+
     resampled = resample(data, target_length, axis=0)
 
     # Center skeleton at hip joint (joint 0) per frame

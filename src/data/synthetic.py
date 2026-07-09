@@ -4,18 +4,44 @@ import numpy as np
 
 # 11-class gait profiles. The first four labels match the public API contract.
 CLASS_NAMES = [
-    "normal", "antalgic", "ataxic", "parkinsonian", "stroke",
-    "diabetic_neuropathy", "osteoarthritis", "dementia",
-    "cerebral_hemorrhage", "cerebral_infarction", "disc_herniation",
+    "normal",
+    "antalgic",
+    "ataxic",
+    "parkinsonian",
+    "stroke",
+    "diabetic_neuropathy",
+    "osteoarthritis",
+    "dementia",
+    "cerebral_hemorrhage",
+    "cerebral_infarction",
+    "disc_herniation",
 ]
 
 _FREQ_MAP = {
-    0: 1.8, 1: 1.2, 2: 1.5, 3: 1.0, 4: 1.1,
-    5: 1.3, 6: 1.2, 7: 1.1, 8: 1.0, 9: 1.1, 10: 1.3,
+    0: 1.8,
+    1: 1.2,
+    2: 1.5,
+    3: 1.0,
+    4: 1.1,
+    5: 1.3,
+    6: 1.2,
+    7: 1.1,
+    8: 1.0,
+    9: 1.1,
+    10: 1.3,
 }
 _NOISE_MAP = {
-    0: 0.10, 1: 0.20, 2: 0.40, 3: 0.15, 4: 0.25,
-    5: 0.30, 6: 0.20, 7: 0.20, 8: 0.35, 9: 0.30, 10: 0.20,
+    0: 0.10,
+    1: 0.20,
+    2: 0.40,
+    3: 0.15,
+    4: 0.25,
+    5: 0.30,
+    6: 0.20,
+    7: 0.20,
+    8: 0.35,
+    9: 0.30,
+    10: 0.20,
 }
 
 
@@ -45,7 +71,7 @@ def generate_synthetic_imu(
     for _ in range(6):
         signal = _generate_gait_cycle(num_frames, freq, noise, rng)
 
-        if gait_class == 1:   # Antalgic: asymmetric pattern
+        if gait_class == 1:  # Antalgic: asymmetric pattern
             signal += 0.3 * np.sin(np.pi * freq * t)
         elif gait_class == 2:  # Ataxic: highly irregular
             signal += 0.35 * rng.standard_normal(num_frames)
@@ -95,28 +121,28 @@ def generate_synthetic_pressure(
         pressure[i][heel_region] = heel_signal[i]
         pressure[i][toe_region] = toe_signal[i]
 
-    if gait_class == 1:    # Antalgic: uneven loading
-        pressure[:, :, :w // 2] *= 0.5
+    if gait_class == 1:  # Antalgic: uneven loading
+        pressure[:, :, : w // 2] *= 0.5
     elif gait_class == 2:  # Ataxic: irregular pressure
         pressure += 0.3 * rng.standard_normal(pressure.shape).astype(np.float32)
     elif gait_class == 3:  # Parkinsonian: flat-footed, shuffle
         pressure = np.clip(pressure, 0.2, 0.8)
     elif gait_class == 4:  # Stroke: unilateral loading
-        pressure[:, :, :w // 2] *= 0.4
+        pressure[:, :, : w // 2] *= 0.4
     elif gait_class == 5:  # Diabetic neuropathy: reduced sensation, forefoot
-        pressure[:, h // 2:, :] *= 0.5
-        pressure[:, :h // 3, :] *= 1.3
+        pressure[:, h // 2 :, :] *= 0.5
+        pressure[:, : h // 3, :] *= 1.3
     elif gait_class == 6:  # Osteoarthritis: uneven loading
-        pressure[:, :, :w // 2] *= 0.6
+        pressure[:, :, : w // 2] *= 0.6
     elif gait_class == 7:  # Dementia: flat, shuffling
         pressure = np.clip(pressure, 0.15, 0.75)
     elif gait_class == 8:  # Cerebral hemorrhage: spastic, asymmetric
-        pressure[:, :, w // 2:] *= 0.3
+        pressure[:, :, w // 2 :] *= 0.3
         pressure += 0.2 * rng.standard_normal(pressure.shape).astype(np.float32)
     elif gait_class == 9:  # Cerebral infarction: hemiparetic loading
-        pressure[:, :, :w // 2] *= 0.5
-    elif gait_class == 10: # Disc herniation: antalgic unloading
-        pressure[:, :, w // 2:] *= 0.7
+        pressure[:, :, : w // 2] *= 0.5
+    elif gait_class == 10:  # Disc herniation: antalgic unloading
+        pressure[:, :, w // 2 :] *= 0.7
 
     noise = 0.05 * rng.standard_normal(pressure.shape).astype(np.float32)
     return np.clip(pressure + noise, 0, 1)
@@ -168,7 +194,7 @@ def generate_synthetic_skeleton(
         skeleton[i, 8, 0] += arm_amp * np.sin(phase) * 1.2
         skeleton[i, :, 2] += 0.5 * t[i]
 
-    if gait_class == 1:    # Antalgic: limping, asymmetric
+    if gait_class == 1:  # Antalgic: limping, asymmetric
         skeleton[:, 10:12, 1] += 0.03
     elif gait_class == 2:  # Ataxic: wide base, unsteady
         skeleton[:, 9:12, 0] -= 0.07
@@ -194,7 +220,7 @@ def generate_synthetic_skeleton(
     elif gait_class == 9:  # Cerebral infarction: hemiparetic gait
         skeleton[:, 3:6, :] *= 0.5
         skeleton[:, 10:12, 0] += 0.03
-    elif gait_class == 10: # Disc herniation: trunk lateral lean
+    elif gait_class == 10:  # Disc herniation: trunk lateral lean
         skeleton[:, 0:2, 0] += 0.04
         skeleton[:, 10:12, 1] += 0.02
 
@@ -218,8 +244,12 @@ def generate_synthetic_dataset(
         for _ in range(num_samples_per_class):
             n = num_frames + rng.integers(-10, 10)
             imu_list.append(generate_synthetic_imu(n, class_idx, rng))
-            pressure_list.append(generate_synthetic_pressure(n, class_idx, grid_size, rng))
-            skeleton_list.append(generate_synthetic_skeleton(n, class_idx, num_joints, rng))
+            pressure_list.append(
+                generate_synthetic_pressure(n, class_idx, grid_size, rng)
+            )
+            skeleton_list.append(
+                generate_synthetic_skeleton(n, class_idx, num_joints, rng)
+            )
             labels.append(class_idx)
 
     return {

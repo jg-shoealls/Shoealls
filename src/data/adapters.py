@@ -73,10 +73,13 @@ class FolderDataAdapter:
             self._load_labels(label_file)
 
         # Discover subjects
-        self.subject_dirs = sorted([
-            d for d in self.data_root.iterdir()
-            if d.is_dir() and not d.name.startswith(".")
-        ])
+        self.subject_dirs = sorted(
+            [
+                d
+                for d in self.data_root.iterdir()
+                if d.is_dir() and not d.name.startswith(".")
+            ]
+        )
 
         if not self.subject_dirs:
             raise FileNotFoundError(
@@ -92,7 +95,12 @@ class FolderDataAdapter:
     def _load_labels(self, label_file: str):
         """Load label CSV file."""
         import pandas as pd
-        path = self.data_root / label_file if not Path(label_file).is_absolute() else Path(label_file)
+
+        path = (
+            self.data_root / label_file
+            if not Path(label_file).is_absolute()
+            else Path(label_file)
+        )
         self.labels_df = pd.read_csv(path)
 
     def _load_csv(self, filepath: Path) -> np.ndarray:
@@ -133,7 +141,7 @@ class FolderDataAdapter:
             elif pressure.ndim == 2 and pressure.shape[1] != h * w:
                 raise ValueError(
                     f"Pressure data has {pressure.shape[1]} columns, "
-                    f"expected {h}x{w}={h*w} for grid_size={self.pressure_grid_size}\n"
+                    f"expected {h}x{w}={h * w} for grid_size={self.pressure_grid_size}\n"
                     f"Adjust pressure_grid_size parameter."
                 )
             result["pressure"] = pressure
@@ -155,7 +163,7 @@ class FolderDataAdapter:
             else:
                 raise ValueError(
                     f"Skeleton data has {skeleton.shape[1]} columns, "
-                    f"expected {j}*3={j*3} or {j}*2={j*2}\n"
+                    f"expected {j}*3={j * 3} or {j}*2={j * 2}\n"
                     f"Adjust num_joints parameter."
                 )
             result["skeleton"] = skeleton
@@ -250,8 +258,9 @@ class CSVDataAdapter:
         delimiter: str = ",",
         has_header: bool = True,
     ):
-        assert len(imu_files) == len(pressure_files) == len(skeleton_files) == len(labels), \
-            "All file lists and labels must have the same length"
+        assert (
+            len(imu_files) == len(pressure_files) == len(skeleton_files) == len(labels)
+        ), "All file lists and labels must have the same length"
 
         self.imu_files = [Path(f) for f in imu_files]
         self.pressure_files = [Path(f) for f in pressure_files]
@@ -273,9 +282,15 @@ class CSVDataAdapter:
         for i, (imu_f, pres_f, skel_f) in enumerate(
             zip(self.imu_files, self.pressure_files, self.skeleton_files)
         ):
-            imu = np.loadtxt(imu_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
-            pressure = np.loadtxt(pres_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
-            skeleton = np.loadtxt(skel_f, delimiter=self.delimiter, skiprows=skip).astype(np.float32)
+            imu = np.loadtxt(imu_f, delimiter=self.delimiter, skiprows=skip).astype(
+                np.float32
+            )
+            pressure = np.loadtxt(
+                pres_f, delimiter=self.delimiter, skiprows=skip
+            ).astype(np.float32)
+            skeleton = np.loadtxt(
+                skel_f, delimiter=self.delimiter, skiprows=skip
+            ).astype(np.float32)
 
             pressure = pressure.reshape(-1, h, w)
             skeleton = skeleton.reshape(-1, j, 3)

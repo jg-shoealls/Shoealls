@@ -9,11 +9,18 @@
 """
 
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .base_classifier import BaseGaitClassifier, TrainingMetrics
 from .common import severity_label, compute_derived_features
-from .report_formatter import header, section, marker_line, risk_line, ranked_line, HEADER_DIVIDER
+from .report_formatter import (
+    header,
+    section,
+    marker_line,
+    risk_line,
+    ranked_line,
+    HEADER_DIVIDER,
+)
 from .gait_anomaly import GaitAnomalyDetector, GaitAnomalyReport, INJURY_CATEGORIES
 
 
@@ -31,10 +38,18 @@ INJURY_LABELS = {
 }
 
 PREDICTOR_FEATURES = [
-    "gait_speed", "cadence", "stride_regularity", "step_symmetry",
-    "cop_sway", "ml_variability", "heel_pressure_ratio",
-    "forefoot_pressure_ratio", "arch_index", "pressure_asymmetry",
-    "acceleration_rms", "trunk_sway",
+    "gait_speed",
+    "cadence",
+    "stride_regularity",
+    "step_symmetry",
+    "cop_sway",
+    "ml_variability",
+    "heel_pressure_ratio",
+    "forefoot_pressure_ratio",
+    "arch_index",
+    "pressure_asymmetry",
+    "acceleration_rms",
+    "trunk_sway",
     "anomaly_score",
 ]
 
@@ -42,13 +57,14 @@ PREDICTOR_FEATURES = [
 @dataclass
 class InjuryPrediction:
     """부상 예측 결과."""
+
     predicted_injury: str
     predicted_korean: str
     confidence: float
-    probabilities: dict[str, float]     # 부상유형 → 확률
-    top3: list[tuple[str, float]]       # [(한국어명, 확률), ...]
-    body_risk_map: dict[str, float]     # 신체부위 → 위험도
-    timeline: str                       # 급성/만성/복합
+    probabilities: dict[str, float]  # 부상유형 → 확률
+    top3: list[tuple[str, float]]  # [(한국어명, 확률), ...]
+    body_risk_map: dict[str, float]  # 신체부위 → 위험도
+    timeline: str  # 급성/만성/복합
     feature_importance: dict[str, float]
 
 
@@ -59,12 +75,13 @@ InjuryPredictorMetrics = TrainingMetrics
 @dataclass
 class ComprehensiveInjuryReport:
     """종합 부상 위험 보고서 (패턴 감지 + ML 예측)."""
+
     anomaly_report: GaitAnomalyReport
     ml_prediction: InjuryPrediction
-    combined_risk_score: float       # 0~1
-    combined_risk_grade: str         # 정상/경미/주의/경고/위험
+    combined_risk_score: float  # 0~1
+    combined_risk_grade: str  # 정상/경미/주의/경고/위험
     body_risk_map: dict[str, float]  # 신체부위별 종합 위험도
-    priority_actions: list[str]      # 우선 조치 사항
+    priority_actions: list[str]  # 우선 조치 사항
     summary_kr: str
 
 
@@ -96,40 +113,292 @@ TIMELINE_MAP = {
 # ── 부상별 합성 데이터 프로파일 ────────────────────────────────────────
 _INJURY_PROFILES = {
     0: {  # 낮은 위험 (정상)
-        "mean": [1.2, 115, 0.85, 0.92, 0.04, 0.06, 0.32, 0.45, 0.25, 0.05, 1.5, 2.0, 0.05],
-        "std":  [0.12, 8, 0.05, 0.03, 0.01, 0.02, 0.04, 0.04, 0.04, 0.02, 0.25, 0.4, 0.03],
+        "mean": [
+            1.2,
+            115,
+            0.85,
+            0.92,
+            0.04,
+            0.06,
+            0.32,
+            0.45,
+            0.25,
+            0.05,
+            1.5,
+            2.0,
+            0.05,
+        ],
+        "std": [
+            0.12,
+            8,
+            0.05,
+            0.03,
+            0.01,
+            0.02,
+            0.04,
+            0.04,
+            0.04,
+            0.02,
+            0.25,
+            0.4,
+            0.03,
+        ],
     },
     1: {  # 족저근막염
-        "mean": [1.0, 108, 0.78, 0.88, 0.055, 0.07, 0.42, 0.38, 0.18, 0.06, 1.8, 2.2, 0.35],
-        "std":  [0.12, 10, 0.06, 0.04, 0.015, 0.02, 0.05, 0.04, 0.04, 0.03, 0.3, 0.4, 0.10],
+        "mean": [
+            1.0,
+            108,
+            0.78,
+            0.88,
+            0.055,
+            0.07,
+            0.42,
+            0.38,
+            0.18,
+            0.06,
+            1.8,
+            2.2,
+            0.35,
+        ],
+        "std": [
+            0.12,
+            10,
+            0.06,
+            0.04,
+            0.015,
+            0.02,
+            0.05,
+            0.04,
+            0.04,
+            0.03,
+            0.3,
+            0.4,
+            0.10,
+        ],
     },
     2: {  # 중족골 피로골절
-        "mean": [1.05, 112, 0.75, 0.85, 0.05, 0.07, 0.20, 0.65, 0.28, 0.07, 1.6, 2.1, 0.45],
-        "std":  [0.12, 10, 0.07, 0.05, 0.015, 0.02, 0.04, 0.06, 0.05, 0.03, 0.3, 0.4, 0.12],
+        "mean": [
+            1.05,
+            112,
+            0.75,
+            0.85,
+            0.05,
+            0.07,
+            0.20,
+            0.65,
+            0.28,
+            0.07,
+            1.6,
+            2.1,
+            0.45,
+        ],
+        "std": [
+            0.12,
+            10,
+            0.07,
+            0.05,
+            0.015,
+            0.02,
+            0.04,
+            0.06,
+            0.05,
+            0.03,
+            0.3,
+            0.4,
+            0.12,
+        ],
     },
     3: {  # 발목 염좌
-        "mean": [1.0, 110, 0.72, 0.80, 0.07, 0.14, 0.30, 0.46, 0.30, 0.12, 1.4, 2.8, 0.50],
-        "std":  [0.15, 12, 0.08, 0.07, 0.02, 0.04, 0.04, 0.05, 0.05, 0.04, 0.3, 0.5, 0.12],
+        "mean": [
+            1.0,
+            110,
+            0.72,
+            0.80,
+            0.07,
+            0.14,
+            0.30,
+            0.46,
+            0.30,
+            0.12,
+            1.4,
+            2.8,
+            0.50,
+        ],
+        "std": [
+            0.15,
+            12,
+            0.08,
+            0.07,
+            0.02,
+            0.04,
+            0.04,
+            0.05,
+            0.05,
+            0.04,
+            0.3,
+            0.5,
+            0.12,
+        ],
     },
     4: {  # 무릎 과부하
-        "mean": [0.95, 105, 0.74, 0.82, 0.055, 0.08, 0.40, 0.42, 0.26, 0.10, 2.2, 2.5, 0.40],
-        "std":  [0.12, 10, 0.06, 0.05, 0.015, 0.03, 0.05, 0.05, 0.04, 0.04, 0.35, 0.5, 0.10],
+        "mean": [
+            0.95,
+            105,
+            0.74,
+            0.82,
+            0.055,
+            0.08,
+            0.40,
+            0.42,
+            0.26,
+            0.10,
+            2.2,
+            2.5,
+            0.40,
+        ],
+        "std": [
+            0.12,
+            10,
+            0.06,
+            0.05,
+            0.015,
+            0.03,
+            0.05,
+            0.05,
+            0.04,
+            0.04,
+            0.35,
+            0.5,
+            0.10,
+        ],
     },
     5: {  # 고관절/요통
-        "mean": [0.90, 100, 0.70, 0.78, 0.06, 0.09, 0.28, 0.48, 0.27, 0.14, 1.3, 3.2, 0.48],
-        "std":  [0.12, 10, 0.08, 0.06, 0.02, 0.03, 0.04, 0.05, 0.05, 0.05, 0.25, 0.6, 0.12],
+        "mean": [
+            0.90,
+            100,
+            0.70,
+            0.78,
+            0.06,
+            0.09,
+            0.28,
+            0.48,
+            0.27,
+            0.14,
+            1.3,
+            3.2,
+            0.48,
+        ],
+        "std": [
+            0.12,
+            10,
+            0.08,
+            0.06,
+            0.02,
+            0.03,
+            0.04,
+            0.05,
+            0.05,
+            0.05,
+            0.25,
+            0.6,
+            0.12,
+        ],
     },
     6: {  # 낙상 위험
-        "mean": [0.70, 88, 0.55, 0.75, 0.09, 0.15, 0.30, 0.44, 0.28, 0.08, 1.0, 4.0, 0.65],
-        "std":  [0.15, 12, 0.10, 0.08, 0.025, 0.04, 0.05, 0.05, 0.05, 0.04, 0.3, 0.7, 0.12],
+        "mean": [
+            0.70,
+            88,
+            0.55,
+            0.75,
+            0.09,
+            0.15,
+            0.30,
+            0.44,
+            0.28,
+            0.08,
+            1.0,
+            4.0,
+            0.65,
+        ],
+        "std": [
+            0.15,
+            12,
+            0.10,
+            0.08,
+            0.025,
+            0.04,
+            0.05,
+            0.05,
+            0.05,
+            0.04,
+            0.3,
+            0.7,
+            0.12,
+        ],
     },
     7: {  # 아킬레스건염
-        "mean": [1.0, 118, 0.78, 0.88, 0.05, 0.07, 0.38, 0.40, 0.22, 0.06, 1.7, 2.3, 0.35],
-        "std":  [0.12, 10, 0.06, 0.04, 0.015, 0.02, 0.05, 0.05, 0.04, 0.03, 0.3, 0.4, 0.10],
+        "mean": [
+            1.0,
+            118,
+            0.78,
+            0.88,
+            0.05,
+            0.07,
+            0.38,
+            0.40,
+            0.22,
+            0.06,
+            1.7,
+            2.3,
+            0.35,
+        ],
+        "std": [
+            0.12,
+            10,
+            0.06,
+            0.04,
+            0.015,
+            0.02,
+            0.05,
+            0.05,
+            0.04,
+            0.03,
+            0.3,
+            0.4,
+            0.10,
+        ],
     },
     8: {  # 경골 스트레스
-        "mean": [1.05, 125, 0.76, 0.86, 0.05, 0.08, 0.40, 0.44, 0.24, 0.07, 2.0, 2.4, 0.38],
-        "std":  [0.12, 12, 0.07, 0.04, 0.015, 0.02, 0.05, 0.05, 0.04, 0.03, 0.35, 0.4, 0.10],
+        "mean": [
+            1.05,
+            125,
+            0.76,
+            0.86,
+            0.05,
+            0.08,
+            0.40,
+            0.44,
+            0.24,
+            0.07,
+            2.0,
+            2.4,
+            0.38,
+        ],
+        "std": [
+            0.12,
+            12,
+            0.07,
+            0.04,
+            0.015,
+            0.02,
+            0.05,
+            0.05,
+            0.04,
+            0.03,
+            0.35,
+            0.4,
+            0.10,
+        ],
     },
 }
 
@@ -199,9 +468,9 @@ class InjuryRiskPredictor(BaseGaitClassifier):
 
         # 종합 위험 점수 (패턴 감지 40% + ML 예측 60%)
         ml_risk = 1.0 - ml_prediction.probabilities.get("낮은 위험", 0.0)
-        combined_risk = float(np.clip(
-            0.4 * anomaly_report.anomaly_score + 0.6 * ml_risk, 0, 1
-        ))
+        combined_risk = float(
+            np.clip(0.4 * anomaly_report.anomaly_score + 0.6 * ml_risk, 0, 1)
+        )
         combined_grade = severity_label(combined_risk)
 
         # 신체 부위 종합 위험도
@@ -214,8 +483,12 @@ class InjuryRiskPredictor(BaseGaitClassifier):
         )
 
         summary = self._generate_comprehensive_summary(
-            anomaly_report, ml_prediction, combined_risk,
-            combined_grade, body_map, priority_actions
+            anomaly_report,
+            ml_prediction,
+            combined_risk,
+            combined_grade,
+            body_map,
+            priority_actions,
         )
 
         return ComprehensiveInjuryReport(
@@ -299,8 +572,7 @@ class InjuryRiskPredictor(BaseGaitClassifier):
                 actions.append(f"교정 필요: {p.korean_name} → {p.correction}")
 
         high_risk_parts = [
-            part for part, score in ml_prediction.body_risk_map.items()
-            if score >= 0.5
+            part for part, score in ml_prediction.body_risk_map.items() if score >= 0.5
         ]
         if high_risk_parts:
             actions.append(f"주의 부위: {', '.join(high_risk_parts[:3])}")
@@ -367,6 +639,8 @@ class InjuryRiskPredictor(BaseGaitClassifier):
             lines.append(f"  {i}. {action}")
 
         lines.append("")
-        lines.append("  ※ 본 결과는 AI 기반 스크리닝이며, 확진은 전문의 상담이 필요합니다.")
+        lines.append(
+            "  ※ 본 결과는 AI 기반 스크리닝이며, 확진은 전문의 상담이 필요합니다."
+        )
         lines.append(HEADER_DIVIDER)
         return "\n".join(lines)

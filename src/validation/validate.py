@@ -1,7 +1,6 @@
 """Validation and initial verification of the multimodal gait model."""
 
 import argparse
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -90,9 +89,13 @@ def run_validation(config: dict, checkpoint_path: str):
     # Confidence analysis
     correct_mask = all_preds == all_labels
     print("\nConfidence Analysis:")
-    print(f"  Mean confidence (correct):   {all_probs.max(axis=1)[correct_mask].mean():.4f}")
+    print(
+        f"  Mean confidence (correct):   {all_probs.max(axis=1)[correct_mask].mean():.4f}"
+    )
     if (~correct_mask).any():
-        print(f"  Mean confidence (incorrect): {all_probs.max(axis=1)[~correct_mask].mean():.4f}")
+        print(
+            f"  Mean confidence (incorrect): {all_probs.max(axis=1)[~correct_mask].mean():.4f}"
+        )
 
     return metrics
 

@@ -40,7 +40,8 @@ def create_dataloaders(config: dict, num_samples: int = 50) -> tuple:
     test_n = total - train_n - val_n
 
     train_ds, val_ds, test_ds = random_split(
-        dataset, [train_n, val_n, test_n],
+        dataset,
+        [train_n, val_n, test_n],
         generator=torch.Generator().manual_seed(42),
     )
 
@@ -151,8 +152,10 @@ def train(
 
     # Data
     train_loader, val_loader, test_loader = create_dataloaders(config, num_samples)
-    print(f"Dataset splits - Train: {len(train_loader.dataset)}, "
-          f"Val: {len(val_loader.dataset)}, Test: {len(test_loader.dataset)}")
+    print(
+        f"Dataset splits - Train: {len(train_loader.dataset)}, "
+        f"Val: {len(val_loader.dataset)}, Test: {len(test_loader.dataset)}"
+    )
 
     # Model
     model = MultimodalGaitNet(config).to(device)
@@ -186,9 +189,13 @@ def train(
             optimizer.load_state_dict(ckpt["optimizer_state_dict"])
             start_epoch = ckpt["epoch"] + 1
             best_val_acc = ckpt["val_accuracy"]
-            print(f"Resumed from epoch {ckpt['epoch']} (best val acc: {best_val_acc:.4f})")
+            print(
+                f"Resumed from epoch {ckpt['epoch']} (best val acc: {best_val_acc:.4f})"
+            )
         else:
-            print(f"Warning: --resume 지정했지만 {ckpt_path} 없음. 처음부터 학습합니다.")
+            print(
+                f"Warning: --resume 지정했지만 {ckpt_path} 없음. 처음부터 학습합니다."
+            )
 
     # Training loop
     patience_counter = 0
@@ -228,14 +235,17 @@ def train(
         if val_metrics["accuracy"] > best_val_acc + es_cfg["min_delta"]:
             best_val_acc = val_metrics["accuracy"]
             patience_counter = 0
-            torch.save({
-                "epoch": epoch,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(),
-                "val_accuracy": best_val_acc,
-                "config": config,
-                "history": history,
-            }, output_dir / "best_model.pt")
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "val_accuracy": best_val_acc,
+                    "config": config,
+                    "history": history,
+                },
+                output_dir / "best_model.pt",
+            )
         else:
             patience_counter += 1
 
@@ -259,14 +269,17 @@ def train(
     print(f"\nConfusion Matrix:\n{test_metrics['confusion_matrix']}")
 
     # Save final history (includes all epochs, not just up to best)
-    torch.save({
-        "epoch": checkpoint["epoch"],
-        "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": checkpoint["optimizer_state_dict"],
-        "val_accuracy": checkpoint["val_accuracy"],
-        "config": config,
-        "history": history,
-    }, output_dir / "best_model.pt")
+    torch.save(
+        {
+            "epoch": checkpoint["epoch"],
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": checkpoint["optimizer_state_dict"],
+            "val_accuracy": checkpoint["val_accuracy"],
+            "config": config,
+            "history": history,
+        },
+        output_dir / "best_model.pt",
+    )
 
     return test_metrics
 
@@ -276,17 +289,35 @@ def main():
         description="Shoealls — 멀티모달 보행 분류 모델 학습",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--config", default="configs/default.yaml", help="설정 파일 경로")
-    parser.add_argument("--output-dir", default="outputs", help="체크포인트 저장 디렉터리")
-    parser.add_argument("--samples", type=int, default=50,
-                        help="클래스당 합성 샘플 수 (많을수록 정확도 향상)")
-    parser.add_argument("--epochs", type=int, default=None, help="에포크 수 (설정 파일 오버라이드)")
-    parser.add_argument("--lr", type=float, default=None, help="학습률 (설정 파일 오버라이드)")
-    parser.add_argument("--resume", action="store_true", help="outputs/best_model.pt에서 재개")
-    parser.add_argument("--checkpoint", default=None,
-                        help="compatible pre-trained checkpoint for transfer learning")
-    parser.add_argument("--verify", action="store_true",
-                        help="학습 후 API 호환성 검증 실행")
+    parser.add_argument(
+        "--config", default="configs/default.yaml", help="설정 파일 경로"
+    )
+    parser.add_argument(
+        "--output-dir", default="outputs", help="체크포인트 저장 디렉터리"
+    )
+    parser.add_argument(
+        "--samples",
+        type=int,
+        default=50,
+        help="클래스당 합성 샘플 수 (많을수록 정확도 향상)",
+    )
+    parser.add_argument(
+        "--epochs", type=int, default=None, help="에포크 수 (설정 파일 오버라이드)"
+    )
+    parser.add_argument(
+        "--lr", type=float, default=None, help="학습률 (설정 파일 오버라이드)"
+    )
+    parser.add_argument(
+        "--resume", action="store_true", help="outputs/best_model.pt에서 재개"
+    )
+    parser.add_argument(
+        "--checkpoint",
+        default=None,
+        help="compatible pre-trained checkpoint for transfer learning",
+    )
+    parser.add_argument(
+        "--verify", action="store_true", help="학습 후 API 호환성 검증 실행"
+    )
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -300,11 +331,17 @@ def main():
 
     output_dir = Path(args.output_dir)
     checkpoint_path = Path(args.checkpoint) if args.checkpoint else None
-    test_metrics = train(config, output_dir, num_samples=args.samples,
-                         resume=args.resume, checkpoint_path=checkpoint_path)
+    test_metrics = train(
+        config,
+        output_dir,
+        num_samples=args.samples,
+        resume=args.resume,
+        checkpoint_path=checkpoint_path,
+    )
 
     # 학습 결과 JSON 저장
     import json
+
     result = {
         "test_accuracy": round(test_metrics["accuracy"], 4),
         "test_f1_macro": round(test_metrics["f1_macro"], 4),
@@ -322,6 +359,7 @@ def main():
 def _verify_api_compat(config: dict, ckpt_path: Path):
     """저장된 체크포인트가 API와 호환되는지 빠른 검증."""
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
     print("\n[검증] API 호환성 확인 중...")
     try:

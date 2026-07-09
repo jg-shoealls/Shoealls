@@ -4,7 +4,11 @@ import numpy as np
 import torch
 import yaml
 
-from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
+from src.data.preprocessing import (
+    preprocess_imu,
+    preprocess_pressure,
+    preprocess_skeleton,
+)
 from src.data.synthetic import generate_synthetic_dataset
 from src.data.dataset import MultimodalGaitDataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
@@ -73,9 +77,7 @@ class TestEncoders:
 
 class TestFusion:
     def test_cross_modal_fusion(self):
-        fusion = CrossModalAttentionFusion(
-            embed_dim=64, num_heads=4, num_modalities=3
-        )
+        fusion = CrossModalAttentionFusion(embed_dim=64, num_heads=4, num_modalities=3)
         features = [
             torch.randn(2, 10, 64),
             torch.randn(2, 8, 64),

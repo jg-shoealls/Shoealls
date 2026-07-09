@@ -18,14 +18,15 @@ from dataclasses import dataclass, field
 # 데이터 구조
 # ─────────────────────────────────────────────
 
+
 @dataclass
 class ProdromalBiomarker:
     name: str
     korean_name: str
     value: float
-    normal_range: tuple[float, float]   # (low, high) 정상 범위
+    normal_range: tuple[float, float]  # (low, high) 정상 범위
     unit: str
-    sensor: str                          # "IMU" | "PRESSURE" | "EXTERNAL" | "FUSION"
+    sensor: str  # "IMU" | "PRESSURE" | "EXTERNAL" | "FUSION"
     clinical_meaning: str
     is_abnormal: bool = field(init=False)
 
@@ -37,9 +38,9 @@ class ProdromalBiomarker:
 @dataclass
 class ProdromalPanel:
     biomarkers: list[ProdromalBiomarker]
-    composite_score: float       # 0–1, 높을수록 전임상 위험
-    prodrome_stage: str          # "정상" | "전임상" | "프로드로말" | "발현"
-    stage_confidence: float      # 0–1
+    composite_score: float  # 0–1, 높을수록 전임상 위험
+    prodrome_stage: str  # "정상" | "전임상" | "프로드로말" | "발현"
+    stage_confidence: float  # 0–1
     abnormal_count: int = field(init=False)
 
     def __post_init__(self):
@@ -52,7 +53,9 @@ class ProdromalPanel:
         ]
         for b in self.biomarkers:
             flag = "⚠" if b.is_abnormal else "✓"
-            lines.append(f"  {flag} {b.korean_name}: {b.value:.4f} {b.unit}  (정상 {b.normal_range[0]}–{b.normal_range[1]})")
+            lines.append(
+                f"  {flag} {b.korean_name}: {b.value:.4f} {b.unit}  (정상 {b.normal_range[0]}–{b.normal_range[1]})"
+            )
         return "\n".join(lines)
 
 
@@ -63,7 +66,7 @@ _STAGE_THRESHOLDS = (0.15, 0.30, 0.55)
 _STAGE_LABELS = ("정상", "전임상", "프로드로말", "발현")
 
 # 복합 점수 가중치 (MDS 특이도 기준)
-_W_OLFACTORY  = 0.40
+_W_OLFACTORY = 0.40
 _W_REM_TREMOR = 0.30
 _W_VARIABILITY = 0.30
 
@@ -71,6 +74,7 @@ _W_VARIABILITY = 0.30
 # ─────────────────────────────────────────────
 # 내부 신호 처리 유틸
 # ─────────────────────────────────────────────
+
 
 def _coefficient_of_variation(arr: np.ndarray) -> float:
     """CV = std/mean. 빈 배열이나 평균=0이면 0 반환."""
@@ -108,6 +112,7 @@ def _bandpower(signal: np.ndarray, fs: float, f_low: float, f_high: float) -> fl
 # 바이오마커 계산 함수
 # ─────────────────────────────────────────────
 
+
 def _stride_time_cv(imu: np.ndarray, fs: float = 100.0) -> float:
     """보폭 시간 변동계수 (CV).
 
@@ -119,7 +124,7 @@ def _stride_time_cv(imu: np.ndarray, fs: float = 100.0) -> float:
     peaks = _find_peaks_simple(accel_z, min_distance=int(fs * 0.3))
     if len(peaks) < 3:
         return 0.0
-    intervals = np.diff(peaks) / fs   # 초 단위
+    intervals = np.diff(peaks) / fs  # 초 단위
     return _coefficient_of_variation(intervals)
 
 
@@ -162,13 +167,13 @@ def _double_support_ratio(pressure: np.ndarray) -> float:
     if pressure.ndim == 3:
         p = pressure
     elif pressure.ndim == 4:
-        p = pressure[:, 0]           # (T, H, W)
+        p = pressure[:, 0]  # (T, H, W)
     else:
-        return 0.22                  # 분석 불가 → 정상값 반환
+        return 0.22  # 분석 불가 → 정상값 반환
 
     T, H, W = p.shape
     mid = H // 2
-    left_active  = p[:, :mid, :].sum(axis=(1, 2)) > 0.01
+    left_active = p[:, :mid, :].sum(axis=(1, 2)) > 0.01
     right_active = p[:, mid:, :].sum(axis=(1, 2)) > 0.01
     both = (left_active & right_active).sum()
     return float(both) / max(T, 1)
@@ -184,10 +189,10 @@ def _rest_tremor_index(imu: np.ndarray, fs: float = 100.0) -> float:
     정상: <0.10, 전임상 PD: 0.10–0.25, 파킨슨: >0.25.
     """
     n_ch = min(3, imu.shape[0])
-    accel = imu[:n_ch]                          # (n_ch, T)
-    accel_mag = np.sqrt((accel ** 2).sum(axis=0))  # 정적 구간 탐색용
+    accel = imu[:n_ch]  # (n_ch, T)
+    accel_mag = np.sqrt((accel**2).sum(axis=0))  # 정적 구간 탐색용
 
-    window = int(fs * 1.0)          # 1초 윈도우
+    window = int(fs * 1.0)  # 1초 윈도우
     if accel_mag.shape[0] < window * 2:
         # 신호가 짧으면 전체 채널에 직접 적용
         ratios = [_bandpower(accel[ch], fs, 4.0, 6.0) for ch in range(n_ch)]
@@ -195,7 +200,7 @@ def _rest_tremor_index(imu: np.ndarray, fs: float = 100.0) -> float:
 
     step = window // 2
     rms_per_window = [
-        float(np.sqrt(np.mean(accel_mag[i: i + window] ** 2)))
+        float(np.sqrt(np.mean(accel_mag[i : i + window] ** 2)))
         for i in range(0, len(accel_mag) - window, step)
     ]
     threshold = float(np.percentile(rms_per_window, 25))
@@ -205,13 +210,12 @@ def _rest_tremor_index(imu: np.ndarray, fs: float = 100.0) -> float:
         if rms <= threshold:
             start = idx * step
             for ch in range(n_ch):
-                quiet_per_ch[ch].append(accel[ch][start: start + window])
+                quiet_per_ch[ch].append(accel[ch][start : start + window])
 
     if not quiet_per_ch[0]:
         return 0.0
     ratios = [
-        _bandpower(np.concatenate(quiet_per_ch[ch]), fs, 4.0, 6.0)
-        for ch in range(n_ch)
+        _bandpower(np.concatenate(quiet_per_ch[ch]), fs, 4.0, 6.0) for ch in range(n_ch)
     ]
     return float(np.mean(ratios))
 
@@ -228,7 +232,7 @@ def _nocturnal_movement_regularity(imu: np.ndarray, fs: float = 100.0) -> float:
     n = len(sig)
     if n < 20:
         return 0.8
-    lag = min(int(fs * 1.0), n // 4)   # 1초 lag
+    lag = min(int(fs * 1.0), n // 4)  # 1초 lag
     denom = float(np.dot(sig, sig))
     if denom < 1e-12:
         return 1.0
@@ -239,6 +243,7 @@ def _nocturnal_movement_regularity(imu: np.ndarray, fs: float = 100.0) -> float:
 # ─────────────────────────────────────────────
 # 메인 추출기
 # ─────────────────────────────────────────────
+
 
 class ProdrOmalBiomarkerExtractor:
     """IMU + 족압 시퀀스에서 전임상 파킨슨 바이오마커 패널을 계산한다.
@@ -252,9 +257,9 @@ class ProdrOmalBiomarkerExtractor:
 
     def extract(
         self,
-        imu_seq: np.ndarray,          # (C, T), C≥3 (최소 3축 가속도)
-        pressure_seq: np.ndarray,     # (T, H, W) | (T, 1, H, W) | (T, H*W)
-        external: dict | None = None, # {"olfactory_screen_score": 0.85}
+        imu_seq: np.ndarray,  # (C, T), C≥3 (최소 3축 가속도)
+        pressure_seq: np.ndarray,  # (T, H, W) | (T, 1, H, W) | (T, H*W)
+        external: dict | None = None,  # {"olfactory_screen_score": 0.85}
     ) -> ProdromalPanel:
         """바이오마커 패널을 계산하고 전임상 단계를 분류한다."""
 
@@ -262,25 +267,29 @@ class ProdrOmalBiomarkerExtractor:
         fs = self.fs
 
         # ── 1. 보행 변동성 군 ────────────────────────────────────
-        stcv  = _stride_time_cv(imu_seq, fs)
-        swcv  = _step_width_cv(imu_seq, fs)
-        cadv  = _cadence_variability(imu_seq, fs)
+        stcv = _stride_time_cv(imu_seq, fs)
+        swcv = _step_width_cv(imu_seq, fs)
+        cadv = _cadence_variability(imu_seq, fs)
 
         # pressure_seq 형태 정규화
         if pressure_seq.ndim == 4:
-            pres = pressure_seq[:, 0]    # (T, H, W)
+            pres = pressure_seq[:, 0]  # (T, H, W)
         elif pressure_seq.ndim == 2:
             T = pressure_seq.shape[0]
             side = int(np.sqrt(pressure_seq.shape[1]))
-            pres = pressure_seq.reshape(T, side, side) if side * side == pressure_seq.shape[1] else pressure_seq[:, :, None]
+            pres = (
+                pressure_seq.reshape(T, side, side)
+                if side * side == pressure_seq.shape[1]
+                else pressure_seq[:, :, None]
+            )
         else:
             pres = pressure_seq
 
         dsr = _double_support_ratio(pres)
 
         # ── 2. REM 수면 장애 대리 지표 군 ────────────────────────
-        rti  = _rest_tremor_index(imu_seq, fs)
-        nmr  = _nocturnal_movement_regularity(imu_seq, fs)
+        rti = _rest_tremor_index(imu_seq, fs)
+        nmr = _nocturnal_movement_regularity(imu_seq, fs)
 
         # ── 3. 후각 선별 점수 ─────────────────────────────────────
         olfactory = float(ext.get("olfactory_screen_score", 1.0))
@@ -288,14 +297,14 @@ class ProdrOmalBiomarkerExtractor:
 
         # ── 복합 점수 계산 ─────────────────────────────────────────
         # 각 지표를 [0,1] 위험 스케일로 정규화 후 가중 결합
-        risk_variability = float(np.clip(stcv / 0.08, 0.0, 1.0))   # 0.08이 위험 상한
-        risk_rem         = float(np.clip(rti  / 0.30, 0.0, 1.0))   # 0.30이 위험 상한
-        risk_olfactory   = float(np.clip(1.0 - olfactory, 0.0, 1.0))  # 낮을수록 위험
+        risk_variability = float(np.clip(stcv / 0.08, 0.0, 1.0))  # 0.08이 위험 상한
+        risk_rem = float(np.clip(rti / 0.30, 0.0, 1.0))  # 0.30이 위험 상한
+        risk_olfactory = float(np.clip(1.0 - olfactory, 0.0, 1.0))  # 낮을수록 위험
 
         composite = (
             _W_VARIABILITY * risk_variability
-            + _W_REM_TREMOR  * risk_rem
-            + _W_OLFACTORY   * risk_olfactory
+            + _W_REM_TREMOR * risk_rem
+            + _W_OLFACTORY * risk_olfactory
         )
         composite = float(np.clip(composite, 0.0, 1.0))
 
@@ -308,7 +317,10 @@ class ProdrOmalBiomarkerExtractor:
         elif composite < t3:
             stage, conf = _STAGE_LABELS[2], (composite - t2) / (t3 - t2)
         else:
-            stage, conf = _STAGE_LABELS[3], min(1.0, (composite - t3) / (1.0 - t3 + 1e-9))
+            stage, conf = (
+                _STAGE_LABELS[3],
+                min(1.0, (composite - t3) / (1.0 - t3 + 1e-9)),
+            )
         conf = float(np.clip(conf, 0.0, 1.0))
 
         # ── 바이오마커 목록 조립 ──────────────────────────────────

@@ -1,12 +1,11 @@
 """질환 특이적 보행 바이오마커 시스템 테스트"""
+
 import pytest
 import numpy as np
 
 from src.analysis.disease_biomarkers import (
     DiseaseBiomarkerAnalyzer,
     SensorChannel,
-    BiomarkerDefinition,
-    DiseasePanel,
     BiomarkerMeasurement,
     DiseaseBiomarkerProfile,
     MultimodalBiomarkerReport,
@@ -24,6 +23,7 @@ from src.models.biomarker_net import (
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def normal_features():
@@ -155,22 +155,25 @@ def biomarker_net(biomarker_net_config):
 # TestBiomarkerDefinitions
 # ---------------------------------------------------------------------------
 
+
 class TestBiomarkerDefinitions:
     """Tests that verify the completeness and correctness of biomarker definitions."""
 
     def test_all_59_biomarkers_defined(self, analyzer):
         """Verify that the system defines exactly 59 biomarkers (13 base + 46 disease-specific)."""
         all_markers = analyzer.get_all_biomarker_definitions()
-        assert len(all_markers) == 59, (
-            f"Expected 59 biomarkers, got {len(all_markers)}"
-        )
+        assert len(all_markers) == 59, f"Expected 59 biomarkers, got {len(all_markers)}"
 
     def test_neurological_panel_markers(self, analyzer):
         """Verify neurological panel has 6 diseases with correct marker counts."""
         neuro = analyzer.get_panel_definitions("neurological")
         expected_diseases = {
-            "parkinsons", "dementia", "cerebellar_ataxia",
-            "multiple_sclerosis", "stroke", "cerebrovascular",
+            "parkinsons",
+            "dementia",
+            "cerebellar_ataxia",
+            "multiple_sclerosis",
+            "stroke",
+            "cerebrovascular",
         }
         assert set(neuro.keys()) == expected_diseases
         # Marker counts per disease
@@ -185,8 +188,10 @@ class TestBiomarkerDefinitions:
         """Verify musculoskeletal panel has 4 diseases with correct marker counts."""
         msk = analyzer.get_panel_definitions("musculoskeletal")
         expected_diseases = {
-            "osteoarthritis", "rheumatoid_arthritis",
-            "disc_herniation", "spinal_stenosis",
+            "osteoarthritis",
+            "rheumatoid_arthritis",
+            "disc_herniation",
+            "spinal_stenosis",
         }
         assert set(msk.keys()) == expected_diseases
         assert len(msk["osteoarthritis"]) == 5
@@ -199,8 +204,7 @@ class TestBiomarkerDefinitions:
         for marker in analyzer.get_all_biomarker_definitions():
             low, high = marker.normal_range
             assert low < high, (
-                f"Biomarker '{marker.name}' has invalid normal_range: "
-                f"[{low}, {high}]"
+                f"Biomarker '{marker.name}' has invalid normal_range: [{low}, {high}]"
             )
 
     def test_sensor_channel_assignments(self, analyzer):
@@ -213,8 +217,7 @@ class TestBiomarkerDefinitions:
         }
         for marker in analyzer.get_all_biomarker_definitions():
             assert marker.primary_sensor in valid_sensors, (
-                f"Biomarker '{marker.name}' has invalid sensor: "
-                f"{marker.primary_sensor}"
+                f"Biomarker '{marker.name}' has invalid sensor: {marker.primary_sensor}"
             )
 
     def test_sensitivity_specificity_bounds(self, analyzer):
@@ -251,6 +254,7 @@ class TestBiomarkerDefinitions:
 # TestBiomarkerComputation
 # ---------------------------------------------------------------------------
 
+
 class TestBiomarkerComputation:
     """Tests for individual biomarker computation logic."""
 
@@ -286,9 +290,7 @@ class TestBiomarkerComputation:
 
     def test_compute_weight_bearing_asymmetry(self, analyzer, stroke_features):
         """Weight-bearing asymmetry should be pronounced for stroke."""
-        result = analyzer.compute_biomarker(
-            "weight_bearing_asymmetry", stroke_features
-        )
+        result = analyzer.compute_biomarker("weight_bearing_asymmetry", stroke_features)
         assert result.value < 0.90, (
             f"Stroke weight_bearing_asymmetry should be < 0.90, got {result.value}"
         )
@@ -309,9 +311,7 @@ class TestBiomarkerComputation:
 
     def test_compute_flexion_preference_stenosis(self, analyzer, disc_features):
         """Flexion preference index should be measurable from features."""
-        result = analyzer.compute_biomarker(
-            "flexion_preference_index", disc_features
-        )
+        result = analyzer.compute_biomarker("flexion_preference_index", disc_features)
         assert isinstance(result, BiomarkerMeasurement)
         assert result.value >= 0.0
 
@@ -341,6 +341,7 @@ class TestBiomarkerComputation:
 # ---------------------------------------------------------------------------
 # TestDiseasePanelAnalysis
 # ---------------------------------------------------------------------------
+
 
 class TestDiseasePanelAnalysis:
     """Tests for disease panel scoring and differential diagnosis."""
@@ -418,6 +419,7 @@ class TestDiseasePanelAnalysis:
 # TestMultimodalReport
 # ---------------------------------------------------------------------------
 
+
 class TestMultimodalReport:
     """Tests for multimodal biomarker report generation."""
 
@@ -469,6 +471,7 @@ class TestMultimodalReport:
 # ---------------------------------------------------------------------------
 # TestBiomarkerNet
 # ---------------------------------------------------------------------------
+
 
 class TestBiomarkerNet:
     """Tests for the BiomarkerDiseaseNet neural network components."""
@@ -592,8 +595,7 @@ class TestBiomarkerNet:
         row_sums = probs.sum(dim=-1)
         for i in range(batch_size):
             assert row_sums[i].item() == pytest.approx(1.0, abs=1e-5), (
-                f"Softmax row sum for sample {i} is {row_sums[i].item()}, "
-                f"expected ~1.0"
+                f"Softmax row sum for sample {i} is {row_sums[i].item()}, expected ~1.0"
             )
         # Temperature scaling should change the distribution entropy
         if hasattr(biomarker_net, "temperature"):

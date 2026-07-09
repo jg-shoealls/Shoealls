@@ -24,52 +24,56 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 # ── GATT UUID ─────────────────────────────────────────────────────────────────
-SHOEALLS_SERVICE_UUID  = "f000aa00-0451-4000-b000-000000000000"
-IMU_CHAR_UUID          = "f000aa01-0451-4000-b000-000000000000"
-PRESSURE_CHAR_UUID     = "f000aa02-0451-4000-b000-000000000000"
-SKELETON_CHAR_UUID     = "f000aa03-0451-4000-b000-000000000000"
-CONTROL_CHAR_UUID      = "f000aa04-0451-4000-b000-000000000000"
-STATUS_CHAR_UUID       = "f000aa05-0451-4000-b000-000000000000"
+SHOEALLS_SERVICE_UUID = "f000aa00-0451-4000-b000-000000000000"
+IMU_CHAR_UUID = "f000aa01-0451-4000-b000-000000000000"
+PRESSURE_CHAR_UUID = "f000aa02-0451-4000-b000-000000000000"
+SKELETON_CHAR_UUID = "f000aa03-0451-4000-b000-000000000000"
+CONTROL_CHAR_UUID = "f000aa04-0451-4000-b000-000000000000"
+STATUS_CHAR_UUID = "f000aa05-0451-4000-b000-000000000000"
 
 # ── 상수 ──────────────────────────────────────────────────────────────────────
-MAGIC          = 0xAA
-HEADER_SIZE    = 12
-MAX_PAYLOAD    = 232   # 244 MTU - 12 header
-IMU_SCALE      = 1000.0   # float → int16  (±32.767 m/s² 또는 rad/s)
+MAGIC = 0xAA
+HEADER_SIZE = 12
+MAX_PAYLOAD = 232  # 244 MTU - 12 header
+IMU_SCALE = 1000.0  # float → int16  (±32.767 m/s² 또는 rad/s)
 PRESSURE_SCALE = 65535.0  # float → uint16 (0–1 → 0–65535)
 
-_HDR_FMT = "<BBHHHHH"  # 12 bytes: MAGIC(B) type(B) session(H) chunk(H) total(H) plen(H) crc(H)
+_HDR_FMT = (
+    "<BBHHHHH"  # 12 bytes: MAGIC(B) type(B) session(H) chunk(H) total(H) plen(H) crc(H)
+)
 
 
 # ── 열거형 ────────────────────────────────────────────────────────────────────
 
+
 class PacketType(IntEnum):
-    IMU      = 0x01
+    IMU = 0x01
     PRESSURE = 0x02
     SKELETON = 0x03
-    FEATURE  = 0x04
-    SYNC     = 0xFE
-    END      = 0xFF
+    FEATURE = 0x04
+    SYNC = 0xFE
+    END = 0xFF
 
 
 class ControlCmd(IntEnum):
-    START_SESSION   = 0x01
-    STOP_SESSION    = 0x02
-    RESET           = 0x03
-    REQUEST_RESEND  = 0x04
+    START_SESSION = 0x01
+    STOP_SESSION = 0x02
+    RESET = 0x03
+    REQUEST_RESEND = 0x04
     SET_SAMPLE_RATE = 0x10
 
 
 # ── 패킷 클래스 ───────────────────────────────────────────────────────────────
 
+
 @dataclass
 class BLEPacket:
-    packet_type:  PacketType
-    session_id:   int
-    chunk_idx:    int
+    packet_type: PacketType
+    session_id: int
+    chunk_idx: int
     total_chunks: int
-    payload:      bytes
-    crc:          int = 0
+    payload: bytes
+    crc: int = 0
 
     def is_valid(self) -> bool:
         return self.crc == _crc16(self.payload)
@@ -95,18 +99,19 @@ class BLEPacket:
         magic, ptype, sid, chunk, total, plen, crc = struct.unpack_from(_HDR_FMT, data)
         if magic != MAGIC:
             raise ValueError(f"MAGIC 불일치: 0x{magic:02X} (expected 0x{MAGIC:02X})")
-        payload = data[HEADER_SIZE: HEADER_SIZE + plen]
+        payload = data[HEADER_SIZE : HEADER_SIZE + plen]
         return cls(
-            packet_type  = PacketType(ptype),
-            session_id   = sid,
-            chunk_idx    = chunk,
-            total_chunks = total,
-            payload      = payload,
-            crc          = crc,
+            packet_type=PacketType(ptype),
+            session_id=sid,
+            chunk_idx=chunk,
+            total_chunks=total,
+            payload=payload,
+            crc=crc,
         )
 
 
 # ── 인코더 ────────────────────────────────────────────────────────────────────
+
 
 def encode_imu(imu: list[list[float]], session_id: int) -> list[bytes]:
     """[T, 6] float → BLE 청크 bytes 리스트 (int16 × 6 × T)."""
@@ -139,7 +144,7 @@ def encode_skeleton(skeleton: list[list[list[float]]], session_id: int) -> list[
 
 
 def _chunked(payload: bytes, ptype: PacketType, session_id: int) -> list[bytes]:
-    chunks = [payload[i: i + MAX_PAYLOAD] for i in range(0, len(payload), MAX_PAYLOAD)]
+    chunks = [payload[i : i + MAX_PAYLOAD] for i in range(0, len(payload), MAX_PAYLOAD)]
     total = len(chunks)
     return [
         BLEPacket(ptype, session_id, i, total, chunk).to_bytes()
@@ -148,6 +153,7 @@ def _chunked(payload: bytes, ptype: PacketType, session_id: int) -> list[bytes]:
 
 
 # ── 디코더 ────────────────────────────────────────────────────────────────────
+
 
 class StreamAssembler:
     """BLE 청크를 수신하면서 완성된 payload를 반환."""
@@ -161,7 +167,9 @@ class StreamAssembler:
         if packet.packet_type != self.expected_type:
             return None
         if not packet.is_valid():
-            raise ValueError(f"CRC 오류: chunk {packet.chunk_idx} (got 0x{packet.crc:04X})")
+            raise ValueError(
+                f"CRC 오류: chunk {packet.chunk_idx} (got 0x{packet.crc:04X})"
+            )
         self._total = packet.total_chunks
         self._chunks[packet.chunk_idx] = packet.payload
         if len(self._chunks) == self._total:
@@ -193,7 +201,9 @@ def decode_imu(raw: bytes) -> list[list[float]]:
 def decode_pressure(raw: bytes) -> list[list[float]]:
     n = len(raw) // 2
     values = struct.unpack_from(f"<{n}H", raw)
-    return [[values[i * 8 + j] / PRESSURE_SCALE for j in range(8)] for i in range(n // 8)]
+    return [
+        [values[i * 8 + j] / PRESSURE_SCALE for j in range(8)] for i in range(n // 8)
+    ]
 
 
 def decode_skeleton(raw: bytes) -> list[list[list[float]]]:
@@ -208,10 +218,12 @@ def decode_skeleton(raw: bytes) -> list[list[list[float]]]:
 
 # ── 유틸 ──────────────────────────────────────────────────────────────────────
 
+
 def _crc16(data: bytes) -> int:
     return zlib.crc32(data) & 0xFFFF
 
 
 def session_id_new() -> int:
     import random
+
     return random.randint(0, 0xFFFF)

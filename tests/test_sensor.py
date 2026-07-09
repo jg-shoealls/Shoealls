@@ -1,14 +1,21 @@
 """센서 레이어 단위 테스트 — BLE 프로토콜 + 특성 추출 + 펌웨어 시뮬레이터."""
 
-import struct
 import pytest
 import numpy as np
 
 from src.sensor.ble_protocol import (
-    BLEPacket, PacketType, StreamAssembler,
-    encode_imu, encode_pressure, encode_skeleton,
-    decode_imu, decode_pressure, decode_skeleton,
-    HEADER_SIZE, MAX_PAYLOAD, MAGIC,
+    BLEPacket,
+    PacketType,
+    StreamAssembler,
+    encode_imu,
+    encode_pressure,
+    encode_skeleton,
+    decode_imu,
+    decode_pressure,
+    decode_skeleton,
+    HEADER_SIZE,
+    MAX_PAYLOAD,
+    MAGIC,
 )
 from src.sensor.feature_extractor import GaitFeatureExtractor, GaitFeatures
 from src.sensor.firmware_sim import FirmwareSimulator
@@ -18,14 +25,20 @@ from src.sensor.firmware_sim import FirmwareSimulator
 # BLE Protocol
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestBLEPacket:
     def _make_payload(self, n: int = 10) -> bytes:
         return bytes(range(n))
 
     def test_roundtrip_to_from_bytes(self):
         payload = self._make_payload(50)
-        pkt = BLEPacket(PacketType.IMU, session_id=0x1234, chunk_idx=0,
-                        total_chunks=3, payload=payload)
+        pkt = BLEPacket(
+            PacketType.IMU,
+            session_id=0x1234,
+            chunk_idx=0,
+            total_chunks=3,
+            payload=payload,
+        )
         raw = pkt.to_bytes()
         pkt2 = BLEPacket.from_bytes(raw)
         assert pkt2.packet_type == PacketType.IMU
@@ -57,7 +70,7 @@ class TestBLEPacket:
         payload = self._make_payload(20)
         pkt = BLEPacket(PacketType.IMU, 0, 0, 1, payload)
         raw = bytearray(pkt.to_bytes())
-        raw[-1] ^= 0xFF            # payload 마지막 바이트 오염
+        raw[-1] ^= 0xFF  # payload 마지막 바이트 오염
         pkt2 = BLEPacket.from_bytes(bytes(raw))
         assert not pkt2.is_valid()
 
@@ -65,13 +78,13 @@ class TestBLEPacket:
         payload = self._make_payload(4)
         pkt = BLEPacket(PacketType.END, 0, 0, 1, payload)
         raw = bytearray(pkt.to_bytes())
-        raw[0] = 0x00              # MAGIC 오염
+        raw[0] = 0x00  # MAGIC 오염
         with pytest.raises(ValueError, match="MAGIC"):
             BLEPacket.from_bytes(bytes(raw))
 
     def test_short_packet_raises(self):
         with pytest.raises(ValueError, match="너무 짧음"):
-            BLEPacket.from_bytes(b"\xAA" * 5)
+            BLEPacket.from_bytes(b"\xaa" * 5)
 
     def test_max_payload_fits(self):
         payload = bytes(MAX_PAYLOAD)
@@ -80,7 +93,9 @@ class TestBLEPacket:
 
 
 class TestStreamAssembler:
-    def _encode_and_reassemble(self, chunks_bytes: list[bytes], ptype: PacketType) -> bytes:
+    def _encode_and_reassemble(
+        self, chunks_bytes: list[bytes], ptype: PacketType
+    ) -> bytes:
         asm = StreamAssembler(ptype)
         result = None
         for raw in chunks_bytes:
@@ -102,7 +117,9 @@ class TestStreamAssembler:
                 assert abs(o - d) < 0.002
 
     def test_pressure_roundtrip(self):
-        pressure = [[float((r * 8 + c) % 100) / 100 for c in range(8)] for r in range(16)]
+        pressure = [
+            [float((r * 8 + c) % 100) / 100 for c in range(8)] for r in range(16)
+        ]
         chunks = encode_pressure(pressure, session_id=0x0002)
         raw = self._encode_and_reassemble(chunks, PacketType.PRESSURE)
         decoded = decode_pressure(raw)
@@ -113,9 +130,10 @@ class TestStreamAssembler:
                 assert abs(o - d) < 0.00002
 
     def test_skeleton_roundtrip(self):
-        skeleton = [[[float(j) * 0.01 + t * 0.001 for _ in range(3)]
-                     for j in range(17)]
-                    for t in range(128)]
+        skeleton = [
+            [[float(j) * 0.01 + t * 0.001 for _ in range(3)] for j in range(17)]
+            for t in range(128)
+        ]
         chunks = encode_skeleton(skeleton, session_id=0x0003)
         raw = self._encode_and_reassemble(chunks, PacketType.SKELETON)
         decoded = decode_skeleton(raw)
@@ -159,13 +177,14 @@ class TestStreamAssembler:
 # Feature Extractor
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestGaitFeatureExtractor:
     def _normal_imu(self, T: int = 128, fs: int = 128) -> np.ndarray:
         """정상 보행 IMU 신호."""
         t = np.linspace(0, T / fs, T)
-        f = 1.8   # 1.8 Hz (stride freq ~1.8 strides/s)
+        f = 1.8  # 1.8 Hz (stride freq ~1.8 strides/s)
         ax = 0.3 * np.sin(2 * np.pi * f * t)
-        ay = 1.0 * np.sin(2 * np.pi * f * t)   # 수직
+        ay = 1.0 * np.sin(2 * np.pi * f * t)  # 수직
         az = 0.2 * np.cos(2 * np.pi * f * t)
         gx = 0.5 * np.cos(2 * np.pi * f * t)
         gy = 0.1 * np.ones(T)
@@ -175,9 +194,9 @@ class TestGaitFeatureExtractor:
     def _normal_pressure(self) -> np.ndarray:
         """정상 족저압 그리드."""
         grid = np.zeros((16, 8))
-        grid[11:, :] = 0.35     # heel
-        grid[3:7, :] = 0.45     # forefoot
-        grid[7:11, :] = 0.20    # midfoot
+        grid[11:, :] = 0.35  # heel
+        grid[3:7, :] = 0.45  # forefoot
+        grid[7:11, :] = 0.20  # midfoot
         return grid / grid.max()
 
     def test_returns_gaitfeatures(self):
@@ -201,10 +220,19 @@ class TestGaitFeatureExtractor:
         ext = GaitFeatureExtractor()
         d = ext.extract(self._normal_imu(), self._normal_pressure()).to_dict()
         expected = {
-            "gait_speed", "cadence", "stride_regularity", "step_symmetry",
-            "cop_sway", "ml_variability", "heel_pressure_ratio",
-            "forefoot_pressure_ratio", "arch_index", "pressure_asymmetry",
-            "acceleration_rms", "acceleration_variability", "trunk_sway",
+            "gait_speed",
+            "cadence",
+            "stride_regularity",
+            "step_symmetry",
+            "cop_sway",
+            "ml_variability",
+            "heel_pressure_ratio",
+            "forefoot_pressure_ratio",
+            "arch_index",
+            "pressure_asymmetry",
+            "acceleration_rms",
+            "acceleration_variability",
+            "trunk_sway",
         }
         assert set(d.keys()) == expected
 
@@ -235,10 +263,10 @@ class TestGaitFeatureExtractor:
         T = 128
         # 안정적인 스켈레톤
         skel = np.zeros((T, 17, 3))
-        skel[:, 5, :] = [0.2, 0.75, 0.0]   # left_shoulder
+        skel[:, 5, :] = [0.2, 0.75, 0.0]  # left_shoulder
         skel[:, 6, :] = [-0.2, 0.75, 0.0]  # right_shoulder
         skel[:, 11, :] = [0.1, 0.55, 0.0]  # left_hip
-        skel[:, 12, :] = [-0.1, 0.55, 0.0] # right_hip
+        skel[:, 12, :] = [-0.1, 0.55, 0.0]  # right_hip
         f = ext.extract(self._normal_imu(), self._normal_pressure(), skel)
         assert 0.0 <= f.trunk_sway <= 20.0
 
@@ -258,14 +286,17 @@ class TestGaitFeatureExtractor:
         t = np.linspace(0, 1, T)
 
         # 정상: 깨끗한 sin
-        imu_norm = np.stack([
-            0.3 * np.sin(2 * np.pi * 1.8 * t),
-            1.0 * np.sin(2 * np.pi * 1.8 * t),
-            0.2 * np.cos(2 * np.pi * 1.8 * t),
-            0.5 * np.cos(2 * np.pi * 1.8 * t),
-            0.1 * np.ones(T),
-            0.3 * np.sin(2 * np.pi * 1.8 * t),
-        ], axis=1)
+        imu_norm = np.stack(
+            [
+                0.3 * np.sin(2 * np.pi * 1.8 * t),
+                1.0 * np.sin(2 * np.pi * 1.8 * t),
+                0.2 * np.cos(2 * np.pi * 1.8 * t),
+                0.5 * np.cos(2 * np.pi * 1.8 * t),
+                0.1 * np.ones(T),
+                0.3 * np.sin(2 * np.pi * 1.8 * t),
+            ],
+            axis=1,
+        )
 
         # 파킨슨: 5 Hz 진전 추가
         tremor = 0.5 * np.sin(2 * np.pi * 5 * t)
@@ -283,6 +314,7 @@ class TestGaitFeatureExtractor:
 # ─────────────────────────────────────────────────────────────────────────────
 # Firmware Simulator
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestFirmwareSimulator:
     def test_snapshot_shapes(self):
@@ -317,9 +349,9 @@ class TestFirmwareSimulator:
     def test_stream_full_reconstruction(self):
         """스트림에서 IMU + Pressure + Skeleton을 완전히 복원한다."""
         sim = FirmwareSimulator(gait_class=0, session_id=0xABCD)
-        asm_imu   = StreamAssembler(PacketType.IMU)
-        asm_pres  = StreamAssembler(PacketType.PRESSURE)
-        asm_skel  = StreamAssembler(PacketType.SKELETON)
+        asm_imu = StreamAssembler(PacketType.IMU)
+        asm_pres = StreamAssembler(PacketType.PRESSURE)
+        asm_skel = StreamAssembler(PacketType.SKELETON)
 
         imu_raw = pres_raw = skel_raw = None
         for pkt_bytes in sim.stream():
@@ -340,9 +372,9 @@ class TestFirmwareSimulator:
         assert pres_raw is not None
         assert skel_raw is not None
 
-        imu   = decode_imu(imu_raw)
-        pres  = decode_pressure(pres_raw)
-        skel  = decode_skeleton(skel_raw)
+        imu = decode_imu(imu_raw)
+        pres = decode_pressure(pres_raw)
+        skel = decode_skeleton(skel_raw)
 
         assert len(imu) == 128
         assert len(pres) == 16

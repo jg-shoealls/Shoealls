@@ -30,14 +30,16 @@ class AnomalyDetectionModule(nn.Module):
         # 이상 유형별 검출기
         # 0: 비대칭, 1: 리듬 불규칙, 2: 진폭 이상, 3: 주파수 이상
         # 4: 공간 패턴 이상, 5: 시간 지연, 6: 떨림, 7: 동결
-        self.anomaly_detectors = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(embed_dim, 64),
-                nn.ReLU(inplace=True),
-                nn.Linear(64, 1),
-            )
-            for _ in range(num_anomaly_types)
-        ])
+        self.anomaly_detectors = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(embed_dim, 64),
+                    nn.ReLU(inplace=True),
+                    nn.Linear(64, 1),
+                )
+                for _ in range(num_anomaly_types)
+            ]
+        )
 
         # 시간축 이상 히트맵 생성기
         self.temporal_anomaly_conv = nn.Conv1d(embed_dim, 1, kernel_size=5, padding=2)
@@ -61,9 +63,9 @@ class AnomalyDetectionModule(nn.Module):
         deviation = pooled - self.normal_prototype  # (B, D)
 
         # 이상 유형별 점수
-        anomaly_scores = torch.stack([
-            det(deviation).squeeze(-1) for det in self.anomaly_detectors
-        ], dim=1)  # (B, num_anomaly_types)
+        anomaly_scores = torch.stack(
+            [det(deviation).squeeze(-1) for det in self.anomaly_detectors], dim=1
+        )  # (B, num_anomaly_types)
         anomaly_scores = torch.sigmoid(anomaly_scores)
 
         # 시간축 이상 히트맵
@@ -93,7 +95,10 @@ class CrossModalEvidenceCollector(nn.Module):
 
         # 모달리티 간 교차 검증 어텐션
         self.cross_verify = nn.MultiheadAttention(
-            embed_dim, num_heads, dropout=0.1, batch_first=True,
+            embed_dim,
+            num_heads,
+            dropout=0.1,
+            batch_first=True,
         )
         self.norm = nn.LayerNorm(embed_dim)
 
@@ -130,7 +135,9 @@ class CrossModalEvidenceCollector(nn.Module):
         D = modality_features[0].size(2)
 
         # 모달리티별 요약
-        summaries = torch.stack([f.mean(dim=1) for f in modality_features], dim=1)  # (B, 3, D)
+        summaries = torch.stack(
+            [f.mean(dim=1) for f in modality_features], dim=1
+        )  # (B, 3, D)
 
         # 교차 검증: 각 모달리티가 다른 모달리티를 참조
         # Optimization: Set need_weights=False to prevent unnecessary memory allocation
@@ -193,15 +200,12 @@ class DifferentialDiagnosisChain(nn.Module):
         self.num_steps = num_reasoning_steps
 
         # 질환별 학습 프로토타입 (각 질환의 전형적 특징)
-        self.class_prototypes = nn.Parameter(
-            torch.randn(num_classes, embed_dim) * 0.02
-        )
+        self.class_prototypes = nn.Parameter(torch.randn(num_classes, embed_dim) * 0.02)
 
         # 추론 단계별 Transformer 블록
-        self.reasoning_steps = nn.ModuleList([
-            ReasoningBlock(embed_dim, num_classes)
-            for _ in range(num_reasoning_steps)
-        ])
+        self.reasoning_steps = nn.ModuleList(
+            [ReasoningBlock(embed_dim, num_classes) for _ in range(num_reasoning_steps)]
+        )
 
         # 찬성/반대 근거 생성기
         self.pro_evidence = nn.Linear(embed_dim, num_classes)
@@ -227,8 +231,8 @@ class DifferentialDiagnosisChain(nn.Module):
 
         # 초기 가설: 프로토타입과의 유사도
         similarity = F.cosine_similarity(
-            evidence_embedding.unsqueeze(1),          # (B, 1, D)
-            self.class_prototypes.unsqueeze(0),        # (1, C, D)
+            evidence_embedding.unsqueeze(1),  # (B, 1, D)
+            self.class_prototypes.unsqueeze(0),  # (1, C, D)
             dim=-1,
         )  # (B, C)
 
@@ -242,8 +246,8 @@ class DifferentialDiagnosisChain(nn.Module):
             reasoning_trace.append(hypothesis.clone())
 
         # 찬성/반대 근거
-        pro = torch.sigmoid(self.pro_evidence(context))   # (B, C)
-        con = torch.sigmoid(self.con_evidence(context))   # (B, C)
+        pro = torch.sigmoid(self.pro_evidence(context))  # (B, C)
+        con = torch.sigmoid(self.con_evidence(context))  # (B, C)
 
         return {
             "hypothesis_logits": hypothesis,
@@ -276,17 +280,17 @@ class ReasoningBlock(nn.Module):
     def forward(
         self,
         hypothesis: torch.Tensor,  # (B, C)
-        context: torch.Tensor,      # (B, D)
-        prototypes: torch.Tensor,    # (C, D)
+        context: torch.Tensor,  # (B, D)
+        prototypes: torch.Tensor,  # (C, D)
     ) -> tuple:
         # 현재 가설 기반으로 프로토타입 가중 합산
-        attn = F.softmax(hypothesis, dim=-1)                  # (B, C)
-        attended_proto = torch.mm(attn, prototypes)            # (B, D)
+        attn = F.softmax(hypothesis, dim=-1)  # (B, C)
+        attended_proto = torch.mm(attn, prototypes)  # (B, D)
 
         # 컨텍스트와 프로토타입의 차이로 가설 업데이트
-        combined = torch.cat([context, hypothesis], dim=-1)    # (B, D+C)
-        delta = self.hypothesis_update(combined)               # (B, C)
-        new_hypothesis = hypothesis + delta                    # residual
+        combined = torch.cat([context, hypothesis], dim=-1)  # (B, D+C)
+        delta = self.hypothesis_update(combined)  # (B, C)
+        new_hypothesis = hypothesis + delta  # residual
 
         # 컨텍스트 정제
         ctx_combined = torch.cat([context + attended_proto, hypothesis], dim=-1)
@@ -337,19 +341,22 @@ class ConfidenceCalibrator(nn.Module):
         # 추론 일관성: 각 단계 간 변화량
         consistency = []
         for i in range(1, len(reasoning_trace)):
-            delta = (reasoning_trace[i] - reasoning_trace[i-1]).abs().mean(dim=-1)
+            delta = (reasoning_trace[i] - reasoning_trace[i - 1]).abs().mean(dim=-1)
             consistency.append(delta)
         consistency = torch.stack(consistency, dim=1)  # (B, num_steps)
 
         # 입력 결합
-        features = torch.cat([
-            hypothesis_logits,      # (B, C)
-            pro_scores,             # (B, C)
-            con_scores,             # (B, C)
-            evidence_strength.unsqueeze(-1),  # (B, 1)
-            consistency,            # (B, num_steps)
-            cross_support_mean.unsqueeze(-1),  # (B, 1)
-        ], dim=-1)
+        features = torch.cat(
+            [
+                hypothesis_logits,  # (B, C)
+                pro_scores,  # (B, C)
+                con_scores,  # (B, C)
+                evidence_strength.unsqueeze(-1),  # (B, 1)
+                consistency,  # (B, num_steps)
+                cross_support_mean.unsqueeze(-1),  # (B, 1)
+            ],
+            dim=-1,
+        )
 
         calibrated_logits = self.calibration_net(features)
 
@@ -384,8 +391,14 @@ class GaitReasoningEngine(nn.Module):
     """
 
     ANOMALY_NAMES_KR = [
-        "좌우 비대칭", "리듬 불규칙", "진폭 이상", "주파수 이상",
-        "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
+        "좌우 비대칭",
+        "리듬 불규칙",
+        "진폭 이상",
+        "주파수 이상",
+        "공간 패턴 이상",
+        "시간 지연",
+        "떨림",
+        "보행 동결",
     ]
 
     CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
@@ -404,6 +417,7 @@ class GaitReasoningEngine(nn.Module):
 
         # 공유 인코더 (기존 모델에서 로드)
         from .encoders import IMUEncoder, PressureEncoder, SkeletonEncoder
+
         imu_cfg = model_cfg["imu_encoder"]
         self.imu_encoder = IMUEncoder(
             in_channels=data_cfg["imu_channels"],
@@ -432,15 +446,18 @@ class GaitReasoningEngine(nn.Module):
         )
 
         # 4단계 추론 모듈
-        self.anomaly_detectors = nn.ModuleList([
-            AnomalyDetectionModule(embed_dim) for _ in range(3)
-        ])
+        self.anomaly_detectors = nn.ModuleList(
+            [AnomalyDetectionModule(embed_dim) for _ in range(3)]
+        )
         self.evidence_collector = CrossModalEvidenceCollector(embed_dim)
         self.diagnosis_chain = DifferentialDiagnosisChain(
-            embed_dim, num_classes, num_reasoning_steps,
+            embed_dim,
+            num_classes,
+            num_reasoning_steps,
         )
         self.confidence_calibrator = ConfidenceCalibrator(
-            num_classes, num_reasoning_steps,
+            num_classes,
+            num_reasoning_steps,
         )
 
     def forward(self, batch: dict) -> dict:
@@ -518,7 +535,11 @@ class GaitReasoningEngine(nn.Module):
 
         # ── 최종 판정 ──
         lines.append("")
-        kr_pred = self.CLASS_NAMES_KR[pred] if pred < len(self.CLASS_NAMES_KR) else f"알 수 없는 클래스 ({pred})"
+        kr_pred = (
+            self.CLASS_NAMES_KR[pred]
+            if pred < len(self.CLASS_NAMES_KR)
+            else f"알 수 없는 클래스 ({pred})"
+        )
         lines.append(f"  최종 판정: {kr_pred}")
         lines.append(f"  확신도:    {probs[pred]:.1%}")
         lines.append(f"  불확실성:  {uncertainty:.1%}")
@@ -533,15 +554,14 @@ class GaitReasoningEngine(nn.Module):
             zip(self.MODALITY_NAMES_KR, result["anomaly_results"])
         ):
             scores = anom["anomaly_scores"][i].cpu().numpy()
-            top_anomalies = sorted(
-                enumerate(scores), key=lambda x: x[1], reverse=True
-            )[:3]
+            top_anomalies = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)[
+                :3
+            ]
 
             detected = [(idx, s) for idx, s in top_anomalies if s > 0.5]
             if detected:
                 findings = ", ".join(
-                    f"{self.ANOMALY_NAMES_KR[idx]}({s:.0%})"
-                    for idx, s in detected
+                    f"{self.ANOMALY_NAMES_KR[idx]}({s:.0%})" for idx, s in detected
                 )
                 lines.append(f"  {m_name}: {findings}")
             else:
@@ -579,18 +599,23 @@ class GaitReasoningEngine(nn.Module):
             step_probs = F.softmax(step_logits[i], dim=-1).cpu().numpy()
             top_cls = step_probs.argmax()
             label = "초기 가설" if step_idx == 0 else f"추론 {step_idx}단계"
-            kr_top_cls = self.CLASS_NAMES_KR[top_cls] if top_cls < len(self.CLASS_NAMES_KR) else f"알 수 없는 클래스 ({top_cls})"
-            lines.append(
-                f"  {label}: "
-                f"{kr_top_cls} ({step_probs[top_cls]:.0%})"
+            kr_top_cls = (
+                self.CLASS_NAMES_KR[top_cls]
+                if top_cls < len(self.CLASS_NAMES_KR)
+                else f"알 수 없는 클래스 ({top_cls})"
             )
+            lines.append(f"  {label}: {kr_top_cls} ({step_probs[top_cls]:.0%})")
 
         lines.append("")
         lines.append("  진단별 근거 분석:")
         ranked = sorted(range(len(probs)), key=lambda c: probs[c], reverse=True)
         for cls_idx in ranked:
             marker = ">>" if cls_idx == pred else "  "
-            kr_cls_idx = self.CLASS_NAMES_KR[cls_idx] if cls_idx < len(self.CLASS_NAMES_KR) else f"알 수 없는 클래스 ({cls_idx})"
+            kr_cls_idx = (
+                self.CLASS_NAMES_KR[cls_idx]
+                if cls_idx < len(self.CLASS_NAMES_KR)
+                else f"알 수 없는 클래스 ({cls_idx})"
+            )
             lines.append(
                 f"  {marker} {kr_cls_idx[:10]:10s} "
                 f"확률 {probs[cls_idx]:5.1%} | "
@@ -616,14 +641,20 @@ class GaitReasoningEngine(nn.Module):
         # 추론 일관성
         changes = []
         for s in range(1, len(trace)):
-            prev_top = F.softmax(trace[s-1][i], dim=-1).argmax().item()
+            prev_top = F.softmax(trace[s - 1][i], dim=-1).argmax().item()
             curr_top = F.softmax(trace[s][i], dim=-1).argmax().item()
             if prev_top != curr_top:
-                kr_prev = self.CLASS_NAMES_KR[prev_top] if prev_top < len(self.CLASS_NAMES_KR) else f"알 수 없는 클래스 ({prev_top})"
-                kr_curr = self.CLASS_NAMES_KR[curr_top] if curr_top < len(self.CLASS_NAMES_KR) else f"알 수 없는 클래스 ({curr_top})"
-                changes.append(
-                    f"  단계{s}: {kr_prev} → {kr_curr}"
+                kr_prev = (
+                    self.CLASS_NAMES_KR[prev_top]
+                    if prev_top < len(self.CLASS_NAMES_KR)
+                    else f"알 수 없는 클래스 ({prev_top})"
                 )
+                kr_curr = (
+                    self.CLASS_NAMES_KR[curr_top]
+                    if curr_top < len(self.CLASS_NAMES_KR)
+                    else f"알 수 없는 클래스 ({curr_top})"
+                )
+                changes.append(f"  단계{s}: {kr_prev} → {kr_curr}")
 
         if changes:
             lines.append("  추론 과정 중 가설 변경:")
@@ -638,7 +669,9 @@ class GaitReasoningEngine(nn.Module):
 
     def load_base_model_weights(self, checkpoint_path: str, device="cpu"):
         """기존 학습된 모델에서 인코더 가중치를 로드."""
-        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        checkpoint = torch.load(
+            checkpoint_path, map_location=device, weights_only=False
+        )
         state = checkpoint["model_state_dict"]
 
         # 인코더 가중치만 추출하여 로드
@@ -653,7 +686,7 @@ class GaitReasoningEngine(nn.Module):
         for key, value in state.items():
             for prefix in encoder_mapping:
                 if key.startswith(prefix):
-                    target_key = encoder_mapping[prefix] + key[len(prefix):]
+                    target_key = encoder_mapping[prefix] + key[len(prefix) :]
                     if target_key in own_state:
                         own_state[target_key].copy_(value)
                         loaded += 1

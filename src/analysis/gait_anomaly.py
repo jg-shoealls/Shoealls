@@ -14,7 +14,7 @@
 """
 
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .common import severity_label, get_feature_korean, compute_derived_features
 from .report_formatter import header, section, marker_line, risk_line, HEADER_DIVIDER
@@ -23,25 +23,27 @@ from .report_formatter import header, section, marker_line, risk_line, HEADER_DI
 @dataclass
 class AnomalyPattern:
     """감지된 비정상 보행 패턴."""
+
     pattern_id: str
     korean_name: str
-    severity: float           # 0.0 ~ 1.0
-    severity_label: str       # 정상/경미/주의/경고/위험
-    description: str          # 한국어 설명
-    evidence: list[str]       # 감지 근거
-    injury_risks: list[str]   # 연관 부상 위험
-    correction: str           # 교정 권고
+    severity: float  # 0.0 ~ 1.0
+    severity_label: str  # 정상/경미/주의/경고/위험
+    description: str  # 한국어 설명
+    evidence: list[str]  # 감지 근거
+    injury_risks: list[str]  # 연관 부상 위험
+    correction: str  # 교정 권고
 
 
 @dataclass
 class GaitAnomalyReport:
     """보행 이상 종합 보고서."""
-    patterns: list[AnomalyPattern]          # 감지된 모든 패턴
-    abnormal_patterns: list[AnomalyPattern] # 비정상으로 판정된 패턴만
-    anomaly_score: float                    # 종합 이상 점수 (0~1)
-    anomaly_grade: str                      # 정상/경미/주의/경고/위험
-    injury_risk_summary: dict[str, float]   # 부상유형 → 종합 위험도
-    summary_kr: str                         # 한국어 보고서
+
+    patterns: list[AnomalyPattern]  # 감지된 모든 패턴
+    abnormal_patterns: list[AnomalyPattern]  # 비정상으로 판정된 패턴만
+    anomaly_score: float  # 종합 이상 점수 (0~1)
+    anomaly_grade: str  # 정상/경미/주의/경고/위험
+    injury_risk_summary: dict[str, float]  # 부상유형 → 종합 위험도
+    summary_kr: str  # 한국어 보고서
 
 
 # ── 비정상 보행 패턴 정의 ─────────────────────────────────────────────
@@ -95,7 +97,11 @@ ANOMALY_DEFINITIONS = {
         "category": "압력",
         "description": "앞발에 과도한 하중이 집중되는 패턴 (뒤꿈치 착지 부전)",
         "features": {
-            "forefoot_pressure_ratio": {"direction": "high", "mild": 0.55, "severe": 0.72},
+            "forefoot_pressure_ratio": {
+                "direction": "high",
+                "mild": 0.55,
+                "severe": 0.72,
+            },
             "heel_pressure_ratio": {"direction": "low", "mild": 0.22, "severe": 0.12},
         },
         "injury_risks": ["중족골 피로골절", "중족골통", "족저근막염", "모턴 신경종"],
@@ -109,7 +115,12 @@ ANOMALY_DEFINITIONS = {
             "heel_pressure_ratio": {"direction": "high", "mild": 0.42, "severe": 0.58},
             "acceleration_rms": {"direction": "high", "mild": 2.5, "severe": 3.5},
         },
-        "injury_risks": ["종골 피로골절", "족저근막염", "무릎 관절 충격", "경골 스트레스"],
+        "injury_risks": [
+            "종골 피로골절",
+            "족저근막염",
+            "무릎 관절 충격",
+            "경골 스트레스",
+        ],
         "correction": "중족부 착지(midfoot strike) 전환 훈련, 충격 흡수 인솔, 보행 속도 조절",
     },
     "lateral_deviation": {
@@ -129,7 +140,12 @@ ANOMALY_DEFINITIONS = {
         "features": {
             "arch_index": {"direction": "high", "mild": 0.35, "severe": 0.50},
         },
-        "injury_risks": ["족저근막염", "후경골건 기능부전", "무릎 내반 변형", "평발 진행"],
+        "injury_risks": [
+            "족저근막염",
+            "후경골건 기능부전",
+            "무릎 내반 변형",
+            "평발 진행",
+        ],
         "correction": "아치 서포트 인솔 착용, 후경골건 강화 운동(타올 그랩, 카프 레이즈), 맨발 운동",
     },
     # === 동적 이상 ===
@@ -181,7 +197,11 @@ ANOMALY_DEFINITIONS = {
 # ── 부상 위험 분류 ────────────────────────────────────────────────────
 INJURY_CATEGORIES = {
     "족저근막염": {"severity_weight": 1.0, "timeline": "만성", "body_part": "발바닥"},
-    "중족골 피로골절": {"severity_weight": 1.2, "timeline": "급성/만성", "body_part": "전족부"},
+    "중족골 피로골절": {
+        "severity_weight": 1.2,
+        "timeline": "급성/만성",
+        "body_part": "전족부",
+    },
     "중족골통": {"severity_weight": 0.8, "timeline": "만성", "body_part": "전족부"},
     "모턴 신경종": {"severity_weight": 0.9, "timeline": "만성", "body_part": "전족부"},
     "발목 염좌": {"severity_weight": 1.1, "timeline": "급성", "body_part": "발목"},
@@ -190,25 +210,73 @@ INJURY_CATEGORIES = {
     "무릎 관절 충격": {"severity_weight": 0.9, "timeline": "만성", "body_part": "무릎"},
     "무릎 내반 변형": {"severity_weight": 1.0, "timeline": "만성", "body_part": "무릎"},
     "고관절 통증": {"severity_weight": 1.0, "timeline": "만성", "body_part": "고관절"},
-    "고관절/무릎 변형": {"severity_weight": 1.1, "timeline": "만성", "body_part": "하지"},
+    "고관절/무릎 변형": {
+        "severity_weight": 1.1,
+        "timeline": "만성",
+        "body_part": "하지",
+    },
     "요통": {"severity_weight": 1.0, "timeline": "만성", "body_part": "허리"},
     "요추 과부하": {"severity_weight": 1.0, "timeline": "만성", "body_part": "허리"},
-    "종골 피로골절": {"severity_weight": 1.2, "timeline": "급성", "body_part": "뒤꿈치"},
-    "아킬레스건염": {"severity_weight": 1.0, "timeline": "만성", "body_part": "발뒤꿈치"},
-    "경골 피로골절": {"severity_weight": 1.2, "timeline": "급성", "body_part": "정강이"},
-    "경골 스트레스": {"severity_weight": 0.9, "timeline": "만성", "body_part": "정강이"},
-    "제5 중족골 골절": {"severity_weight": 1.3, "timeline": "급성", "body_part": "발 외측"},
-    "장경인대 증후군": {"severity_weight": 0.9, "timeline": "만성", "body_part": "무릎 외측"},
-    "후경골건 기능부전": {"severity_weight": 1.0, "timeline": "만성", "body_part": "발 내측"},
+    "종골 피로골절": {
+        "severity_weight": 1.2,
+        "timeline": "급성",
+        "body_part": "뒤꿈치",
+    },
+    "아킬레스건염": {
+        "severity_weight": 1.0,
+        "timeline": "만성",
+        "body_part": "발뒤꿈치",
+    },
+    "경골 피로골절": {
+        "severity_weight": 1.2,
+        "timeline": "급성",
+        "body_part": "정강이",
+    },
+    "경골 스트레스": {
+        "severity_weight": 0.9,
+        "timeline": "만성",
+        "body_part": "정강이",
+    },
+    "제5 중족골 골절": {
+        "severity_weight": 1.3,
+        "timeline": "급성",
+        "body_part": "발 외측",
+    },
+    "장경인대 증후군": {
+        "severity_weight": 0.9,
+        "timeline": "만성",
+        "body_part": "무릎 외측",
+    },
+    "후경골건 기능부전": {
+        "severity_weight": 1.0,
+        "timeline": "만성",
+        "body_part": "발 내측",
+    },
     "평발 진행": {"severity_weight": 0.7, "timeline": "만성", "body_part": "발"},
     "낙상": {"severity_weight": 1.5, "timeline": "급성", "body_part": "전신"},
     "근감소증": {"severity_weight": 0.8, "timeline": "만성", "body_part": "전신"},
     "근감소증 진행": {"severity_weight": 0.8, "timeline": "만성", "body_part": "전신"},
     "관절 구축": {"severity_weight": 0.9, "timeline": "만성", "body_part": "관절"},
-    "근골격계 과부하": {"severity_weight": 0.9, "timeline": "만성", "body_part": "하지"},
-    "전신 근골격 과부하": {"severity_weight": 0.9, "timeline": "만성", "body_part": "전신"},
-    "이차적 과부하 손상": {"severity_weight": 1.0, "timeline": "만성", "body_part": "하지"},
-    "보상성 관절 통증": {"severity_weight": 0.9, "timeline": "만성", "body_part": "하지"},
+    "근골격계 과부하": {
+        "severity_weight": 0.9,
+        "timeline": "만성",
+        "body_part": "하지",
+    },
+    "전신 근골격 과부하": {
+        "severity_weight": 0.9,
+        "timeline": "만성",
+        "body_part": "전신",
+    },
+    "이차적 과부하 손상": {
+        "severity_weight": 1.0,
+        "timeline": "만성",
+        "body_part": "하지",
+    },
+    "보상성 관절 통증": {
+        "severity_weight": 0.9,
+        "timeline": "만성",
+        "body_part": "하지",
+    },
     "보행 효율 저하": {"severity_weight": 0.5, "timeline": "만성", "body_part": "전신"},
 }
 
@@ -261,8 +329,9 @@ class GaitAnomalyDetector:
         injury_risk_summary = self._aggregate_injury_risks(abnormal)
 
         # 보고서 생성
-        summary = self._generate_report(patterns, abnormal, anomaly_score,
-                                         anomaly_grade, injury_risk_summary)
+        summary = self._generate_report(
+            patterns, abnormal, anomaly_score, anomaly_grade, injury_risk_summary
+        )
 
         return GaitAnomalyReport(
             patterns=patterns,
@@ -362,7 +431,9 @@ class GaitAnomalyDetector:
 
         for pattern in abnormal_patterns:
             for injury_name in pattern.injury_risks:
-                weight = self.injury_cats.get(injury_name, {}).get("severity_weight", 1.0)
+                weight = self.injury_cats.get(injury_name, {}).get(
+                    "severity_weight", 1.0
+                )
                 weighted_score = pattern.severity * weight
                 injury_scores.setdefault(injury_name, []).append(weighted_score)
 
@@ -394,7 +465,9 @@ class GaitAnomalyDetector:
 
         # 종합 점수
         lines.append(f"  종합 이상 점수: {anomaly_score:.0%} ({anomaly_grade})")
-        lines.append(f"  감지된 이상 패턴: {len(abnormal)}개 / {len(all_patterns)}개 검사")
+        lines.append(
+            f"  감지된 이상 패턴: {len(abnormal)}개 / {len(all_patterns)}개 검사"
+        )
         lines.append("")
 
         # 전체 패턴 상태
@@ -422,7 +495,9 @@ class GaitAnomalyDetector:
 
             for p in abnormal[:5]:
                 lines.append("")
-                lines.append(f"  ■ {p.korean_name} (심각도: {p.severity:.0%}, {p.severity_label})")
+                lines.append(
+                    f"  ■ {p.korean_name} (심각도: {p.severity:.0%}, {p.severity_label})"
+                )
                 lines.append(f"    {p.description}")
 
                 if p.evidence:
@@ -448,9 +523,11 @@ class GaitAnomalyDetector:
                 cat = self.injury_cats.get(injury_name, {})
                 timeline = cat.get("timeline", "")
                 body_part = cat.get("body_part", "")
-                lines.append(risk_line(
-                    injury_name, risk_score, extra=f"[{timeline}/{body_part}]"
-                ))
+                lines.append(
+                    risk_line(
+                        injury_name, risk_score, extra=f"[{timeline}/{body_part}]"
+                    )
+                )
 
         # 권고사항
         lines.append("")

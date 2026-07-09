@@ -12,7 +12,16 @@ from torch.utils.data import Dataset, Subset, random_split
 
 
 LABEL_COLUMNS = ("label", "labels", "target", "targets", "y", "class", "activity")
-FEATURE_COLUMNS = ("x", "X", "features", "feature", "values", "series", "signal", "data")
+FEATURE_COLUMNS = (
+    "x",
+    "X",
+    "features",
+    "feature",
+    "values",
+    "series",
+    "signal",
+    "data",
+)
 
 
 @dataclass(frozen=True)
@@ -48,8 +57,7 @@ class HARWindowDataset(Dataset):
         self.sequence_length = sequence_length
         self.normalize = normalize
         self.windows = [
-            prepare_har_window(window, sequence_length, normalize)
-            for window in windows
+            prepare_har_window(window, sequence_length, normalize) for window in windows
         ]
         self.labels = np.asarray(labels, dtype=np.int64)
 
@@ -278,11 +286,15 @@ def _extract_har_row(row: dict[str, Any]) -> tuple[np.ndarray, int]:
             feature_value = [row[key] for key in numbered_keys]
         else:
             numeric_items = [
-                value for key, value in row.items()
-                if key != label_key and isinstance(value, (int, float, list, tuple, np.ndarray))
+                value
+                for key, value in row.items()
+                if key != label_key
+                and isinstance(value, (int, float, list, tuple, np.ndarray))
             ]
             if not numeric_items:
-                raise ValueError(f"Could not find sensor features in HF row keys: {list(row)}")
+                raise ValueError(
+                    f"Could not find sensor features in HF row keys: {list(row)}"
+                )
             feature_value = numeric_items[0]
     else:
         feature_value = row[feature_key]
@@ -325,7 +337,9 @@ def _balanced_indices(labels: np.ndarray, max_samples: int) -> np.ndarray:
         selected.extend(idx[:per_class].tolist())
 
     if len(selected) < max_samples:
-        remaining = np.setdiff1d(np.arange(len(labels)), np.asarray(selected), assume_unique=False)
+        remaining = np.setdiff1d(
+            np.arange(len(labels)), np.asarray(selected), assume_unique=False
+        )
         rng.shuffle(remaining)
         selected.extend(remaining[: max_samples - len(selected)].tolist())
 

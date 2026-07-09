@@ -47,11 +47,13 @@ class IMUPressureGaitNet(nn.Module):
         layers = []
         in_dim = embed_dim * 2
         for h_dim in cls_cfg["hidden_dims"]:
-            layers.extend([
-                nn.Linear(in_dim, h_dim),
-                nn.ReLU(inplace=True),
-                nn.Dropout(cls_cfg["dropout"]),
-            ])
+            layers.extend(
+                [
+                    nn.Linear(in_dim, h_dim),
+                    nn.ReLU(inplace=True),
+                    nn.Dropout(cls_cfg["dropout"]),
+                ]
+            )
             in_dim = h_dim
         layers.append(nn.Linear(in_dim, data_cfg["num_classes"]))
         self.classifier = nn.Sequential(*layers)

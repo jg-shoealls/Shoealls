@@ -22,11 +22,12 @@ FS = 100.0  # Hz
 # Fixtures
 # ─────────────────────────────────────────────
 
+
 def _normal_imu(T: int = 512) -> np.ndarray:
     """정상 보행: 매우 규칙적인 수직 가속도, 트레모 없음."""
     imu = np.zeros((6, T), dtype=np.float32)
     t = np.arange(T) / FS
-    imu[2] = np.sin(2 * np.pi * 2.0 * t)   # 완전 규칙 걸음
+    imu[2] = np.sin(2 * np.pi * 2.0 * t)  # 완전 규칙 걸음
     imu[0] = np.sin(2 * np.pi * 2.0 * t) * 0.01  # 극소 ML 신호
     return imu
 
@@ -64,6 +65,7 @@ def _normal_pressure(T: int = 512) -> np.ndarray:
 # ─────────────────────────────────────────────
 # 단위 함수 테스트
 # ─────────────────────────────────────────────
+
 
 class TestCoefficientOfVariation:
     def test_zero_variance(self):
@@ -112,7 +114,7 @@ class TestStridTimeCV:
 
     def test_irregular_gait_higher_cv(self):
         cv_normal = _stride_time_cv(_normal_imu(), FS)
-        cv_pd     = _stride_time_cv(_pd_imu(), FS)
+        cv_pd = _stride_time_cv(_pd_imu(), FS)
         assert cv_pd >= cv_normal, "PD 패턴이 정상보다 CV가 낮을 수 없음"
 
     def test_too_short_returns_zero(self):
@@ -127,14 +129,14 @@ class TestRestTremorIndex:
 
     def test_5hz_tremor_elevates_index(self):
         rti_normal = _rest_tremor_index(_normal_imu(), FS)
-        rti_pd     = _rest_tremor_index(_pd_imu(), FS)
+        rti_pd = _rest_tremor_index(_pd_imu(), FS)
         assert rti_pd > rti_normal, "5 Hz 트레모 삽입 후 지수가 높아야 함"
 
     def test_pure_5hz_signal(self):
         # 단일 채널에 5 Hz 만 존재 — 개별 채널 밴드파워로 검출해야 함
         t = np.arange(512) / FS
         imu = np.zeros((6, 512), dtype=np.float32)
-        imu[0] = np.sin(2 * np.pi * 5.0 * t)   # X 채널만 5 Hz
+        imu[0] = np.sin(2 * np.pi * 5.0 * t)  # X 채널만 5 Hz
         rti = _rest_tremor_index(imu, FS)
         assert rti > 0.10, f"순수 5 Hz 신호에서 rti={rti:.4f} 낮음"
 
@@ -164,6 +166,7 @@ class TestDoubleSupportRatio:
 # ProdromalBiomarker 데이터 클래스 테스트
 # ─────────────────────────────────────────────
 
+
 class TestProdromalBiomarker:
     def test_normal_value_not_abnormal(self):
         b = ProdromalBiomarker("x", "x", 0.02, (0.00, 0.03), "CV", "IMU", "test")
@@ -174,7 +177,9 @@ class TestProdromalBiomarker:
         assert b.is_abnormal
 
     def test_value_below_range_is_abnormal(self):
-        b = ProdromalBiomarker("x", "x", 0.50, (0.70, 1.00), "score", "EXTERNAL", "test")
+        b = ProdromalBiomarker(
+            "x", "x", 0.50, (0.70, 1.00), "score", "EXTERNAL", "test"
+        )
         assert b.is_abnormal
 
     def test_boundary_values_not_abnormal(self):
@@ -187,6 +192,7 @@ class TestProdromalBiomarker:
 # ─────────────────────────────────────────────
 # ProdrOmalBiomarkerExtractor 통합 테스트
 # ─────────────────────────────────────────────
+
 
 class TestProdrOmalBiomarkerExtractor:
     @pytest.fixture
@@ -205,9 +211,13 @@ class TestProdrOmalBiomarkerExtractor:
         panel = extractor.extract(_normal_imu(), _normal_pressure())
         names = {b.name for b in panel.biomarkers}
         expected = {
-            "stride_time_cv", "step_width_cv", "cadence_variability",
-            "double_support_ratio", "rest_tremor_index",
-            "nocturnal_movement_regularity", "olfactory_screen_score",
+            "stride_time_cv",
+            "step_width_cv",
+            "cadence_variability",
+            "double_support_ratio",
+            "rest_tremor_index",
+            "nocturnal_movement_regularity",
+            "olfactory_screen_score",
             "prodromal_composite_score",
         }
         assert names == expected
@@ -234,12 +244,18 @@ class TestProdrOmalBiomarkerExtractor:
         assert 0.0 <= panel.stage_confidence <= 1.0
 
     def test_olfactory_abnormal_raises_risk(self, extractor):
-        panel_ok  = extractor.extract(_normal_imu(), _normal_pressure(), external={"olfactory_screen_score": 0.90})
-        panel_bad = extractor.extract(_normal_imu(), _normal_pressure(), external={"olfactory_screen_score": 0.30})
+        panel_ok = extractor.extract(
+            _normal_imu(), _normal_pressure(), external={"olfactory_screen_score": 0.90}
+        )
+        panel_bad = extractor.extract(
+            _normal_imu(), _normal_pressure(), external={"olfactory_screen_score": 0.30}
+        )
         assert panel_bad.composite_score > panel_ok.composite_score
 
     def test_olfactory_abnormal_flagged(self, extractor):
-        panel = extractor.extract(_normal_imu(), _normal_pressure(), external={"olfactory_screen_score": 0.40})
+        panel = extractor.extract(
+            _normal_imu(), _normal_pressure(), external={"olfactory_screen_score": 0.40}
+        )
         olf = next(b for b in panel.biomarkers if b.name == "olfactory_screen_score")
         assert olf.is_abnormal
 

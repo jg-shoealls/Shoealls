@@ -19,6 +19,7 @@ from sklearn.metrics import accuracy_score, f1_score
 @dataclass
 class TrainingMetrics:
     """분류기 학습 성과 (공통)."""
+
     accuracy: float
     f1_macro: float
     cv_accuracy_mean: float
@@ -135,7 +136,9 @@ class BaseGaitClassifier(ABC):
 
     def _build_feature_vector(self, features: dict[str, float]) -> np.ndarray:
         """특성 딕셔너리 → 고정 순서 벡터."""
-        return np.array([features.get(f, 0.0) for f in self.feature_names]).reshape(1, -1)
+        return np.array([features.get(f, 0.0) for f in self.feature_names]).reshape(
+            1, -1
+        )
 
     def _predict_base(self, features: dict[str, float]) -> tuple[np.ndarray, int, int]:
         """공통 예측 로직. Returns: (proba, pred_idx, pred_class)."""
@@ -161,6 +164,5 @@ class BaseGaitClassifier(ABC):
         """확률 배열 → Top 3 리스트."""
         top_indices = np.argsort(proba)[::-1][:3]
         return [
-            (self.labels[self.classes_[i]][1], float(proba[i]))
-            for i in top_indices
+            (self.labels[self.classes_[i]][1], float(proba[i])) for i in top_indices
         ]

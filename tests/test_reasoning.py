@@ -69,7 +69,9 @@ class TestCrossModalEvidence:
 
 class TestDifferentialDiagnosis:
     def test_output_shapes(self):
-        module = DifferentialDiagnosisChain(embed_dim=128, num_classes=4, num_reasoning_steps=3)
+        module = DifferentialDiagnosisChain(
+            embed_dim=128, num_classes=4, num_reasoning_steps=3
+        )
         evidence = torch.randn(2, 128)
         context = torch.randn(2, 128)
 

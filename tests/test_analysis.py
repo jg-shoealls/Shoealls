@@ -1,7 +1,6 @@
 """Tests for the personalized gait analysis system."""
 
 import numpy as np
-import pytest
 
 from src.analysis.foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
 from src.analysis.gait_profile import PersonalGaitProfiler
@@ -167,8 +166,12 @@ class TestInjuryRiskEngine:
 
         names = {r.name for r in report.risks}
         expected = {
-            "plantar_fasciitis", "metatarsal_stress", "ankle_sprain",
-            "heel_spur", "flat_foot", "high_arch",
+            "plantar_fasciitis",
+            "metatarsal_stress",
+            "ankle_sprain",
+            "heel_spur",
+            "flat_foot",
+            "high_arch",
         }
         assert names == expected
 
@@ -183,7 +186,12 @@ class TestFeedbackGenerator:
         feedback = gen.generate(injury_report)
 
         assert isinstance(feedback.report_kr, str)
-        assert feedback.overall_status in ("매우 양호", "양호", "개선 권장", "주의 필요")
+        assert feedback.overall_status in (
+            "매우 양호",
+            "양호",
+            "개선 권장",
+            "주의 필요",
+        )
         assert isinstance(feedback.encouragement, str)
 
     def test_feedback_with_deviations(self):
