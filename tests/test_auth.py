@@ -288,7 +288,7 @@ class TestDriveServiceServiceAccount:
                 ):
                     with patch(
                         "googleapiclient.discovery.build", return_value=mock_service
-                    ) as mock_build:
+                    ):
                         # Build the patched environment so drive_service can import
                         with patch.object(
                             sys.modules.get(
@@ -450,7 +450,7 @@ class TestDriveServiceOAuth:
                 "googleapiclient.discovery": discovery_module,
             },
         ):
-            result = self.m.drive_service(args)
+            self.m.drive_service(args)
 
         flow_module.InstalledAppFlow.from_client_secrets_file.assert_called_once_with(
             "oauth.json", self.m.DRIVE_SCOPES

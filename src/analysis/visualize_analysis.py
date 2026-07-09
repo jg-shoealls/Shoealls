@@ -269,7 +269,7 @@ def plot_zone_temporal(
 
     x = np.arange(len(zones))
     w = 0.35
-    bars1 = ax.barh(
+    ax.barh(
         x - w / 2,
         peak_avgs,
         w,
@@ -278,7 +278,7 @@ def plot_zone_temporal(
         edgecolor="white",
         label="평균 최고 압력",
     )
-    bars2 = ax.barh(
+    ax.barh(
         x + w / 2,
         peak_maxs,
         w,
@@ -560,6 +560,7 @@ def plot_gait_profile_deviation(
     baseline_vals = []
     plot_metrics = []
     plot_labels = []
+    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
 
     for m in metrics:
         if m in session_features and m in baseline_means:
@@ -729,7 +730,7 @@ def plot_trend_dashboard(
         ax.plot(x_fit, y_fit, "--", color=color, linewidth=1.5, alpha=0.5)
 
         # Annotation
-        kr_name = METRIC_KR.get(metric, metric)
+        kr_name = _EXTRA_KR.get(metric, get_feature_korean(metric))
         direction_kr = {
             "improving": "개선",
             "worsening": "악화",

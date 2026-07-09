@@ -531,7 +531,7 @@ class DiseaseRiskPredictor:
 
         # 종합 위험 점수 (가중 평균)
         if scores:
-            total_weight = sum(
+            sum(
                 c["weight"]
                 for c in gait_features.values()
                 if features.get(c.get("feature", "")) is not None or True
