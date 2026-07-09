@@ -1,8 +1,7 @@
 """Longitudinal trend tracker: session-over-session gait analysis."""
 
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from .config import TREND_THRESHOLD as _DEFAULT_TREND_THRESHOLD
 
@@ -10,6 +9,7 @@ from .config import TREND_THRESHOLD as _DEFAULT_TREND_THRESHOLD
 @dataclass
 class TrendPoint:
     """Single session data point for trend tracking."""
+
     session_id: int
     features: dict[str, float]
     injury_risk: float
@@ -19,7 +19,10 @@ class TrendPoint:
 @dataclass
 class TrendAnalysis:
     """Results of longitudinal trend analysis."""
-    metric_trends: dict[str, dict]   # metric -> {direction, slope, p_value_approx, summary_kr}
+
+    metric_trends: dict[
+        str, dict
+    ]  # metric -> {direction, slope, p_value_approx, summary_kr}
     improving_metrics: list[str]
     worsening_metrics: list[str]
     stable_metrics: list[str]
@@ -60,12 +63,14 @@ class LongitudinalTrendTracker:
     ):
         """Record a new session's data."""
         sid = len(self.history)
-        self.history.append(TrendPoint(
-            session_id=sid,
-            features=features,
-            injury_risk=injury_risk,
-            overall_deviation=overall_deviation,
-        ))
+        self.history.append(
+            TrendPoint(
+                session_id=sid,
+                features=features,
+                injury_risk=injury_risk,
+                overall_deviation=overall_deviation,
+            )
+        )
 
     def analyze_trends(self, min_sessions: int = 3) -> TrendAnalysis:
         """Analyze trends across recorded sessions.
@@ -116,9 +121,7 @@ class LongitudinalTrendTracker:
             slope, intercept = self._linear_fit(xv, yv)
             r_squared = self._r_squared(xv, yv, slope, intercept)
 
-            korean_name, direction = self.METRIC_LABELS.get(
-                metric, (metric, "neutral")
-            )
+            korean_name, direction = self.METRIC_LABELS.get(metric, (metric, "neutral"))
 
             # Determine trend direction
             norm_slope = slope / (np.std(yv) + 1e-8)
@@ -165,7 +168,9 @@ class LongitudinalTrendTracker:
                 "values": yv.tolist(),
             }
 
-        report = self._build_trend_report(metric_trends, improving, worsening, stable, n)
+        report = self._build_trend_report(
+            metric_trends, improving, worsening, stable, n
+        )
 
         return TrendAnalysis(
             metric_trends=metric_trends,
@@ -189,7 +194,9 @@ class LongitudinalTrendTracker:
         intercept = y_mean - slope * x_mean
         return float(slope), float(intercept)
 
-    def _r_squared(self, x: np.ndarray, y: np.ndarray, slope: float, intercept: float) -> float:
+    def _r_squared(
+        self, x: np.ndarray, y: np.ndarray, slope: float, intercept: float
+    ) -> float:
         """Coefficient of determination."""
         y_pred = slope * x + intercept
         ss_res = np.sum((y - y_pred) ** 2)
@@ -238,11 +245,15 @@ class LongitudinalTrendTracker:
 
         # Overall assessment
         if worsening and not improving:
-            lines.append("  종합: 주의가 필요합니다. 악화 추세 항목에 대한 관리가 필요합니다.")
+            lines.append(
+                "  종합: 주의가 필요합니다. 악화 추세 항목에 대한 관리가 필요합니다."
+            )
         elif improving and not worsening:
             lines.append("  종합: 좋은 추세입니다! 현재 관리 방향을 유지하세요.")
         elif improving and worsening:
-            lines.append("  종합: 일부 개선, 일부 악화가 보입니다. 악화 항목에 집중 관리가 필요합니다.")
+            lines.append(
+                "  종합: 일부 개선, 일부 악화가 보입니다. 악화 항목에 집중 관리가 필요합니다."
+            )
         else:
             lines.append("  종합: 전체적으로 안정적인 패턴을 유지하고 있습니다.")
 

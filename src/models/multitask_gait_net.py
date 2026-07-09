@@ -110,11 +110,13 @@ class MultitaskGaitNet(nn.Module):
         gait_layers = []
         in_dim = embed_dim
         for h_dim in cls_cfg["hidden_dims"]:
-            gait_layers.extend([
-                nn.Linear(in_dim, h_dim),
-                nn.ReLU(inplace=True),
-                nn.Dropout(cls_cfg["dropout"]),
-            ])
+            gait_layers.extend(
+                [
+                    nn.Linear(in_dim, h_dim),
+                    nn.ReLU(inplace=True),
+                    nn.Dropout(cls_cfg["dropout"]),
+                ]
+            )
             in_dim = h_dim
         gait_layers.append(nn.Linear(in_dim, data_cfg["num_classes"]))
         self.gait_classifier = nn.Sequential(*gait_layers)
@@ -146,9 +148,15 @@ class MultitaskGaitNet(nn.Module):
         )
 
         # ── Task selection ────────────────────────────────────────────
-        self.active_tasks = task_cfg.get("active", [
-            "gait", "disease", "fall_risk", "gait_phase",
-        ])
+        self.active_tasks = task_cfg.get(
+            "active",
+            [
+                "gait",
+                "disease",
+                "fall_risk",
+                "gait_phase",
+            ],
+        )
 
     def forward(self, batch: dict) -> dict:
         """
@@ -159,7 +167,7 @@ class MultitaskGaitNet(nn.Module):
             Dict with outputs per active task.
         """
         # Encode each modality
-        imu_features = self.imu_encoder(batch["imu"])           # (B, T1, D)
+        imu_features = self.imu_encoder(batch["imu"])  # (B, T1, D)
         pressure_features = self.pressure_encoder(batch["pressure"])  # (B, T2, D)
         skeleton_features = self.skeleton_encoder(batch["skeleton"])  # (B, T3, D)
 
@@ -203,6 +211,7 @@ class MultitaskGaitNet(nn.Module):
 
     def get_task_param_breakdown(self) -> dict:
         """Get parameter count per component."""
+
         def _count(module):
             return sum(p.numel() for p in module.parameters())
 

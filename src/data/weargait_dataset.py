@@ -11,16 +11,23 @@ from torch.utils.data import Dataset
 
 
 IMU_COLS = [
-    "R_Ankle_Acc_X", "R_Ankle_Acc_Y", "R_Ankle_Acc_Z",
-    "R_Ankle_Gyr_X", "R_Ankle_Gyr_Y", "R_Ankle_Gyr_Z",
-    "L_Ankle_Acc_X", "L_Ankle_Acc_Y", "L_Ankle_Acc_Z",
-    "L_Ankle_Gyr_X", "L_Ankle_Gyr_Y", "L_Ankle_Gyr_Z",
+    "R_Ankle_Acc_X",
+    "R_Ankle_Acc_Y",
+    "R_Ankle_Acc_Z",
+    "R_Ankle_Gyr_X",
+    "R_Ankle_Gyr_Y",
+    "R_Ankle_Gyr_Z",
+    "L_Ankle_Acc_X",
+    "L_Ankle_Acc_Y",
+    "L_Ankle_Acc_Z",
+    "L_Ankle_Gyr_X",
+    "L_Ankle_Gyr_Y",
+    "L_Ankle_Gyr_Z",
 ]
 
-PRESSURE_COLS = (
-    [f"LPressure{i}" for i in range(1, 17)]
-    + [f"RPressure{i}" for i in range(1, 17)]
-)
+PRESSURE_COLS = [f"LPressure{i}" for i in range(1, 17)] + [
+    f"RPressure{i}" for i in range(1, 17)
+]
 
 
 class WearGaitDataset(Dataset):
@@ -37,12 +44,16 @@ class WearGaitDataset(Dataset):
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         return {
             "imu": torch.as_tensor(self.imu_windows[idx], dtype=torch.float32),
-            "pressure": torch.as_tensor(self.pressure_windows[idx], dtype=torch.float32),
+            "pressure": torch.as_tensor(
+                self.pressure_windows[idx], dtype=torch.float32
+            ),
             "label": torch.tensor(self.labels[idx], dtype=torch.long),
         }
 
 
-def load_weargait_by_subject(data_dir: str | Path, window: int = 128, stride: int = 64) -> dict:
+def load_weargait_by_subject(
+    data_dir: str | Path, window: int = 128, stride: int = 64
+) -> dict:
     """Load WearGait-PD self-paced CSVs grouped by subject id.
 
     Returns:
@@ -76,14 +87,20 @@ def load_weargait_by_subject(data_dir: str | Path, window: int = 128, stride: in
     return subjects
 
 
-def _load_csv_windows(path: Path, window: int, stride: int) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def _load_csv_windows(
+    path: Path, window: int, stride: int
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
     header = pd.read_csv(path, nrows=0).columns
     missing = [col for col in [*IMU_COLS, *PRESSURE_COLS] if col not in header]
     if missing:
         raise ValueError(f"missing required columns: {missing[:5]}")
 
     df = pd.read_csv(path, usecols=[*IMU_COLS, *PRESSURE_COLS], low_memory=False)
-    values = df.apply(pd.to_numeric, errors="coerce").interpolate(limit_direction="both").fillna(0.0)
+    values = (
+        df.apply(pd.to_numeric, errors="coerce")
+        .interpolate(limit_direction="both")
+        .fillna(0.0)
+    )
 
     imu = values[IMU_COLS].to_numpy(dtype=np.float32)
     pressure = values[PRESSURE_COLS].to_numpy(dtype=np.float32)

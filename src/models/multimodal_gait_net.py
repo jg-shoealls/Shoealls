@@ -44,7 +44,13 @@ class IMUGaitNet(nn.Module):
         layers = []
         in_dim = embed_dim
         for h_dim in cls_cfg["hidden_dims"]:
-            layers.extend([nn.Linear(in_dim, h_dim), nn.ReLU(inplace=True), nn.Dropout(cls_cfg["dropout"])])
+            layers.extend(
+                [
+                    nn.Linear(in_dim, h_dim),
+                    nn.ReLU(inplace=True),
+                    nn.Dropout(cls_cfg["dropout"]),
+                ]
+            )
             in_dim = h_dim
         layers.append(nn.Linear(in_dim, data_cfg["num_classes"]))
         self.classifier = nn.Sequential(*layers)
@@ -52,16 +58,15 @@ class IMUGaitNet(nn.Module):
     def forward(self, batch: dict) -> torch.Tensor:
         # imu_encoder: (B, 6, T) -> (B, T', embed_dim)
         features = self.imu_encoder(batch["imu"])
-        pooled = features.mean(dim=1)   # (B, embed_dim)
+        pooled = features.mean(dim=1)  # (B, embed_dim)
         return self.classifier(pooled)
 
 
 class MultimodalGaitNet(nn.Module):
-
     def __init__(self, config: dict):
         super().__init__()
         model_cfg = config["model"]
-        data_cfg  = config["data"]
+        data_cfg = config["data"]
         embed_dim = model_cfg["fusion"]["embed_dim"]
 
         # IMU 인코더 (발목 6축: 가속도 3 + 자이로 3)
@@ -111,7 +116,11 @@ class MultimodalGaitNet(nn.Module):
         cls_cfg = model_cfg["classifier"]
         layers, in_dim = [], embed_dim
         for h in cls_cfg["hidden_dims"]:
-            layers += [nn.Linear(in_dim, h), nn.ReLU(inplace=True), nn.Dropout(cls_cfg["dropout"])]
+            layers += [
+                nn.Linear(in_dim, h),
+                nn.ReLU(inplace=True),
+                nn.Dropout(cls_cfg["dropout"]),
+            ]
             in_dim = h
         layers.append(nn.Linear(in_dim, data_cfg["num_classes"]))
         self.classifier = nn.Sequential(*layers)
@@ -122,9 +131,9 @@ class MultimodalGaitNet(nn.Module):
 
     def extract_features(self, batch: dict) -> torch.Tensor:
         """분류기 직전의 융합된 특징 벡터를 추출합니다."""
-        imu_feat  = self.imu_encoder(batch["imu"])
+        imu_feat = self.imu_encoder(batch["imu"])
         pres_feat = self.pressure_encoder(batch["pressure"])
-        mb_feat   = self.mag_baro_encoder(batch["mag_baro"])
+        mb_feat = self.mag_baro_encoder(batch["mag_baro"])
 
         return self.fusion([imu_feat, pres_feat, mb_feat])
 

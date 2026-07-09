@@ -4,16 +4,20 @@ import torch
 import torch.nn as nn
 
 
-def _build_1d_cnn(in_ch: int, channels: list, kernel_size: int, dropout: float) -> nn.Sequential:
+def _build_1d_cnn(
+    in_ch: int, channels: list, kernel_size: int, dropout: float
+) -> nn.Sequential:
     layers = []
     for ch_out in channels:
-        layers.extend([
-            nn.Conv1d(in_ch, ch_out, kernel_size, padding=kernel_size // 2),
-            nn.BatchNorm1d(ch_out),
-            nn.ReLU(inplace=True),
-            nn.MaxPool1d(2),
-            nn.Dropout(dropout),
-        ])
+        layers.extend(
+            [
+                nn.Conv1d(in_ch, ch_out, kernel_size, padding=kernel_size // 2),
+                nn.BatchNorm1d(ch_out),
+                nn.ReLU(inplace=True),
+                nn.MaxPool1d(2),
+                nn.Dropout(dropout),
+            ]
+        )
         in_ch = ch_out
     return nn.Sequential(*layers)
 
@@ -51,10 +55,10 @@ class IMUEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (B, 6, T)
-        features = self.cnn(x)          # (B, C, T')
+        features = self.cnn(x)  # (B, C, T')
         features = features.permute(0, 2, 1)  # (B, T', C)
-        lstm_out, _ = self.lstm(features)      # (B, T', 2*hidden)
-        return self.proj(lstm_out)             # (B, T', hidden)
+        lstm_out, _ = self.lstm(features)  # (B, T', 2*hidden)
+        return self.proj(lstm_out)  # (B, T', hidden)
 
 
 class PressureEncoder(nn.Module):
@@ -78,13 +82,15 @@ class PressureEncoder(nn.Module):
         layers = []
         ch_in = in_channels
         for ch_out in conv_channels:
-            layers.extend([
-                nn.Conv2d(ch_in, ch_out, kernel_size, padding=kernel_size // 2),
-                nn.BatchNorm2d(ch_out),
-                nn.ReLU(inplace=True),
-                nn.MaxPool2d(2),
-                nn.Dropout2d(dropout),
-            ])
+            layers.extend(
+                [
+                    nn.Conv2d(ch_in, ch_out, kernel_size, padding=kernel_size // 2),
+                    nn.BatchNorm2d(ch_out),
+                    nn.ReLU(inplace=True),
+                    nn.MaxPool2d(2),
+                    nn.Dropout2d(dropout),
+                ]
+            )
             ch_in = ch_out
         self.cnn = nn.Sequential(*layers)
         self.adaptive_pool = nn.AdaptiveAvgPool2d(1)
@@ -93,12 +99,12 @@ class PressureEncoder(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (B, T, 1, H, W)
         B, T = x.shape[:2]
-        x = x.reshape(B * T, *x.shape[2:])    # (B*T, 1, H, W)
-        features = self.cnn(x)                  # (B*T, C, H', W')
-        features = self.adaptive_pool(features) # (B*T, C, 1, 1)
-        features = features.flatten(1)          # (B*T, C)
-        features = self.proj(features)          # (B*T, embed_dim)
-        return features.reshape(B, T, -1)       # (B, T, embed_dim)
+        x = x.reshape(B * T, *x.shape[2:])  # (B*T, 1, H, W)
+        features = self.cnn(x)  # (B*T, C, H', W')
+        features = self.adaptive_pool(features)  # (B*T, C, 1, 1)
+        features = features.flatten(1)  # (B*T, C)
+        features = self.proj(features)  # (B*T, embed_dim)
+        return features.reshape(B, T, -1)  # (B, T, embed_dim)
 
 
 class MagBaroEncoder(nn.Module):
@@ -132,10 +138,10 @@ class MagBaroEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (B, 4, T)
-        features = self.cnn(x)                # (B, C, T')
+        features = self.cnn(x)  # (B, C, T')
         features = features.permute(0, 2, 1)  # (B, T', C)
-        lstm_out, _ = self.lstm(features)     # (B, T', 2*hidden)
-        return self.proj(lstm_out)            # (B, T', hidden)
+        lstm_out, _ = self.lstm(features)  # (B, T', 2*hidden)
+        return self.proj(lstm_out)  # (B, T', hidden)
 
 
 class SkeletonEncoder(nn.Module):
@@ -178,11 +184,20 @@ class SkeletonEncoder(nn.Module):
     def _build_adjacency(num_joints: int) -> torch.Tensor:
         """Build skeleton adjacency matrix."""
         edges = [
-            (0, 1), (1, 2),           # hip -> spine -> head
-            (1, 3), (3, 4), (4, 5),   # spine -> L.shoulder -> L.elbow -> L.wrist
-            (1, 6), (6, 7), (7, 8),   # spine -> R.shoulder -> R.elbow -> R.wrist
-            (0, 9), (9, 10), (10, 11),  # hip -> L.hip -> L.knee -> L.ankle
-            (0, 12), (12, 13), (13, 14),  # hip -> R.hip -> R.knee -> R.ankle
+            (0, 1),
+            (1, 2),  # hip -> spine -> head
+            (1, 3),
+            (3, 4),
+            (4, 5),  # spine -> L.shoulder -> L.elbow -> L.wrist
+            (1, 6),
+            (6, 7),
+            (7, 8),  # spine -> R.shoulder -> R.elbow -> R.wrist
+            (0, 9),
+            (9, 10),
+            (10, 11),  # hip -> L.hip -> L.knee -> L.ankle
+            (0, 12),
+            (12, 13),
+            (13, 14),  # hip -> R.hip -> R.knee -> R.ankle
         ]
         if num_joints > 15:
             edges.extend([(11, 15), (14, 16)])  # ankles -> feet
@@ -231,7 +246,8 @@ class STGCNBlock(nn.Module):
 
         # Temporal convolution
         self.temporal_conv = nn.Conv2d(
-            out_channels, out_channels,
+            out_channels,
+            out_channels,
             kernel_size=(temporal_kernel, 1),
             padding=(temporal_kernel // 2, 0),
         )

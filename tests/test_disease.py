@@ -1,75 +1,112 @@
 """Tests for disease prediction and classification modules."""
 
-import numpy as np
-import pytest
-
-from src.analysis.biomarkers import GaitBiomarkerExtractor, BIOMARKER_DEFINITIONS
+from src.analysis.biomarkers import GaitBiomarkerExtractor
 from src.analysis.disease_predictor import DiseaseRiskPredictor, DISEASE_DEFINITIONS
-from src.analysis.disease_classifier import GaitDiseaseClassifier, FEATURE_NAMES, DISEASE_LABELS
+from src.analysis.disease_classifier import GaitDiseaseClassifier, FEATURE_NAMES
 
 
 def make_normal_features():
     """정상 보행 특성."""
     return {
-        "gait_speed": 1.2, "cadence": 115, "stride_regularity": 0.85,
-        "step_symmetry": 0.92, "cop_sway": 0.04, "ml_index": 0.03,
-        "arch_index": 0.25, "acceleration_rms": 1.5,
-        "zone_heel_medial_mean": 0.3, "zone_heel_lateral_mean": 0.3,
-        "zone_forefoot_medial_mean": 0.35, "zone_forefoot_lateral_mean": 0.3,
+        "gait_speed": 1.2,
+        "cadence": 115,
+        "stride_regularity": 0.85,
+        "step_symmetry": 0.92,
+        "cop_sway": 0.04,
+        "ml_index": 0.03,
+        "arch_index": 0.25,
+        "acceleration_rms": 1.5,
+        "zone_heel_medial_mean": 0.3,
+        "zone_heel_lateral_mean": 0.3,
+        "zone_forefoot_medial_mean": 0.35,
+        "zone_forefoot_lateral_mean": 0.3,
         "zone_toes_mean": 0.15,
-        "zone_midfoot_medial_mean": 0.1, "zone_midfoot_lateral_mean": 0.08,
+        "zone_midfoot_medial_mean": 0.1,
+        "zone_midfoot_lateral_mean": 0.08,
     }
 
 
 def make_parkinsons_features():
     """파킨슨병 특징적 보행 특성."""
     return {
-        "gait_speed": 0.6, "cadence": 150, "stride_regularity": 0.40,
-        "step_symmetry": 0.75, "cop_sway": 0.07, "ml_index": 0.10,
-        "arch_index": 0.24, "acceleration_rms": 0.8,
-        "zone_heel_medial_mean": 0.25, "zone_heel_lateral_mean": 0.25,
-        "zone_forefoot_medial_mean": 0.35, "zone_forefoot_lateral_mean": 0.35,
+        "gait_speed": 0.6,
+        "cadence": 150,
+        "stride_regularity": 0.40,
+        "step_symmetry": 0.75,
+        "cop_sway": 0.07,
+        "ml_index": 0.10,
+        "arch_index": 0.24,
+        "acceleration_rms": 0.8,
+        "zone_heel_medial_mean": 0.25,
+        "zone_heel_lateral_mean": 0.25,
+        "zone_forefoot_medial_mean": 0.35,
+        "zone_forefoot_lateral_mean": 0.35,
         "zone_toes_mean": 0.15,
-        "zone_midfoot_medial_mean": 0.1, "zone_midfoot_lateral_mean": 0.1,
+        "zone_midfoot_medial_mean": 0.1,
+        "zone_midfoot_lateral_mean": 0.1,
     }
 
 
 def make_stroke_features():
     """뇌졸중(편마비) 특징적 보행 특성."""
     return {
-        "gait_speed": 0.5, "cadence": 85, "stride_regularity": 0.55,
-        "step_symmetry": 0.55, "cop_sway": 0.08, "ml_index": 0.22,
-        "arch_index": 0.26, "acceleration_rms": 1.1,
-        "zone_heel_medial_mean": 0.2, "zone_heel_lateral_mean": 0.3,
-        "zone_forefoot_medial_mean": 0.4, "zone_forefoot_lateral_mean": 0.3,
+        "gait_speed": 0.5,
+        "cadence": 85,
+        "stride_regularity": 0.55,
+        "step_symmetry": 0.55,
+        "cop_sway": 0.08,
+        "ml_index": 0.22,
+        "arch_index": 0.26,
+        "acceleration_rms": 1.1,
+        "zone_heel_medial_mean": 0.2,
+        "zone_heel_lateral_mean": 0.3,
+        "zone_forefoot_medial_mean": 0.4,
+        "zone_forefoot_lateral_mean": 0.3,
         "zone_toes_mean": 0.1,
-        "zone_midfoot_medial_mean": 0.1, "zone_midfoot_lateral_mean": 0.1,
+        "zone_midfoot_medial_mean": 0.1,
+        "zone_midfoot_lateral_mean": 0.1,
     }
 
 
 def make_hemorrhage_features():
     """뇌출혈 후유증 특징적 보행 특성."""
     return {
-        "gait_speed": 0.45, "cadence": 80, "stride_regularity": 0.45,
-        "step_symmetry": 0.50, "cop_sway": 0.09, "ml_index": 0.20,
-        "arch_index": 0.27, "acceleration_rms": 1.0,
-        "zone_heel_medial_mean": 0.18, "zone_heel_lateral_mean": 0.32,
-        "zone_forefoot_medial_mean": 0.42, "zone_forefoot_lateral_mean": 0.30,
+        "gait_speed": 0.45,
+        "cadence": 80,
+        "stride_regularity": 0.45,
+        "step_symmetry": 0.50,
+        "cop_sway": 0.09,
+        "ml_index": 0.20,
+        "arch_index": 0.27,
+        "acceleration_rms": 1.0,
+        "zone_heel_medial_mean": 0.18,
+        "zone_heel_lateral_mean": 0.32,
+        "zone_forefoot_medial_mean": 0.42,
+        "zone_forefoot_lateral_mean": 0.30,
         "zone_toes_mean": 0.10,
-        "zone_midfoot_medial_mean": 0.08, "zone_midfoot_lateral_mean": 0.12,
+        "zone_midfoot_medial_mean": 0.08,
+        "zone_midfoot_lateral_mean": 0.12,
     }
 
 
 def make_disc_features():
     """추간판 탈출증(디스크) 특징적 보행 특성."""
     return {
-        "gait_speed": 0.70, "cadence": 95, "stride_regularity": 0.60,
-        "step_symmetry": 0.68, "cop_sway": 0.065, "ml_index": 0.12,
-        "arch_index": 0.26, "acceleration_rms": 0.75,
-        "zone_heel_medial_mean": 0.10, "zone_heel_lateral_mean": 0.08,
-        "zone_forefoot_medial_mean": 0.45, "zone_forefoot_lateral_mean": 0.38,
+        "gait_speed": 0.70,
+        "cadence": 95,
+        "stride_regularity": 0.60,
+        "step_symmetry": 0.68,
+        "cop_sway": 0.065,
+        "ml_index": 0.12,
+        "arch_index": 0.26,
+        "acceleration_rms": 0.75,
+        "zone_heel_medial_mean": 0.10,
+        "zone_heel_lateral_mean": 0.08,
+        "zone_forefoot_medial_mean": 0.45,
+        "zone_forefoot_lateral_mean": 0.38,
         "zone_toes_mean": 0.18,
-        "zone_midfoot_medial_mean": 0.10, "zone_midfoot_lateral_mean": 0.10,
+        "zone_midfoot_medial_mean": 0.10,
+        "zone_midfoot_lateral_mean": 0.10,
     }
 
 
@@ -115,7 +152,12 @@ class TestBiomarkerExtractor:
 
     def test_derived_features(self):
         extractor = GaitBiomarkerExtractor()
-        features = {"cadence": 110, "ml_index": 0.1, "cop_sway": 0.05, "acceleration_rms": 1.5}
+        features = {
+            "cadence": 110,
+            "ml_index": 0.1,
+            "cop_sway": 0.05,
+            "acceleration_rms": 1.5,
+        }
         profile = extractor.extract(features)
 
         # 파생 바이오마커가 자동 계산되어야 함
@@ -139,7 +181,9 @@ class TestDiseaseRiskPredictor:
         report = predictor.predict(features)
 
         # 파킨슨병이 상위 위험에 있어야 함
-        parkinsons_risk = next(r for r in report.results if r.disease_id == "parkinsons")
+        parkinsons_risk = next(
+            r for r in report.results if r.disease_id == "parkinsons"
+        )
         assert parkinsons_risk.risk_score > 0.1
 
     def test_predict_stroke(self):
@@ -175,7 +219,9 @@ class TestDiseaseRiskPredictor:
         features = make_hemorrhage_features()
         report = predictor.predict(features)
 
-        hemorrhage_risk = next(r for r in report.results if r.disease_id == "cerebral_hemorrhage")
+        hemorrhage_risk = next(
+            r for r in report.results if r.disease_id == "cerebral_hemorrhage"
+        )
         assert hemorrhage_risk.risk_score > 0.1
         assert len(hemorrhage_risk.matched_signs) > 0
 
@@ -227,8 +273,27 @@ class TestDiseaseClassifier:
         clf = GaitDiseaseClassifier(n_estimators=50)
         clf.train()
 
-        features = {f: v for f, v in zip(FEATURE_NAMES,
-                    [1.2, 115, 0.85, 0.92, 0.04, 0.06, 0.32, 0.45, 0.25, 0.05, 1.5, 0.15, 2.0])}
+        features = {
+            f: v
+            for f, v in zip(
+                FEATURE_NAMES,
+                [
+                    1.2,
+                    115,
+                    0.85,
+                    0.92,
+                    0.04,
+                    0.06,
+                    0.32,
+                    0.45,
+                    0.25,
+                    0.05,
+                    1.5,
+                    0.15,
+                    2.0,
+                ],
+            )
+        }
         result = clf.predict(features)
 
         assert result.predicted_korean == "정상 보행"
@@ -239,8 +304,27 @@ class TestDiseaseClassifier:
         clf = GaitDiseaseClassifier(n_estimators=50)
         clf.train()
 
-        features = {f: v for f, v in zip(FEATURE_NAMES,
-                    [0.65, 148, 0.45, 0.78, 0.065, 0.10, 0.29, 0.49, 0.23, 0.09, 0.95, 0.36, 2.9])}
+        features = {
+            f: v
+            for f, v in zip(
+                FEATURE_NAMES,
+                [
+                    0.65,
+                    148,
+                    0.45,
+                    0.78,
+                    0.065,
+                    0.10,
+                    0.29,
+                    0.49,
+                    0.23,
+                    0.09,
+                    0.95,
+                    0.36,
+                    2.9,
+                ],
+            )
+        }
         result = clf.predict(features)
 
         # 파킨슨 확률이 상위에 있어야 함

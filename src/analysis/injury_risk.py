@@ -3,17 +3,18 @@
 import numpy as np
 from dataclasses import dataclass
 
-from .foot_zones import FootZoneAnalyzer, FootAnalysisResult, REGION_GROUPS
+from .foot_zones import FootZoneAnalyzer, FootAnalysisResult
 from .common import severity_label_4level, linear_risk_score
 
 
 @dataclass
 class InjuryRisk:
     """Risk assessment for a single injury type."""
+
     name: str
     korean_name: str
-    risk_score: float       # 0-1
-    severity: str           # 정상/주의/경고/위험
+    risk_score: float  # 0-1
+    severity: str  # 정상/주의/경고/위험
     contributing_factors: list[str]
     recommendation: str
 
@@ -21,10 +22,11 @@ class InjuryRisk:
 @dataclass
 class InjuryRiskReport:
     """Complete injury risk report."""
+
     risks: list[InjuryRisk]
-    overall_risk: float     # 0-1
-    top_risk: str           # name of highest risk
-    summary_kr: str         # Korean summary
+    overall_risk: float  # 0-1
+    top_risk: str  # name of highest risk
+    summary_kr: str  # Korean summary
 
 
 from .config import INJURY_NORMAL_RANGES
@@ -90,31 +92,52 @@ class InjuryRiskEngine:
             summary_kr=summary,
         )
 
-    def _compute_aggregate_metrics(self, frames: list[FootAnalysisResult], analysis: dict) -> dict:
+    def _compute_aggregate_metrics(
+        self, frames: list[FootAnalysisResult], analysis: dict
+    ) -> dict:
         """Compute aggregate metrics across all frames."""
         total_pressures = [f.total_pressure for f in frames]
-        avg_total = np.mean(total_pressures) if total_pressures else 1.0
+        np.mean(total_pressures) if total_pressures else 1.0
 
         # Zone pressure ratios
         zone_totals = {}
-        for zone_name in ["toes", "forefoot_medial", "forefoot_lateral",
-                          "midfoot_medial", "midfoot_lateral",
-                          "heel_medial", "heel_lateral"]:
+        for zone_name in [
+            "toes",
+            "forefoot_medial",
+            "forefoot_lateral",
+            "midfoot_medial",
+            "midfoot_lateral",
+            "heel_medial",
+            "heel_lateral",
+        ]:
             vals = [f.zone_metrics[zone_name].pressure_integral for f in frames]
             zone_totals[zone_name] = float(np.mean(vals))
 
         heel_total = zone_totals["heel_medial"] + zone_totals["heel_lateral"]
-        fore_total = (zone_totals["toes"] + zone_totals["forefoot_medial"]
-                      + zone_totals["forefoot_lateral"])
+        fore_total = (
+            zone_totals["toes"]
+            + zone_totals["forefoot_medial"]
+            + zone_totals["forefoot_lateral"]
+        )
         mid_total = zone_totals["midfoot_medial"] + zone_totals["midfoot_lateral"]
         grand_total = heel_total + fore_total + mid_total + 1e-8
 
         # Peak pressures per region
-        heel_peaks = [max(f.zone_metrics["heel_medial"].peak_pressure,
-                         f.zone_metrics["heel_lateral"].peak_pressure) for f in frames]
-        fore_peaks = [max(f.zone_metrics["forefoot_medial"].peak_pressure,
-                         f.zone_metrics["forefoot_lateral"].peak_pressure,
-                         f.zone_metrics["toes"].peak_pressure) for f in frames]
+        heel_peaks = [
+            max(
+                f.zone_metrics["heel_medial"].peak_pressure,
+                f.zone_metrics["heel_lateral"].peak_pressure,
+            )
+            for f in frames
+        ]
+        fore_peaks = [
+            max(
+                f.zone_metrics["forefoot_medial"].peak_pressure,
+                f.zone_metrics["forefoot_lateral"].peak_pressure,
+                f.zone_metrics["toes"].peak_pressure,
+            )
+            for f in frames
+        ]
 
         return {
             "heel_pressure_ratio": heel_total / grand_total,
@@ -128,12 +151,18 @@ class InjuryRiskEngine:
             "peak_heel_pressure": float(np.max(heel_peaks)) if heel_peaks else 0.0,
             "peak_forefoot_pressure": float(np.max(fore_peaks)) if fore_peaks else 0.0,
             "heel_medial_ratio": zone_totals["heel_medial"] / (heel_total + 1e-8),
-            "forefoot_medial_ratio": zone_totals["forefoot_medial"] / (fore_total + 1e-8),
-            "midfoot_contact": float(np.mean([
-                f.zone_metrics["midfoot_medial"].contact_area_ratio +
-                f.zone_metrics["midfoot_lateral"].contact_area_ratio
-                for f in frames
-            ])) / 2.0,
+            "forefoot_medial_ratio": zone_totals["forefoot_medial"]
+            / (fore_total + 1e-8),
+            "midfoot_contact": float(
+                np.mean(
+                    [
+                        f.zone_metrics["midfoot_medial"].contact_area_ratio
+                        + f.zone_metrics["midfoot_lateral"].contact_area_ratio
+                        for f in frames
+                    ]
+                )
+            )
+            / 2.0,
         }
 
     _score = staticmethod(linear_risk_score)
@@ -170,7 +199,8 @@ class InjuryRiskEngine:
             severity=self._severity_label(risk),
             contributing_factors=factors or ["특이사항 없음"],
             recommendation="뒤꿈치 쿠션이 좋은 신발 착용, 아치 지지 인솔 사용, 스트레칭 권장"
-            if risk > 0.25 else "현재 양호합니다",
+            if risk > 0.25
+            else "현재 양호합니다",
         )
 
     def _assess_metatarsal_stress(self, m: dict) -> InjuryRisk:
@@ -196,7 +226,8 @@ class InjuryRiskEngine:
             severity=self._severity_label(risk),
             contributing_factors=factors or ["특이사항 없음"],
             recommendation="앞발 하중을 줄이는 보행 훈련, 메타타르살 패드 사용 권장"
-            if risk > 0.25 else "현재 양호합니다",
+            if risk > 0.25
+            else "현재 양호합니다",
         )
 
     def _assess_ankle_sprain(self, m: dict) -> InjuryRisk:
@@ -230,7 +261,8 @@ class InjuryRiskEngine:
             severity=self._severity_label(risk),
             contributing_factors=factors or ["특이사항 없음"],
             recommendation="발목 안정성 강화 운동, 불안정한 지면 보행 주의"
-            if risk > 0.25 else "현재 양호합니다",
+            if risk > 0.25
+            else "현재 양호합니다",
         )
 
     def _assess_heel_spur(self, m: dict) -> InjuryRisk:
@@ -263,7 +295,8 @@ class InjuryRiskEngine:
             severity=self._severity_label(risk),
             contributing_factors=factors or ["특이사항 없음"],
             recommendation="뒤꿈치 충격 흡수 패드 사용, 딱딱한 바닥 보행 자제"
-            if risk > 0.25 else "현재 양호합니다",
+            if risk > 0.25
+            else "현재 양호합니다",
         )
 
     def _assess_flat_foot(self, m: dict) -> InjuryRisk:
@@ -297,7 +330,8 @@ class InjuryRiskEngine:
             severity=self._severity_label(risk),
             contributing_factors=factors or ["특이사항 없음"],
             recommendation="아치 지지 인솔 사용, 내측 지지 강화 신발 착용 권장"
-            if risk > 0.25 else "현재 양호합니다",
+            if risk > 0.25
+            else "현재 양호합니다",
         )
 
     def _assess_high_arch(self, m: dict) -> InjuryRisk:
@@ -331,7 +365,8 @@ class InjuryRiskEngine:
             severity=self._severity_label(risk),
             contributing_factors=factors or ["특이사항 없음"],
             recommendation="쿠션이 좋은 중립 신발 착용, 발바닥 스트레칭 권장"
-            if risk > 0.25 else "현재 양호합니다",
+            if risk > 0.25
+            else "현재 양호합니다",
         )
 
     def _generate_summary(self, risks: list[InjuryRisk], overall: float) -> str:
@@ -350,6 +385,8 @@ class InjuryRiskEngine:
         if warnings:
             lines.append("\n주요 위험 요소:")
             for r in sorted(warnings, key=lambda x: -x.risk_score):
-                lines.append(f"  - {r.korean_name} ({r.severity}): {', '.join(r.contributing_factors)}")
+                lines.append(
+                    f"  - {r.korean_name} ({r.severity}): {', '.join(r.contributing_factors)}"
+                )
 
         return "\n".join(lines)

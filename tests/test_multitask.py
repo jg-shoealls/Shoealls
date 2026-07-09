@@ -94,10 +94,7 @@ class TestMultitaskGaitNet:
         assert breakdown["total"] > 0
 
         # Task heads should be small relative to shared backbone
-        shared = (
-            sum(breakdown["shared_encoders"].values())
-            + breakdown["shared_fusion"]
-        )
+        shared = sum(breakdown["shared_encoders"].values()) + breakdown["shared_fusion"]
         heads = sum(breakdown["task_heads"].values())
         assert shared > heads, "Shared backbone should have more params than heads"
 
@@ -172,8 +169,12 @@ class TestMultitaskLoss:
         # Key parameters should have gradients (some heads like time_to_fall
         # may not be in the loss, so we check critical components only)
         critical_modules = [
-            "imu_encoder", "pressure_encoder", "skeleton_encoder",
-            "fusion", "gait_classifier", "disease_head.classifier",
+            "imu_encoder",
+            "pressure_encoder",
+            "skeleton_encoder",
+            "fusion",
+            "gait_classifier",
+            "disease_head.classifier",
             "fall_risk_head.risk_classifier",
         ]
         for name, param in model.named_parameters():

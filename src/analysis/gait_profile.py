@@ -1,4 +1,5 @@
 """Personal gait profile learner: builds and tracks individual baselines."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -12,6 +13,7 @@ from .common import get_feature_korean
 @dataclass
 class GaitBaseline:
     """Statistical baseline for an individual's gait pattern."""
+
     # Pressure zone baselines: {zone_name: {"mean": float, "std": float, "peak_mean": float}}
     zone_baselines: dict[str, dict[str, float]] = field(default_factory=dict)
     # Global gait indices
@@ -31,9 +33,10 @@ class GaitBaseline:
 @dataclass
 class DeviationReport:
     """Report of how a session deviates from baseline."""
+
     deviations: dict[str, float]  # metric_name -> z-score
     alerts: list[dict[str, str]]  # list of {"metric", "severity", "message"}
-    overall_deviation: float       # aggregate deviation score 0-1
+    overall_deviation: float  # aggregate deviation score 0-1
 
 
 class PersonalGaitProfiler:
@@ -91,8 +94,8 @@ class PersonalGaitProfiler:
             else:
                 accel = imu[:, :3].T if imu.shape[1] >= 3 else imu[:3]
 
-            accel_mag = np.sqrt(np.sum(accel ** 2, axis=0))
-            features["acceleration_rms"] = float(np.sqrt(np.mean(accel_mag ** 2)))
+            accel_mag = np.sqrt(np.sum(accel**2, axis=0))
+            features["acceleration_rms"] = float(np.sqrt(np.mean(accel_mag**2)))
 
             # Step symmetry from autocorrelation
             features["step_symmetry"] = self._compute_step_symmetry(accel_mag)
@@ -109,8 +112,10 @@ class PersonalGaitProfiler:
         """Symmetry from autocorrelation: ratio of first two peaks."""
         if len(accel_mag) < 20:
             return 1.0
-        ac = np.correlate(accel_mag - accel_mag.mean(), accel_mag - accel_mag.mean(), mode="full")
-        ac = ac[len(ac) // 2:]
+        ac = np.correlate(
+            accel_mag - accel_mag.mean(), accel_mag - accel_mag.mean(), mode="full"
+        )
+        ac = ac[len(ac) // 2 :]
         ac = ac / (ac[0] + 1e-8)
 
         # Find first two peaks after lag 0
@@ -123,7 +128,9 @@ class PersonalGaitProfiler:
 
         if len(peaks) < 2:
             return 1.0
-        return float(min(peaks[0][1], peaks[1][1]) / (max(peaks[0][1], peaks[1][1]) + 1e-8))
+        return float(
+            min(peaks[0][1], peaks[1][1]) / (max(peaks[0][1], peaks[1][1]) + 1e-8)
+        )
 
     def _estimate_cadence(self, accel_mag: np.ndarray, sample_rate: int = 128) -> float:
         """Estimate steps per minute from acceleration magnitude."""
@@ -141,8 +148,10 @@ class PersonalGaitProfiler:
         """Stride regularity from autocorrelation peak height."""
         if len(accel_mag) < 20:
             return 1.0
-        ac = np.correlate(accel_mag - accel_mag.mean(), accel_mag - accel_mag.mean(), mode="full")
-        ac = ac[len(ac) // 2:]
+        ac = np.correlate(
+            accel_mag - accel_mag.mean(), accel_mag - accel_mag.mean(), mode="full"
+        )
+        ac = ac[len(ac) // 2 :]
         ac = ac / (ac[0] + 1e-8)
 
         # Find the dominant autocorrelation peak (stride period)
@@ -180,9 +189,18 @@ class PersonalGaitProfiler:
             self.baseline.arch_index = (session_features.get("arch_index", 0.0), 0.0)
             self.baseline.cop_sway = (session_features.get("cop_sway", 0.0), 0.0)
             self.baseline.cadence = (session_features.get("cadence", 0.0), 0.0)
-            self.baseline.stride_regularity = (session_features.get("stride_regularity", 0.0), 0.0)
-            self.baseline.step_symmetry = (session_features.get("step_symmetry", 0.0), 0.0)
-            self.baseline.acceleration_rms = (session_features.get("acceleration_rms", 0.0), 0.0)
+            self.baseline.stride_regularity = (
+                session_features.get("stride_regularity", 0.0),
+                0.0,
+            )
+            self.baseline.step_symmetry = (
+                session_features.get("step_symmetry", 0.0),
+                0.0,
+            )
+            self.baseline.acceleration_rms = (
+                session_features.get("acceleration_rms", 0.0),
+                0.0,
+            )
         else:
             # Recompute from full history
             all_features = {}
@@ -198,13 +216,25 @@ class PersonalGaitProfiler:
                     if zone not in self.baseline.zone_baselines:
                         self.baseline.zone_baselines[zone] = {}
                     self.baseline.zone_baselines[zone][suffix] = float(np.mean(vals))
-                    self.baseline.zone_baselines[zone][f"{suffix}_std"] = float(np.std(vals))
+                    self.baseline.zone_baselines[zone][f"{suffix}_std"] = float(
+                        np.std(vals)
+                    )
 
-            for attr in ["ml_index", "ap_index", "arch_index", "cop_sway",
-                         "cadence", "stride_regularity", "step_symmetry", "acceleration_rms"]:
+            for attr in [
+                "ml_index",
+                "ap_index",
+                "arch_index",
+                "cop_sway",
+                "cadence",
+                "stride_regularity",
+                "step_symmetry",
+                "acceleration_rms",
+            ]:
                 if attr in all_features:
                     vals = all_features[attr]
-                    setattr(self.baseline, attr, (float(np.mean(vals)), float(np.std(vals))))
+                    setattr(
+                        self.baseline, attr, (float(np.mean(vals)), float(np.std(vals)))
+                    )
 
     def compute_deviations(self, session_features: dict[str, float]) -> DeviationReport:
         """Compare session features against baseline and report deviations."""
@@ -237,23 +267,29 @@ class PersonalGaitProfiler:
             deviations[metric] = z
 
             if z >= self.SEVERE_THRESHOLD:
-                alerts.append({
-                    "metric": metric,
-                    "severity": "심각",
-                    "message": f"{korean_name}이(가) 평소 대비 크게 벗어났습니다 (z={z:.1f})",
-                })
+                alerts.append(
+                    {
+                        "metric": metric,
+                        "severity": "심각",
+                        "message": f"{korean_name}이(가) 평소 대비 크게 벗어났습니다 (z={z:.1f})",
+                    }
+                )
             elif z >= self.MODERATE_THRESHOLD:
-                alerts.append({
-                    "metric": metric,
-                    "severity": "주의",
-                    "message": f"{korean_name}이(가) 평소 대비 변화가 감지되었습니다 (z={z:.1f})",
-                })
+                alerts.append(
+                    {
+                        "metric": metric,
+                        "severity": "주의",
+                        "message": f"{korean_name}이(가) 평소 대비 변화가 감지되었습니다 (z={z:.1f})",
+                    }
+                )
             elif z >= self.MILD_THRESHOLD:
-                alerts.append({
-                    "metric": metric,
-                    "severity": "경미",
-                    "message": f"{korean_name}에 약간의 변화가 있습니다 (z={z:.1f})",
-                })
+                alerts.append(
+                    {
+                        "metric": metric,
+                        "severity": "경미",
+                        "message": f"{korean_name}에 약간의 변화가 있습니다 (z={z:.1f})",
+                    }
+                )
 
         # Overall deviation: RMS of z-scores
         if deviations:
@@ -266,6 +302,8 @@ class PersonalGaitProfiler:
 
         return DeviationReport(
             deviations=deviations,
-            alerts=sorted(alerts, key=lambda a: {"심각": 0, "주의": 1, "경미": 2}[a["severity"]]),
+            alerts=sorted(
+                alerts, key=lambda a: {"심각": 0, "주의": 1, "경미": 2}[a["severity"]]
+            ),
             overall_deviation=overall,
         )

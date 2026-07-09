@@ -69,7 +69,9 @@ class TestCrossModalEvidence:
 
 class TestDifferentialDiagnosis:
     def test_output_shapes(self):
-        module = DifferentialDiagnosisChain(embed_dim=128, num_classes=4, num_reasoning_steps=3)
+        module = DifferentialDiagnosisChain(
+            embed_dim=128, num_classes=4, num_reasoning_steps=3
+        )
         evidence = torch.randn(2, 128)
         context = torch.randn(2, 128)
 
@@ -134,6 +136,7 @@ class TestConfidenceCalibrator:
 class TestGaitReasoningEngine:
     def test_full_reasoning(self):
         config = load_config()
+        config["data"]["num_classes"] = 4
         engine = GaitReasoningEngine(config)
         batch = make_batch(2)
 
@@ -151,6 +154,7 @@ class TestGaitReasoningEngine:
 
     def test_explain_output(self):
         config = load_config()
+        config["data"]["num_classes"] = 4
         engine = GaitReasoningEngine(config)
         batch = make_batch(1)
 

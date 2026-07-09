@@ -18,50 +18,58 @@ from typing import Iterator
 import numpy as np
 
 from .ble_protocol import (
-    BLEPacket, PacketType,
-    encode_imu, encode_pressure, encode_skeleton,
+    BLEPacket,
+    PacketType,
+    encode_imu,
+    encode_pressure,
+    encode_skeleton,
     session_id_new,
 )
 
 # ── 하드웨어 스펙 ──────────────────────────────────────────────────────────────
 SENSOR_SPECS = {
     "imu": {
-        "model":       "ICM-42688-P",
+        "model": "ICM-42688-P",
         "accel_range": "±8 g",
-        "gyro_range":  "±1000 dps",
-        "sample_rate": 128,       # Hz
-        "resolution":  16,        # bits
+        "gyro_range": "±1000 dps",
+        "sample_rate": 128,  # Hz
+        "resolution": 16,  # bits
     },
     "pressure": {
-        "model":       "Pedar-X FSR array",
-        "grid":        [16, 8],
-        "cells":       128,
-        "sample_rate": 100,       # Hz
-        "resolution":  12,        # bits
+        "model": "Pedar-X FSR array",
+        "grid": [16, 8],
+        "cells": 128,
+        "sample_rate": 100,  # Hz
+        "resolution": 12,  # bits
     },
     "ble": {
-        "soc":         "nRF52840",
-        "version":     "BT 5.0",
-        "mtu":         244,
-        "tx_power":    "+4 dBm",
+        "soc": "nRF52840",
+        "version": "BT 5.0",
+        "mtu": 244,
+        "tx_power": "+4 dBm",
     },
 }
 
 # 보행 클래스별 생성 파라미터
 _GAIT_PARAMS: dict[str | int, dict] = {
     0: {"freq": 1.8, "noise": 0.10, "amp": 1.0, "label": "normal"},
-    1: {"freq": 1.2, "noise": 0.15, "amp": 0.5, "label": "parkinsons"},   # 느린 보행, 진전
-    2: {"freq": 1.5, "noise": 0.20, "amp": 0.9, "label": "stroke"},       # 비대칭
-    3: {"freq": 1.4, "noise": 0.35, "amp": 0.8, "label": "fall_risk"},    # 불규칙
+    1: {
+        "freq": 1.2,
+        "noise": 0.15,
+        "amp": 0.5,
+        "label": "parkinsons",
+    },  # 느린 보행, 진전
+    2: {"freq": 1.5, "noise": 0.20, "amp": 0.9, "label": "stroke"},  # 비대칭
+    3: {"freq": 1.4, "noise": 0.35, "amp": 0.8, "label": "fall_risk"},  # 불규칙
 }
 # 문자열 alias
 _GAIT_ALIAS: dict[str, int] = {
-    "normal":     0,
+    "normal": 0,
     "parkinsons": 1,
-    "stroke":     2,
-    "fall_risk":  3,
-    "antalgic":   2,
-    "ataxic":     3,
+    "stroke": 2,
+    "fall_risk": 3,
+    "antalgic": 2,
+    "ataxic": 3,
 }
 
 
@@ -86,23 +94,23 @@ class FirmwareSimulator:
             gait_class = _GAIT_ALIAS.get(gait_class, 0)
         self.gait_class = int(gait_class)
         self.session_id = session_id if session_id is not None else session_id_new()
-        self.seq_len    = seq_len
-        self._rng       = np.random.default_rng(seed)
-        self._params    = _GAIT_PARAMS.get(self.gait_class, _GAIT_PARAMS[0])
+        self.seq_len = seq_len
+        self._rng = np.random.default_rng(seed)
+        self._params = _GAIT_PARAMS.get(self.gait_class, _GAIT_PARAMS[0])
 
     # ── 센서 데이터 생성 ──────────────────────────────────────────────────────
 
     def generate_imu(self) -> list[list[float]]:
         """[seq_len, 6] — (ax,ay,az,gx,gy,gz) m/s² / rad/s."""
-        T  = self.seq_len
-        p  = self._params
-        t  = np.linspace(0, T / 128, T)
-        f  = p["freq"]
-        a  = p["amp"]
-        n  = p["noise"]
+        T = self.seq_len
+        p = self._params
+        t = np.linspace(0, T / 128, T)
+        f = p["freq"]
+        a = p["amp"]
+        n = p["noise"]
 
         ax = a * 0.3 * np.sin(2 * np.pi * f * t + 0.2)
-        ay = a * 1.0 * np.sin(2 * np.pi * f * t)        # 주 수직 성분
+        ay = a * 1.0 * np.sin(2 * np.pi * f * t)  # 주 수직 성분
         az = a * 0.2 * np.cos(2 * np.pi * f * t)
 
         # 파킨슨: 4–6 Hz 진전 추가
@@ -116,7 +124,7 @@ class FirmwareSimulator:
         gz = a * 0.3 * np.sin(2 * np.pi * f * t + np.pi / 3)
 
         noise = self._rng.normal(0, n, (T, 6))
-        imu   = np.stack([ax, ay, az, gx, gy, gz], axis=1) + noise
+        imu = np.stack([ax, ay, az, gx, gy, gz], axis=1) + noise
         return imu.tolist()
 
     def generate_pressure(self) -> list[list[float]]:
@@ -144,37 +152,40 @@ class FirmwareSimulator:
         f = p["freq"]
 
         # COCO 기준 정적 자세 (발뒤꿈치 원점)
-        base = np.array([
-            [0.0,  1.0,  0.0],   # 0  nose
-            [0.1,  1.0,  0.0],   # 1  left_eye
-            [-0.1, 1.0,  0.0],   # 2  right_eye
-            [0.2,  0.95, 0.0],   # 3  left_ear
-            [-0.2, 0.95, 0.0],   # 4  right_ear
-            [0.2,  0.75, 0.0],   # 5  left_shoulder
-            [-0.2, 0.75, 0.0],   # 6  right_shoulder
-            [0.35, 0.45, 0.0],   # 7  left_elbow
-            [-0.35,0.45, 0.0],   # 8  right_elbow
-            [0.4,  0.2,  0.0],   # 9  left_wrist
-            [-0.4, 0.2,  0.0],   # 10 right_wrist
-            [0.1,  0.55, 0.0],   # 11 left_hip
-            [-0.1, 0.55, 0.0],   # 12 right_hip
-            [0.15, 0.3,  0.0],   # 13 left_knee
-            [-0.15,0.3,  0.0],   # 14 right_knee
-            [0.15, 0.05, 0.0],   # 15 left_ankle
-            [-0.15,0.05, 0.0],   # 16 right_ankle
-        ], dtype=np.float64)
+        base = np.array(
+            [
+                [0.0, 1.0, 0.0],  # 0  nose
+                [0.1, 1.0, 0.0],  # 1  left_eye
+                [-0.1, 1.0, 0.0],  # 2  right_eye
+                [0.2, 0.95, 0.0],  # 3  left_ear
+                [-0.2, 0.95, 0.0],  # 4  right_ear
+                [0.2, 0.75, 0.0],  # 5  left_shoulder
+                [-0.2, 0.75, 0.0],  # 6  right_shoulder
+                [0.35, 0.45, 0.0],  # 7  left_elbow
+                [-0.35, 0.45, 0.0],  # 8  right_elbow
+                [0.4, 0.2, 0.0],  # 9  left_wrist
+                [-0.4, 0.2, 0.0],  # 10 right_wrist
+                [0.1, 0.55, 0.0],  # 11 left_hip
+                [-0.1, 0.55, 0.0],  # 12 right_hip
+                [0.15, 0.3, 0.0],  # 13 left_knee
+                [-0.15, 0.3, 0.0],  # 14 right_knee
+                [0.15, 0.05, 0.0],  # 15 left_ankle
+                [-0.15, 0.05, 0.0],  # 16 right_ankle
+            ],
+            dtype=np.float64,
+        )
 
         # 보행 애니메이션: 좌우 교대 레그 모션
         skel = np.tile(base, (T, 1, 1))
         swing = 0.12 * np.sin(2 * np.pi * f * t)
-        skel[:, 13, 2] += swing        # left_knee z
-        skel[:, 14, 2] -= swing        # right_knee z (반대)
+        skel[:, 13, 2] += swing  # left_knee z
+        skel[:, 14, 2] -= swing  # right_knee z (반대)
         skel[:, 15, 2] += swing * 1.5  # left_ankle
         skel[:, 16, 2] -= swing * 1.5
 
         # 몸통 흔들림
         trunk_sway = p["noise"] * 0.5 * np.sin(2 * np.pi * f * t)
-        skel[:, 5, 0] += trunk_sway   # left_shoulder x
+        skel[:, 5, 0] += trunk_sway  # left_shoulder x
         skel[:, 6, 0] += trunk_sway
 
         noise = self._rng.normal(0, p["noise"] * 0.02, skel.shape)
@@ -188,18 +199,16 @@ class FirmwareSimulator:
         Args:
             delay_ms : 패킷 간 지연 (ms). 0이면 즉시 반환.
         """
-        imu      = self.generate_imu()
+        imu = self.generate_imu()
         pressure = self.generate_pressure()
         skeleton = self.generate_skeleton()
 
-        packets  = (
+        packets = (
             encode_imu(imu, self.session_id)
             + encode_pressure(pressure, self.session_id)
             + encode_skeleton(skeleton, self.session_id)
         )
-        packets.append(
-            BLEPacket(PacketType.END, self.session_id, 0, 1, b"").to_bytes()
-        )
+        packets.append(BLEPacket(PacketType.END, self.session_id, 0, 1, b"").to_bytes())
 
         for pkt in packets:
             if delay_ms > 0:
@@ -209,10 +218,10 @@ class FirmwareSimulator:
     def snapshot(self) -> dict:
         """단번에 모든 센서 데이터를 dict로 반환 (BLE 없이 직접 사용)."""
         return {
-            "session_id":  self.session_id,
-            "gait_class":  self.gait_class,
-            "gait_label":  self._params["label"],
-            "imu":         self.generate_imu(),
-            "pressure":    self.generate_pressure(),
-            "skeleton":    self.generate_skeleton(),
+            "session_id": self.session_id,
+            "gait_class": self.gait_class,
+            "gait_label": self._params["label"],
+            "imu": self.generate_imu(),
+            "pressure": self.generate_pressure(),
+            "skeleton": self.generate_skeleton(),
         }

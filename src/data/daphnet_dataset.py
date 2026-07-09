@@ -30,11 +30,11 @@ class DaphnetDataset(Dataset):
         self.grid_size = grid_size
         self.num_joints = num_joints
 
-        self.segments = []   # (T, 6) float32
-        self.labels = []     # int
+        self.segments = []  # (T, 6) float32
+        self.labels = []  # int
 
         for path in sorted(pathlib.Path(data_dir).glob("*.txt")):
-            raw = np.loadtxt(path)          # (N, 11)
+            raw = np.loadtxt(path)  # (N, 11)
             accel = raw[:, 1:10].astype(np.float32)  # 9 channels
             labels = raw[:, 10].astype(int)
 
@@ -49,22 +49,22 @@ class DaphnetDataset(Dataset):
     def _window_recording(self, imu: np.ndarray, labels: np.ndarray):
         n = len(imu)
         for start in range(0, n - self.window + 1, self.stride):
-            seg_labels = labels[start: start + self.window]
+            seg_labels = labels[start : start + self.window]
             # Skip windows that contain transition frames (label 0)
             if np.any(seg_labels == 0):
                 continue
             # Majority vote for window label
             majority = int(np.bincount(seg_labels).argmax())
-            self.segments.append(imu[start: start + self.window].copy())
+            self.segments.append(imu[start : start + self.window].copy())
             self.labels.append(majority - 1)  # 1→0, 2→1
 
     def __len__(self):
         return len(self.segments)
 
     def __getitem__(self, idx):
-        imu = torch.from_numpy(self.segments[idx]).T         # (6, T)
+        imu = torch.from_numpy(self.segments[idx]).T  # (6, T)
         h, w = self.grid_size
-        pressure = torch.zeros(self.window, 1, h, w)        # (T, 1, H, W)
-        skeleton = torch.zeros(3, self.window, self.num_joints)   # (3, T, J)
+        pressure = torch.zeros(self.window, 1, h, w)  # (T, 1, H, W)
+        skeleton = torch.zeros(3, self.window, self.num_joints)  # (3, T, J)
         label = torch.tensor(self.labels[idx], dtype=torch.long)
         return {"imu": imu, "pressure": pressure, "skeleton": skeleton, "label": label}

@@ -24,7 +24,10 @@ BIOMARKER_NAMES = [
 
 
 BIOMARKER_INFO = {
-    "acc_rms": ("IMU", "ankle acceleration magnitude; lower values can reflect bradykinetic gait"),
+    "acc_rms": (
+        "IMU",
+        "ankle acceleration magnitude; lower values can reflect bradykinetic gait",
+    ),
     "acc_variability": ("IMU", "stride-to-stride acceleration variability"),
     "gyro_rms": ("IMU", "ankle angular velocity magnitude"),
     "gyro_variability": ("IMU", "angular velocity rhythm variability"),
@@ -48,7 +51,9 @@ class WearGaitBiomarkerSummary:
     std: dict[str, float]
 
 
-def extract_weargait_biomarkers(imu: np.ndarray, pressure: np.ndarray) -> dict[str, float]:
+def extract_weargait_biomarkers(
+    imu: np.ndarray, pressure: np.ndarray
+) -> dict[str, float]:
     """Extract explicit biomarkers from one WearGait window.
 
     Args:
@@ -84,20 +89,34 @@ def extract_weargait_biomarkers(imu: np.ndarray, pressure: np.ndarray) -> dict[s
     forefoot = total_pressure[:, :2, :].sum(axis=(1, 2))
     midfoot = total_pressure[:, 2, :].sum(axis=1)
 
-    return _finite_dict({
-        "acc_rms": _rms(acc_mag),
-        "acc_variability": _cv(acc_mag),
-        "gyro_rms": _rms(gyro_mag),
-        "gyro_variability": _cv(gyro_mag),
-        "right_left_acc_asymmetry": _asymmetry(_rms(_magnitude(r_acc)), _rms(_magnitude(l_acc))),
-        "right_left_gyro_asymmetry": _asymmetry(_rms(_magnitude(r_gyr)), _rms(_magnitude(l_gyr))),
-        "pressure_asymmetry": _asymmetry(float(left_force.sum()), float(right_force.sum())),
-        "double_support_ratio": _double_support_ratio(left_force, right_force),
-        "heel_pressure_ratio": _safe_ratio(float(heel.sum()), float(total_force.sum())),
-        "forefoot_pressure_ratio": _safe_ratio(float(forefoot.sum()), float(total_force.sum())),
-        "midfoot_pressure_ratio": _safe_ratio(float(midfoot.sum()), float(total_force.sum())),
-        "cop_path_length": _cop_path_length(total_pressure),
-    })
+    return _finite_dict(
+        {
+            "acc_rms": _rms(acc_mag),
+            "acc_variability": _cv(acc_mag),
+            "gyro_rms": _rms(gyro_mag),
+            "gyro_variability": _cv(gyro_mag),
+            "right_left_acc_asymmetry": _asymmetry(
+                _rms(_magnitude(r_acc)), _rms(_magnitude(l_acc))
+            ),
+            "right_left_gyro_asymmetry": _asymmetry(
+                _rms(_magnitude(r_gyr)), _rms(_magnitude(l_gyr))
+            ),
+            "pressure_asymmetry": _asymmetry(
+                float(left_force.sum()), float(right_force.sum())
+            ),
+            "double_support_ratio": _double_support_ratio(left_force, right_force),
+            "heel_pressure_ratio": _safe_ratio(
+                float(heel.sum()), float(total_force.sum())
+            ),
+            "forefoot_pressure_ratio": _safe_ratio(
+                float(forefoot.sum()), float(total_force.sum())
+            ),
+            "midfoot_pressure_ratio": _safe_ratio(
+                float(midfoot.sum()), float(total_force.sum())
+            ),
+            "cop_path_length": _cop_path_length(total_pressure),
+        }
+    )
 
 
 def biomarker_vector(imu: np.ndarray, pressure: np.ndarray) -> np.ndarray:
@@ -122,7 +141,9 @@ def summarize_biomarkers(vectors: list[np.ndarray]) -> WearGaitBiomarkerSummary:
 
 def _channels(imu: np.ndarray, start: int, end: int) -> np.ndarray:
     if imu.ndim != 2 or imu.shape[0] < end:
-        return np.zeros((end - start, max(1, imu.shape[-1] if imu.ndim else 1)), dtype=np.float32)
+        return np.zeros(
+            (end - start, max(1, imu.shape[-1] if imu.ndim else 1)), dtype=np.float32
+        )
     return imu[start:end]
 
 
@@ -156,7 +177,7 @@ def _rms(values: np.ndarray) -> float:
     values = np.asarray(values, dtype=np.float32)
     if values.size == 0:
         return 0.0
-    return float(np.sqrt(np.mean(values ** 2)))
+    return float(np.sqrt(np.mean(values**2)))
 
 
 def _cv(values: np.ndarray) -> float:
@@ -201,7 +222,7 @@ def _cop_path_length(total_pressure: np.ndarray) -> float:
     dx = np.diff(x[valid])
     dy = np.diff(y[valid])
     scale = max(float(h + w), 1.0)
-    return float(np.sqrt(dx ** 2 + dy ** 2).sum() / scale)
+    return float(np.sqrt(dx**2 + dy**2).sum() / scale)
 
 
 def _finite_dict(values: dict[str, float]) -> dict[str, float]:

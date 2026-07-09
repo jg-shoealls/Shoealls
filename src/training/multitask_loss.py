@@ -25,7 +25,10 @@ class MultitaskGaitLoss(nn.Module):
     ):
         super().__init__()
         self.active_tasks = active_tasks or [
-            "gait", "disease", "fall_risk", "gait_phase",
+            "gait",
+            "disease",
+            "fall_risk",
+            "gait_phase",
         ]
 
         # Fixed weights (used when uncertainty weighting is off)
@@ -41,10 +44,9 @@ class MultitaskGaitLoss(nn.Module):
         self.use_uncertainty_weighting = use_uncertainty_weighting
         if use_uncertainty_weighting:
             # Learnable log-variance parameters (one per task)
-            self.log_vars = nn.ParameterDict({
-                task: nn.Parameter(torch.zeros(1))
-                for task in self.active_tasks
-            })
+            self.log_vars = nn.ParameterDict(
+                {task: nn.Parameter(torch.zeros(1)) for task in self.active_tasks}
+            )
 
         # Loss functions
         self.ce_loss = nn.CrossEntropyLoss()
@@ -63,9 +65,7 @@ class MultitaskGaitLoss(nn.Module):
 
         # ── Gait classification ──
         if "gait" in self.active_tasks and "gait_logits" in outputs:
-            losses["gait"] = self.ce_loss(
-                outputs["gait_logits"], targets["gait_label"]
-            )
+            losses["gait"] = self.ce_loss(outputs["gait_logits"], targets["gait_label"])
 
         # ── Disease classification + severity ──
         if "disease" in self.active_tasks and "disease_logits" in outputs:

@@ -1,18 +1,17 @@
 """Corrective feedback generator: personalized Korean gait improvement recommendations."""
 
-import numpy as np
 from dataclasses import dataclass
 
-from .foot_zones import FootAnalysisResult
-from .gait_profile import PersonalGaitProfiler, DeviationReport, GaitBaseline
+from .gait_profile import DeviationReport, GaitBaseline
 from .injury_risk import InjuryRiskReport, InjuryRisk
 
 
 @dataclass
 class FeedbackItem:
     """Single feedback recommendation."""
-    category: str        # exercise / footwear / posture / medical
-    priority: int        # 1=highest
+
+    category: str  # exercise / footwear / posture / medical
+    priority: int  # 1=highest
     title: str
     description: str
     exercises: list[str]
@@ -21,6 +20,7 @@ class FeedbackItem:
 @dataclass
 class PersonalizedFeedback:
     """Complete personalized feedback report."""
+
     items: list[FeedbackItem]
     overall_status: str
     encouragement: str
@@ -83,15 +83,23 @@ class CorrektiveFeedbackGenerator:
             encouragement = "부상 위험이 높습니다. 아래 권장사항을 꼭 확인해주세요."
         elif injury_report.overall_risk >= 0.5:
             status = "개선 권장"
-            encouragement = "몇 가지 개선이 필요하지만, 꾸준한 관리로 충분히 좋아질 수 있습니다!"
+            encouragement = (
+                "몇 가지 개선이 필요하지만, 꾸준한 관리로 충분히 좋아질 수 있습니다!"
+            )
         elif injury_report.overall_risk >= 0.25:
             status = "양호"
-            encouragement = "전체적으로 좋은 상태입니다. 작은 습관 개선으로 더 좋아질 수 있어요."
+            encouragement = (
+                "전체적으로 좋은 상태입니다. 작은 습관 개선으로 더 좋아질 수 있어요."
+            )
         else:
             status = "매우 양호"
-            encouragement = "훌륭한 보행 패턴을 유지하고 있습니다! 계속 이대로 유지하세요."
+            encouragement = (
+                "훌륭한 보행 패턴을 유지하고 있습니다! 계속 이대로 유지하세요."
+            )
 
-        report = self._build_report(items, status, encouragement, injury_report, deviation_report)
+        report = self._build_report(
+            items, status, encouragement, injury_report, deviation_report
+        )
 
         return PersonalizedFeedback(
             items=items,
@@ -220,37 +228,43 @@ class CorrektiveFeedbackGenerator:
 
         return feedback_map.get(metric)
 
-    def _baseline_tips(self, baseline: GaitBaseline, start_priority: int) -> list[FeedbackItem]:
+    def _baseline_tips(
+        self, baseline: GaitBaseline, start_priority: int
+    ) -> list[FeedbackItem]:
         """General tips based on baseline patterns."""
         tips = []
         p = start_priority
 
         # Low stride regularity
         if baseline.stride_regularity[0] < 0.5:
-            tips.append(FeedbackItem(
-                category="exercise",
-                priority=p,
-                title="보폭 규칙성 향상 추천",
-                description="보폭 규칙성 지수가 낮습니다. 꾸준한 연습으로 개선할 수 있습니다.",
-                exercises=[
-                    "리듬에 맞춰 걷기 연습 (음악 BPM 100-120)",
-                    "트레드밀에서 일정 속도 걷기 (10분)",
-                ],
-            ))
+            tips.append(
+                FeedbackItem(
+                    category="exercise",
+                    priority=p,
+                    title="보폭 규칙성 향상 추천",
+                    description="보폭 규칙성 지수가 낮습니다. 꾸준한 연습으로 개선할 수 있습니다.",
+                    exercises=[
+                        "리듬에 맞춰 걷기 연습 (음악 BPM 100-120)",
+                        "트레드밀에서 일정 속도 걷기 (10분)",
+                    ],
+                )
+            )
             p += 1
 
         # Low step symmetry
         if baseline.step_symmetry[0] < 0.7:
-            tips.append(FeedbackItem(
-                category="exercise",
-                priority=p,
-                title="보행 대칭성 향상 추천",
-                description="좌우 보행 대칭성을 개선하면 부상 위험을 줄일 수 있습니다.",
-                exercises=[
-                    "좌우 번갈아 한 발 서기 (30초씩 5세트)",
-                    "약한 쪽 다리 스쿼트 (10회 3세트)",
-                ],
-            ))
+            tips.append(
+                FeedbackItem(
+                    category="exercise",
+                    priority=p,
+                    title="보행 대칭성 향상 추천",
+                    description="좌우 보행 대칭성을 개선하면 부상 위험을 줄일 수 있습니다.",
+                    exercises=[
+                        "좌우 번갈아 한 발 서기 (30초씩 5세트)",
+                        "약한 쪽 다리 스쿼트 (10회 3세트)",
+                    ],
+                )
+            )
             p += 1
 
         return tips
@@ -279,7 +293,9 @@ class CorrektiveFeedbackGenerator:
         lines.append("  [부상 위험 평가]")
         lines.append("")
         for risk in sorted(injury_report.risks, key=lambda r: -r.risk_score):
-            bar = "█" * int(risk.risk_score * 10) + "░" * (10 - int(risk.risk_score * 10))
+            bar = "█" * int(risk.risk_score * 10) + "░" * (
+                10 - int(risk.risk_score * 10)
+            )
             lines.append(f"  {risk.korean_name:12s} [{bar}] {risk.severity}")
 
         # Deviation summary

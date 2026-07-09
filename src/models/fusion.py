@@ -23,20 +23,27 @@ class CrossModalAttentionFusion(nn.Module):
         self.num_modalities = num_modalities
 
         # Modality-specific tokens
-        self.modality_embeddings = nn.ParameterList([
-            nn.Parameter(torch.randn(1, 1, embed_dim) * 0.02)
-            for _ in range(num_modalities)
-        ])
+        self.modality_embeddings = nn.ParameterList(
+            [
+                nn.Parameter(torch.randn(1, 1, embed_dim) * 0.02)
+                for _ in range(num_modalities)
+            ]
+        )
 
         # Cross-attention layers
-        self.cross_attention_layers = nn.ModuleList([
-            CrossAttentionBlock(embed_dim, num_heads, ff_dim, dropout)
-            for _ in range(num_layers)
-        ])
+        self.cross_attention_layers = nn.ModuleList(
+            [
+                CrossAttentionBlock(embed_dim, num_heads, ff_dim, dropout)
+                for _ in range(num_layers)
+            ]
+        )
 
         # Self-attention for fused representation
         self.self_attention = nn.MultiheadAttention(
-            embed_dim, num_heads, dropout=dropout, batch_first=True,
+            embed_dim,
+            num_heads,
+            dropout=dropout,
+            batch_first=True,
         )
         self.norm = nn.LayerNorm(embed_dim)
 
@@ -60,7 +67,9 @@ class CrossModalAttentionFusion(nn.Module):
             updated = []
             for i in range(self.num_modalities):
                 # Concatenate all other modalities as context
-                context_parts = [enriched[j] for j in range(self.num_modalities) if j != i]
+                context_parts = [
+                    enriched[j] for j in range(self.num_modalities) if j != i
+                ]
                 context = torch.cat(context_parts, dim=1)
                 updated.append(layer(enriched[i], context))
             enriched = updated
@@ -69,7 +78,11 @@ class CrossModalAttentionFusion(nn.Module):
         combined = torch.cat(enriched, dim=1)  # (B, sum(T_i), D)
 
         # Self-attention over combined
-        attn_out, _ = self.self_attention(combined, combined, combined)
+        # Optimization: Set need_weights=False to prevent unnecessary memory allocation
+        # and enable optimized attention backends (like FlashAttention).
+        attn_out, _ = self.self_attention(
+            combined, combined, combined, need_weights=False
+        )
         combined = self.norm(combined + attn_out)
 
         # Global average pooling
@@ -88,7 +101,10 @@ class CrossAttentionBlock(nn.Module):
     ):
         super().__init__()
         self.cross_attn = nn.MultiheadAttention(
-            embed_dim, num_heads, dropout=dropout, batch_first=True,
+            embed_dim,
+            num_heads,
+            dropout=dropout,
+            batch_first=True,
         )
         self.norm1 = nn.LayerNorm(embed_dim)
         self.norm2 = nn.LayerNorm(embed_dim)
@@ -102,7 +118,9 @@ class CrossAttentionBlock(nn.Module):
 
     def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         # Cross-attention: query attends to context
-        attn_out, _ = self.cross_attn(query, context, context)
+        # Optimization: Set need_weights=False to prevent unnecessary memory allocation
+        # and enable optimized attention backends (like FlashAttention).
+        attn_out, _ = self.cross_attn(query, context, context, need_weights=False)
         query = self.norm1(query + attn_out)
 
         # Feed-forward

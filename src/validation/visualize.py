@@ -3,11 +3,12 @@
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix
 
 
 # ── Color palette ──────────────────────────────────────────────────────
@@ -33,8 +34,17 @@ def plot_training_curves(history: dict, save_path: Path):
 
     # Loss curve
     ax = axes[0]
-    ax.plot(epochs, history["train_loss"], "o-", label="Train", color="#2196F3", markersize=3)
-    ax.plot(epochs, history["val_loss"], "s-", label="Val", color="#F44336", markersize=3)
+    ax.plot(
+        epochs,
+        history["train_loss"],
+        "o-",
+        label="Train",
+        color="#2196F3",
+        markersize=3,
+    )
+    ax.plot(
+        epochs, history["val_loss"], "s-", label="Val", color="#F44336", markersize=3
+    )
     ax.set_xlabel("Epoch", fontsize=12)
     ax.set_ylabel("Loss", fontsize=12)
     ax.set_title("Training & Validation Loss", fontsize=14, fontweight="bold")
@@ -44,8 +54,12 @@ def plot_training_curves(history: dict, save_path: Path):
 
     # Accuracy curve
     ax = axes[1]
-    ax.plot(epochs, history["train_acc"], "o-", label="Train", color="#2196F3", markersize=3)
-    ax.plot(epochs, history["val_acc"], "s-", label="Val", color="#F44336", markersize=3)
+    ax.plot(
+        epochs, history["train_acc"], "o-", label="Train", color="#2196F3", markersize=3
+    )
+    ax.plot(
+        epochs, history["val_acc"], "s-", label="Val", color="#F44336", markersize=3
+    )
     ax.set_xlabel("Epoch", fontsize=12)
     ax.set_ylabel("Accuracy", fontsize=12)
     ax.set_title("Training & Validation Accuracy", fontsize=14, fontweight="bold")
@@ -102,8 +116,16 @@ def plot_confusion_matrix(
             pct = cm_norm[i, j]
             count = cm[i, j]
             color = "white" if pct > 0.5 else "black"
-            ax.text(j, i, f"{count}\n({pct:.0%})", ha="center", va="center",
-                    fontsize=11, fontweight="bold", color=color)
+            ax.text(
+                j,
+                i,
+                f"{count}\n({pct:.0%})",
+                ha="center",
+                va="center",
+                fontsize=11,
+                fontweight="bold",
+                color=color,
+            )
 
     plt.tight_layout()
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
@@ -136,11 +158,23 @@ def plot_confidence_distribution(
     ax = axes[0]
     bins = np.linspace(0, 1, 21)
     if correct.any():
-        ax.hist(max_probs[correct], bins=bins, alpha=0.7, label="Correct",
-                color="#4CAF50", edgecolor="white")
+        ax.hist(
+            max_probs[correct],
+            bins=bins,
+            alpha=0.7,
+            label="Correct",
+            color="#4CAF50",
+            edgecolor="white",
+        )
     if (~correct).any():
-        ax.hist(max_probs[~correct], bins=bins, alpha=0.7, label="Incorrect",
-                color="#F44336", edgecolor="white")
+        ax.hist(
+            max_probs[~correct],
+            bins=bins,
+            alpha=0.7,
+            label="Incorrect",
+            color="#F44336",
+            edgecolor="white",
+        )
     ax.set_xlabel("Prediction Confidence", fontsize=12)
     ax.set_ylabel("Count", fontsize=12)
     ax.set_title("Confidence: Correct vs Incorrect", fontsize=14, fontweight="bold")
@@ -180,7 +214,10 @@ def plot_per_class_metrics(
     from sklearn.metrics import precision_recall_fscore_support
 
     prec, rec, f1, support = precision_recall_fscore_support(
-        y_true, y_pred, average=None, zero_division=0,
+        y_true,
+        y_pred,
+        average=None,
+        zero_division=0,
     )
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -188,7 +225,9 @@ def plot_per_class_metrics(
     x = np.arange(len(class_names))
     width = 0.22
 
-    bars1 = ax.bar(x - width, prec, width, label="Precision", color="#2196F3", alpha=0.85)
+    bars1 = ax.bar(
+        x - width, prec, width, label="Precision", color="#2196F3", alpha=0.85
+    )
     bars2 = ax.bar(x, rec, width, label="Recall", color="#FF9800", alpha=0.85)
     bars3 = ax.bar(x + width, f1, width, label="F1 Score", color="#4CAF50", alpha=0.85)
 
@@ -196,8 +235,15 @@ def plot_per_class_metrics(
     for bars in [bars1, bars2, bars3]:
         for bar in bars:
             h = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2, h + 0.01,
-                    f"{h:.2f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                h + 0.01,
+                f"{h:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+                fontweight="bold",
+            )
 
     # Support counts
     for i, s in enumerate(support):
@@ -241,8 +287,14 @@ def plot_modality_ablation(ablation_results: dict, save_path: Path):
     bars = ax.barh(range(len(names)), accs, color=colors, alpha=0.85, edgecolor="white")
 
     for bar, acc in zip(bars, accs):
-        ax.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height() / 2,
-                f"{acc:.1%}", va="center", fontsize=11, fontweight="bold")
+        ax.text(
+            bar.get_width() + 0.01,
+            bar.get_y() + bar.get_height() / 2,
+            f"{acc:.1%}",
+            va="center",
+            fontsize=11,
+            fontweight="bold",
+        )
 
     ax.set_yticks(range(len(names)))
     ax.set_yticklabels(names, fontsize=11)
@@ -280,8 +332,17 @@ def plot_summary_dashboard(
     # Training loss
     ax = fig.add_subplot(gs[0, 0])
     epochs = range(1, len(history["train_loss"]) + 1)
-    ax.plot(epochs, history["train_loss"], "o-", label="Train", color="#2196F3", markersize=2)
-    ax.plot(epochs, history["val_loss"], "s-", label="Val", color="#F44336", markersize=2)
+    ax.plot(
+        epochs,
+        history["train_loss"],
+        "o-",
+        label="Train",
+        color="#2196F3",
+        markersize=2,
+    )
+    ax.plot(
+        epochs, history["val_loss"], "s-", label="Val", color="#F44336", markersize=2
+    )
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
     ax.set_title("Loss Curves", fontweight="bold")
@@ -291,8 +352,12 @@ def plot_summary_dashboard(
 
     # Training accuracy
     ax = fig.add_subplot(gs[0, 1])
-    ax.plot(epochs, history["train_acc"], "o-", label="Train", color="#2196F3", markersize=2)
-    ax.plot(epochs, history["val_acc"], "s-", label="Val", color="#F44336", markersize=2)
+    ax.plot(
+        epochs, history["train_acc"], "o-", label="Train", color="#2196F3", markersize=2
+    )
+    ax.plot(
+        epochs, history["val_acc"], "s-", label="Val", color="#F44336", markersize=2
+    )
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Accuracy")
     ax.set_title("Accuracy Curves", fontweight="bold")
@@ -304,7 +369,7 @@ def plot_summary_dashboard(
     ax = fig.add_subplot(gs[0, 2])
     cm = confusion_matrix(y_true, y_pred)
     cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
-    im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
+    ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
     ax.set_xticks(range(len(class_names)))
     ax.set_yticks(range(len(class_names)))
     ax.set_xticklabels([n[:6] for n in class_names], rotation=45, ha="right")
@@ -315,14 +380,25 @@ def plot_summary_dashboard(
     for i in range(len(class_names)):
         for j in range(len(class_names)):
             color = "white" if cm_norm[i, j] > 0.5 else "black"
-            ax.text(j, i, f"{cm[i,j]}\n({cm_norm[i,j]:.0%})",
-                    ha="center", va="center", fontsize=9, fontweight="bold", color=color)
+            ax.text(
+                j,
+                i,
+                f"{cm[i, j]}\n({cm_norm[i, j]:.0%})",
+                ha="center",
+                va="center",
+                fontsize=9,
+                fontweight="bold",
+                color=color,
+            )
 
     # ── Row 2: Per-class metrics + Confidence ──────────────────────────
     from sklearn.metrics import precision_recall_fscore_support
 
     prec, rec, f1, support = precision_recall_fscore_support(
-        y_true, y_pred, average=None, zero_division=0,
+        y_true,
+        y_pred,
+        average=None,
+        zero_division=0,
     )
 
     # Per-class bars
@@ -346,9 +422,17 @@ def plot_summary_dashboard(
     correct = y_true == y_pred
     bins = np.linspace(0, 1, 21)
     if correct.any():
-        ax.hist(max_probs[correct], bins=bins, alpha=0.7, label="Correct", color="#4CAF50")
+        ax.hist(
+            max_probs[correct], bins=bins, alpha=0.7, label="Correct", color="#4CAF50"
+        )
     if (~correct).any():
-        ax.hist(max_probs[~correct], bins=bins, alpha=0.7, label="Incorrect", color="#F44336")
+        ax.hist(
+            max_probs[~correct],
+            bins=bins,
+            alpha=0.7,
+            label="Incorrect",
+            color="#F44336",
+        )
     ax.set_xlabel("Confidence")
     ax.set_ylabel("Count")
     ax.set_title("Prediction Confidence", fontweight="bold")
@@ -370,8 +454,14 @@ def plot_summary_dashboard(
                 bar_colors.append("#2196F3")
         bars = ax.barh(range(len(names)), accs, color=bar_colors, alpha=0.85)
         for bar, acc in zip(bars, accs):
-            ax.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height() / 2,
-                    f"{acc:.1%}", va="center", fontsize=11, fontweight="bold")
+            ax.text(
+                bar.get_width() + 0.01,
+                bar.get_y() + bar.get_height() / 2,
+                f"{acc:.1%}",
+                va="center",
+                fontsize=11,
+                fontweight="bold",
+            )
         ax.set_yticks(range(len(names)))
         ax.set_yticklabels(names)
         ax.set_xlabel("Accuracy")
@@ -380,8 +470,12 @@ def plot_summary_dashboard(
         ax.grid(True, alpha=0.3, axis="x")
         ax.invert_yaxis()
 
-    fig.suptitle("Multimodal Gait Analysis - Results Dashboard",
-                 fontsize=18, fontweight="bold", y=1.01)
+    fig.suptitle(
+        "Multimodal Gait Analysis - Results Dashboard",
+        fontsize=18,
+        fontweight="bold",
+        y=1.01,
+    )
     fig.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved dashboard: {save_path}")

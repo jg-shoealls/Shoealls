@@ -29,24 +29,26 @@ REGION_GROUPS = {
 @dataclass
 class ZoneMetrics:
     """Pressure metrics for a single anatomical zone."""
+
     mean_pressure: float
     peak_pressure: float
     contact_area_ratio: float  # fraction of zone with nonzero pressure
-    pressure_integral: float   # sum of pressures (force proxy)
+    pressure_integral: float  # sum of pressures (force proxy)
     std_pressure: float
 
 
 @dataclass
 class FootAnalysisResult:
     """Complete foot pressure analysis for one frame or averaged over time."""
+
     zone_metrics: dict[str, ZoneMetrics]
     cop_x: float  # center of pressure, normalized 0-1
     cop_y: float
-    mediolateral_index: float   # >0 = lateral shift, <0 = medial shift
+    mediolateral_index: float  # >0 = lateral shift, <0 = medial shift
     anteroposterior_index: float  # >0 = forefoot, <0 = heel
-    arch_index: float           # midfoot / total contact ratio
+    arch_index: float  # midfoot / total contact ratio
     total_pressure: float
-    pressure_symmetry: float    # left-right symmetry (0=perfect)
+    pressure_symmetry: float  # left-right symmetry (0=perfect)
 
 
 class FootZoneAnalyzer:
@@ -71,7 +73,9 @@ class FootZoneAnalyzer:
             mask[r0:r1, c0:c1] = True
             self.zone_masks[name] = mask
 
-    def _compute_zone_metrics(self, pressure: np.ndarray, mask: np.ndarray) -> ZoneMetrics:
+    def _compute_zone_metrics(
+        self, pressure: np.ndarray, mask: np.ndarray
+    ) -> ZoneMetrics:
         """Compute metrics for one zone from a 2D pressure map."""
         zone_vals = pressure[mask]
         if zone_vals.size == 0:
@@ -113,19 +117,27 @@ class FootZoneAnalyzer:
         cop_x, cop_y = self._compute_cop(p)
 
         # Mediolateral index: lateral - medial pressure ratio
-        medial_p = sum(zone_metrics[z].pressure_integral for z in REGION_GROUPS["medial"])
-        lateral_p = sum(zone_metrics[z].pressure_integral for z in REGION_GROUPS["lateral"])
+        medial_p = sum(
+            zone_metrics[z].pressure_integral for z in REGION_GROUPS["medial"]
+        )
+        lateral_p = sum(
+            zone_metrics[z].pressure_integral for z in REGION_GROUPS["lateral"]
+        )
         total_ml = medial_p + lateral_p
         ml_index = (lateral_p - medial_p) / total_ml if total_ml > 1e-8 else 0.0
 
         # Anteroposterior index: forefoot - heel pressure ratio
-        fore_p = sum(zone_metrics[z].pressure_integral for z in REGION_GROUPS["forefoot"])
+        fore_p = sum(
+            zone_metrics[z].pressure_integral for z in REGION_GROUPS["forefoot"]
+        )
         heel_p = sum(zone_metrics[z].pressure_integral for z in REGION_GROUPS["heel"])
         total_ap = fore_p + heel_p
         ap_index = (fore_p - heel_p) / total_ap if total_ap > 1e-8 else 0.0
 
         # Arch index: midfoot contact relative to total
-        mid_contact = sum(zone_metrics[z].contact_area_ratio for z in REGION_GROUPS["midfoot"])
+        mid_contact = sum(
+            zone_metrics[z].contact_area_ratio for z in REGION_GROUPS["midfoot"]
+        )
         all_contact = sum(zm.contact_area_ratio for zm in zone_metrics.values())
         arch_index = mid_contact / all_contact if all_contact > 1e-8 else 0.0
 
@@ -163,7 +175,9 @@ class FootZoneAnalyzer:
         cop_trajectory = np.array([(f.cop_x, f.cop_y) for f in frames])
 
         # COP variability (sway)
-        cop_sway = float(np.std(cop_trajectory, axis=0).mean()) if len(frames) > 1 else 0.0
+        cop_sway = (
+            float(np.std(cop_trajectory, axis=0).mean()) if len(frames) > 1 else 0.0
+        )
 
         # Temporal zone summaries
         zone_temporal = {}

@@ -10,6 +10,7 @@ import numpy as np
 # 심각도 스코어링
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+
 def severity_label(score: float) -> str:
     """0~1 위험 점수를 한국어 심각도 라벨로 변환.
 
@@ -53,13 +54,9 @@ def linear_risk_score(
     low_risk > high_risk: value가 낮을수록 위험
     """
     if high_risk > low_risk:
-        return float(np.clip(
-            (value - low_risk) / (high_risk - low_risk + 1e-8), 0, 1
-        ))
+        return float(np.clip((value - low_risk) / (high_risk - low_risk + 1e-8), 0, 1))
     else:
-        return float(np.clip(
-            (low_risk - value) / (low_risk - high_risk + 1e-8), 0, 1
-        ))
+        return float(np.clip((low_risk - value) / (low_risk - high_risk + 1e-8), 0, 1))
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -99,7 +96,11 @@ def get_feature_korean(feature_name: str) -> str:
 
 # zone feature 키 이름
 _HEEL_ZONES = ["zone_heel_medial_mean", "zone_heel_lateral_mean"]
-_FORE_ZONES = ["zone_forefoot_medial_mean", "zone_forefoot_lateral_mean", "zone_toes_mean"]
+_FORE_ZONES = [
+    "zone_forefoot_medial_mean",
+    "zone_forefoot_lateral_mean",
+    "zone_toes_mean",
+]
 _MID_ZONES = ["zone_midfoot_medial_mean", "zone_midfoot_lateral_mean"]
 
 
@@ -141,7 +142,9 @@ def compute_derived_features(features: dict[str, float]) -> None:
 
     # 가속도 변동성
     if "acceleration_rms" in features and "acceleration_variability" not in features:
-        features["acceleration_variability"] = features.get("acceleration_rms", 1.0) * 0.2
+        features["acceleration_variability"] = (
+            features.get("acceleration_rms", 1.0) * 0.2
+        )
 
     # 체간 흔들림 (가속도 기반 추정)
     if "acceleration_rms" in features and "trunk_sway" not in features:

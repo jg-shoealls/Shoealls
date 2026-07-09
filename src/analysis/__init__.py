@@ -9,7 +9,11 @@ from .biomarkers import GaitBiomarkerExtractor, BiomarkerProfile, BiomarkerResul
 from .disease_predictor import DiseaseRiskPredictor, DiseaseScreeningReport
 from .disease_classifier import GaitDiseaseClassifier, ClassificationResult
 from .gait_anomaly import GaitAnomalyDetector, GaitAnomalyReport, AnomalyPattern
-from .injury_predictor import InjuryRiskPredictor, InjuryPrediction, ComprehensiveInjuryReport
+from .injury_predictor import (
+    InjuryRiskPredictor,
+    InjuryPrediction,
+    ComprehensiveInjuryReport,
+)
 
 __all__ = [
     "FootZoneAnalyzer",

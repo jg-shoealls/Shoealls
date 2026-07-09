@@ -4,8 +4,7 @@
 의학 문헌 기반의 정상 범위와 비교하여 이상 여부를 판정합니다.
 """
 
-import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .common import compute_derived_features
 
@@ -13,6 +12,7 @@ from .common import compute_derived_features
 @dataclass
 class BiomarkerResult:
     """단일 바이오마커 측정 결과."""
+
     name: str
     korean_name: str
     value: float
@@ -26,6 +26,7 @@ class BiomarkerResult:
 @dataclass
 class BiomarkerProfile:
     """전체 바이오마커 프로파일."""
+
     biomarkers: list[BiomarkerResult]
     abnormal_count: int
     total_count: int
@@ -40,7 +41,17 @@ BIOMARKER_DEFINITIONS = {
         "korean_name": "보행 속도",
         "unit": "m/s",
         "normal_range": (1.0, 1.4),
-        "diseases": ["파킨슨병", "뇌졸중", "치매", "근감소증", "말초동맥질환", "뇌출혈", "뇌경색", "추간판 탈출증", "류마티스 관절염"],
+        "diseases": [
+            "파킨슨병",
+            "뇌졸중",
+            "치매",
+            "근감소증",
+            "말초동맥질환",
+            "뇌출혈",
+            "뇌경색",
+            "추간판 탈출증",
+            "류마티스 관절염",
+        ],
         "meaning_low": "느린 보행 → 근력 저하, 신경계 이상 의심",
         "meaning_high": "과도한 보행 속도 → 충동 보행(festination) 의심",
     },
@@ -64,7 +75,15 @@ BIOMARKER_DEFINITIONS = {
         "korean_name": "좌우 대칭성",
         "unit": "ratio",
         "normal_range": (0.85, 1.0),
-        "diseases": ["뇌졸중", "골관절염", "말초신경병증", "뇌출혈", "뇌경색", "추간판 탈출증", "류마티스 관절염"],
+        "diseases": [
+            "뇌졸중",
+            "골관절염",
+            "말초신경병증",
+            "뇌출혈",
+            "뇌경색",
+            "추간판 탈출증",
+            "류마티스 관절염",
+        ],
         "meaning_low": "좌우 비대칭 → 편마비, 관절 통증, 신경 손상 의심",
         "meaning_high": "",
     },
@@ -73,7 +92,13 @@ BIOMARKER_DEFINITIONS = {
         "korean_name": "체중심 흔들림",
         "unit": "normalized",
         "normal_range": (0.0, 0.06),
-        "diseases": ["소뇌 실조증", "전정기관 장애", "다발성경화증", "말초신경병증", "류마티스 관절염"],
+        "diseases": [
+            "소뇌 실조증",
+            "전정기관 장애",
+            "다발성경화증",
+            "말초신경병증",
+            "류마티스 관절염",
+        ],
         "meaning_low": "",
         "meaning_high": "과도한 흔들림 → 균형 장애, 낙상 위험",
     },
@@ -105,7 +130,12 @@ BIOMARKER_DEFINITIONS = {
         "korean_name": "아치 지수",
         "unit": "ratio",
         "normal_range": (0.15, 0.35),
-        "diseases": ["당뇨 신경병증", "류마티스 관절염", "샤르코-마리-투스병", "추간판 탈출증"],
+        "diseases": [
+            "당뇨 신경병증",
+            "류마티스 관절염",
+            "샤르코-마리-투스병",
+            "추간판 탈출증",
+        ],
         "meaning_low": "높은 아치 → 요족, 신경근육 질환 의심",
         "meaning_high": "낮은 아치(평발) → 과회내, 연부조직 퇴행",
     },
@@ -113,7 +143,15 @@ BIOMARKER_DEFINITIONS = {
         "korean_name": "좌우 압력 비대칭",
         "unit": "index",
         "normal_range": (0.0, 0.12),
-        "diseases": ["뇌졸중", "골관절염", "고관절 질환", "뇌출혈", "뇌경색", "추간판 탈출증", "류마티스 관절염"],
+        "diseases": [
+            "뇌졸중",
+            "골관절염",
+            "고관절 질환",
+            "뇌출혈",
+            "뇌경색",
+            "추간판 탈출증",
+            "류마티스 관절염",
+        ],
         "meaning_low": "",
         "meaning_high": "좌우 하중 차이 → 편마비, 관절 보호 보행",
     },
@@ -138,7 +176,14 @@ BIOMARKER_DEFINITIONS = {
         "korean_name": "체간 흔들림",
         "unit": "deg/s",
         "normal_range": (0.0, 3.0),
-        "diseases": ["소뇌 실조증", "전정기관 장애", "파킨슨병", "척추관협착증", "뇌출혈", "추간판 탈출증"],
+        "diseases": [
+            "소뇌 실조증",
+            "전정기관 장애",
+            "파킨슨병",
+            "척추관협착증",
+            "뇌출혈",
+            "추간판 탈출증",
+        ],
         "meaning_low": "",
         "meaning_high": "과도한 체간 동요 → 균형 장애, 낙상 고위험",
     },
@@ -211,16 +256,18 @@ class GaitBiomarkerExtractor:
                 deviation_pct = 0.0
                 meaning = "정상 범위 내"
 
-            biomarkers.append(BiomarkerResult(
-                name=bio_key,
-                korean_name=bio_def["korean_name"],
-                value=round(value, 4),
-                normal_range=(lo, hi),
-                unit=bio_def["unit"],
-                is_abnormal=is_abnormal,
-                deviation_pct=round(deviation_pct, 1),
-                clinical_meaning=meaning if meaning else "정상 범위 내",
-            ))
+            biomarkers.append(
+                BiomarkerResult(
+                    name=bio_key,
+                    korean_name=bio_def["korean_name"],
+                    value=round(value, 4),
+                    normal_range=(lo, hi),
+                    unit=bio_def["unit"],
+                    is_abnormal=is_abnormal,
+                    deviation_pct=round(deviation_pct, 1),
+                    clinical_meaning=meaning if meaning else "정상 범위 내",
+                )
+            )
 
         # 질환별 관련 바이오마커 그룹핑
         risk_categories = {}

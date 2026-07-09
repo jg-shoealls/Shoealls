@@ -13,12 +13,17 @@
 """
 
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from .biomarkers import GaitBiomarkerExtractor, BiomarkerProfile, BIOMARKER_DEFINITIONS
-from .common import get_feature_korean, severity_label
-from .report_formatter import header, section, risk_bar, HEADER_DIVIDER, overall_summary_line
+from .common import get_feature_korean
+from .report_formatter import (
+    header,
+    section,
+    risk_bar,
+    HEADER_DIVIDER,
+    overall_summary_line,
+)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -29,15 +34,31 @@ DISEASE_DEFINITIONS = {
         "korean_name": "파킨슨병",
         "description": "도파민 부족으로 인한 운동 장애",
         "gait_features": {
-            "stride_regularity":          {"direction": "low",  "weight": 0.90, "threshold": 0.60},
-            "cadence":                    {"direction": "high", "weight": 0.70, "threshold": 140},
-            "gait_speed":                 {"direction": "low",  "weight": 0.90, "threshold": 0.80},
-            "acceleration_variability":   {"direction": "high", "weight": 0.80, "threshold": 0.30},
-            "step_symmetry":              {"direction": "low",  "weight": 0.50, "threshold": 0.80},
+            "stride_regularity": {
+                "direction": "low",
+                "weight": 0.90,
+                "threshold": 0.60,
+            },
+            "cadence": {"direction": "high", "weight": 0.70, "threshold": 140},
+            "gait_speed": {"direction": "low", "weight": 0.90, "threshold": 0.80},
+            "acceleration_variability": {
+                "direction": "high",
+                "weight": 0.80,
+                "threshold": 0.30,
+            },
+            "step_symmetry": {"direction": "low", "weight": 0.50, "threshold": 0.80},
             # 전임상 바이오마커 (prodromal_biomarkers.py 계산값)
-            "prodromal_composite_score":  {"direction": "high", "weight": 0.95, "threshold": 0.15},
-            "rest_tremor_index":          {"direction": "high", "weight": 0.80, "threshold": 0.10},
-            "stride_time_cv":             {"direction": "high", "weight": 0.70, "threshold": 0.03},
+            "prodromal_composite_score": {
+                "direction": "high",
+                "weight": 0.95,
+                "threshold": 0.15,
+            },
+            "rest_tremor_index": {
+                "direction": "high",
+                "weight": 0.80,
+                "threshold": 0.10,
+            },
+            "stride_time_cv": {"direction": "high", "weight": 0.70, "threshold": 0.03},
         },
         "key_signs": [
             "소보행 (짧은 보폭 + 빠른 보행률)",
@@ -56,7 +77,11 @@ DISEASE_DEFINITIONS = {
         "description": "뇌혈관 손상으로 인한 일측성 운동 장애",
         "gait_features": {
             "step_symmetry": {"direction": "low", "weight": 1.0, "threshold": 0.7},
-            "pressure_asymmetry": {"direction": "high", "weight": 0.9, "threshold": 0.15},
+            "pressure_asymmetry": {
+                "direction": "high",
+                "weight": 0.9,
+                "threshold": 0.15,
+            },
             "gait_speed": {"direction": "low", "weight": 0.7, "threshold": 0.7},
             "ml_variability": {"direction": "high", "weight": 0.6, "threshold": 0.12},
         },
@@ -73,9 +98,17 @@ DISEASE_DEFINITIONS = {
         "korean_name": "당뇨 신경병증",
         "description": "당뇨로 인한 말초신경 손상, 발 감각 저하",
         "gait_features": {
-            "forefoot_pressure_ratio": {"direction": "high", "weight": 0.9, "threshold": 0.55},
+            "forefoot_pressure_ratio": {
+                "direction": "high",
+                "weight": 0.9,
+                "threshold": 0.55,
+            },
             "cop_sway": {"direction": "high", "weight": 0.8, "threshold": 0.07},
-            "heel_pressure_ratio": {"direction": "low", "weight": 0.7, "threshold": 0.22},
+            "heel_pressure_ratio": {
+                "direction": "low",
+                "weight": 0.7,
+                "threshold": 0.22,
+            },
             "stride_regularity": {"direction": "low", "weight": 0.6, "threshold": 0.65},
             "arch_index": {"direction": "high", "weight": 0.5, "threshold": 0.38},
         },
@@ -96,7 +129,11 @@ DISEASE_DEFINITIONS = {
             "ml_variability": {"direction": "high", "weight": 0.9, "threshold": 0.12},
             "stride_regularity": {"direction": "low", "weight": 0.9, "threshold": 0.55},
             "trunk_sway": {"direction": "high", "weight": 0.8, "threshold": 3.5},
-            "acceleration_variability": {"direction": "high", "weight": 0.7, "threshold": 0.35},
+            "acceleration_variability": {
+                "direction": "high",
+                "weight": 0.7,
+                "threshold": 0.35,
+            },
         },
         "key_signs": [
             "넓은 보폭 기저면 (wide-based gait)",
@@ -131,8 +168,16 @@ DISEASE_DEFINITIONS = {
         "gait_features": {
             "step_symmetry": {"direction": "low", "weight": 0.8, "threshold": 0.80},
             "gait_speed": {"direction": "low", "weight": 0.7, "threshold": 0.9},
-            "pressure_asymmetry": {"direction": "high", "weight": 0.8, "threshold": 0.12},
-            "heel_pressure_ratio": {"direction": "high", "weight": 0.5, "threshold": 0.42},
+            "pressure_asymmetry": {
+                "direction": "high",
+                "weight": 0.8,
+                "threshold": 0.12,
+            },
+            "heel_pressure_ratio": {
+                "direction": "high",
+                "weight": 0.5,
+                "threshold": 0.42,
+            },
         },
         "key_signs": [
             "통증 회피 보행 (antalgic gait)",
@@ -150,7 +195,11 @@ DISEASE_DEFINITIONS = {
             "gait_speed": {"direction": "low", "weight": 1.0, "threshold": 0.8},
             "stride_regularity": {"direction": "low", "weight": 0.9, "threshold": 0.60},
             "cadence": {"direction": "low", "weight": 0.6, "threshold": 95},
-            "acceleration_variability": {"direction": "high", "weight": 0.8, "threshold": 0.28},
+            "acceleration_variability": {
+                "direction": "high",
+                "weight": 0.8,
+                "threshold": 0.28,
+            },
             "trunk_sway": {"direction": "high", "weight": 0.6, "threshold": 2.8},
             "cop_sway": {"direction": "high", "weight": 0.5, "threshold": 0.06},
         },
@@ -171,7 +220,11 @@ DISEASE_DEFINITIONS = {
         "gait_features": {
             "gait_speed": {"direction": "low", "weight": 0.8, "threshold": 0.9},
             "acceleration_rms": {"direction": "low", "weight": 0.7, "threshold": 0.9},
-            "heel_pressure_ratio": {"direction": "low", "weight": 0.6, "threshold": 0.25},
+            "heel_pressure_ratio": {
+                "direction": "low",
+                "weight": 0.6,
+                "threshold": 0.25,
+            },
             "step_symmetry": {"direction": "low", "weight": 0.5, "threshold": 0.82},
         },
         "key_signs": [
@@ -189,7 +242,11 @@ DISEASE_DEFINITIONS = {
         "gait_features": {
             "trunk_sway": {"direction": "high", "weight": 0.8, "threshold": 3.0},
             "gait_speed": {"direction": "low", "weight": 0.7, "threshold": 0.85},
-            "forefoot_pressure_ratio": {"direction": "high", "weight": 0.6, "threshold": 0.55},
+            "forefoot_pressure_ratio": {
+                "direction": "high",
+                "weight": 0.6,
+                "threshold": 0.55,
+            },
             "cop_sway": {"direction": "high", "weight": 0.5, "threshold": 0.06},
         },
         "key_signs": [
@@ -225,7 +282,11 @@ DISEASE_DEFINITIONS = {
         "description": "뇌혈관 파열로 인한 출혈성 손상. 급성기 이후 편마비·실조 등 후유증 보행 특성",
         "gait_features": {
             "step_symmetry": {"direction": "low", "weight": 1.0, "threshold": 0.70},
-            "pressure_asymmetry": {"direction": "high", "weight": 0.9, "threshold": 0.15},
+            "pressure_asymmetry": {
+                "direction": "high",
+                "weight": 0.9,
+                "threshold": 0.15,
+            },
             "ml_variability": {"direction": "high", "weight": 0.8, "threshold": 0.12},
             "gait_speed": {"direction": "low", "weight": 0.8, "threshold": 0.7},
             "trunk_sway": {"direction": "high", "weight": 0.7, "threshold": 3.0},
@@ -247,10 +308,18 @@ DISEASE_DEFINITIONS = {
         "gait_features": {
             "step_symmetry": {"direction": "low", "weight": 0.9, "threshold": 0.75},
             "gait_speed": {"direction": "low", "weight": 0.9, "threshold": 0.8},
-            "pressure_asymmetry": {"direction": "high", "weight": 0.8, "threshold": 0.12},
+            "pressure_asymmetry": {
+                "direction": "high",
+                "weight": 0.8,
+                "threshold": 0.12,
+            },
             "stride_regularity": {"direction": "low", "weight": 0.7, "threshold": 0.60},
             "cop_sway": {"direction": "high", "weight": 0.6, "threshold": 0.07},
-            "heel_pressure_ratio": {"direction": "low", "weight": 0.5, "threshold": 0.25},
+            "heel_pressure_ratio": {
+                "direction": "low",
+                "weight": 0.5,
+                "threshold": 0.25,
+            },
         },
         "key_signs": [
             "점진적 편측 약화 (progressive hemiparesis)",
@@ -270,8 +339,16 @@ DISEASE_DEFINITIONS = {
             "step_symmetry": {"direction": "low", "weight": 0.9, "threshold": 0.80},
             "trunk_sway": {"direction": "high", "weight": 0.8, "threshold": 2.8},
             "gait_speed": {"direction": "low", "weight": 0.7, "threshold": 0.9},
-            "heel_pressure_ratio": {"direction": "low", "weight": 0.7, "threshold": 0.25},
-            "pressure_asymmetry": {"direction": "high", "weight": 0.6, "threshold": 0.10},
+            "heel_pressure_ratio": {
+                "direction": "low",
+                "weight": 0.7,
+                "threshold": 0.25,
+            },
+            "pressure_asymmetry": {
+                "direction": "high",
+                "weight": 0.6,
+                "threshold": 0.10,
+            },
             "acceleration_rms": {"direction": "low", "weight": 0.5, "threshold": 1.0},
         },
         "key_signs": [
@@ -290,10 +367,18 @@ DISEASE_DEFINITIONS = {
         "gait_features": {
             "gait_speed": {"direction": "low", "weight": 0.8, "threshold": 0.85},
             "step_symmetry": {"direction": "low", "weight": 0.7, "threshold": 0.82},
-            "forefoot_pressure_ratio": {"direction": "high", "weight": 0.8, "threshold": 0.55},
+            "forefoot_pressure_ratio": {
+                "direction": "high",
+                "weight": 0.8,
+                "threshold": 0.55,
+            },
             "arch_index": {"direction": "high", "weight": 0.7, "threshold": 0.35},
             "cop_sway": {"direction": "high", "weight": 0.6, "threshold": 0.06},
-            "pressure_asymmetry": {"direction": "high", "weight": 0.5, "threshold": 0.10},
+            "pressure_asymmetry": {
+                "direction": "high",
+                "weight": 0.5,
+                "threshold": 0.10,
+            },
         },
         "key_signs": [
             "조조강직(morning stiffness)으로 보행 시작 어려움",
@@ -311,20 +396,22 @@ DISEASE_DEFINITIONS = {
 @dataclass
 class DiseaseRiskResult:
     """단일 질환 위험 평가 결과."""
+
     disease_id: str
     korean_name: str
-    risk_score: float         # 0.0 ~ 1.0
-    severity: str             # 정상/관심/주의/위험
-    confidence: float         # 판정 신뢰도
+    risk_score: float  # 0.0 ~ 1.0
+    severity: str  # 정상/관심/주의/위험
+    confidence: float  # 판정 신뢰도
     matched_signs: list[str]  # 매칭된 이상 소견
-    key_signs: list[str]      # 해당 질환의 주요 징후
-    referral: str             # 권장 진료과
+    key_signs: list[str]  # 해당 질환의 주요 징후
+    referral: str  # 권장 진료과
     biomarker_details: list[dict]  # 관련 바이오마커 상세
 
 
 @dataclass
 class DiseaseScreeningReport:
     """전체 질환 스크리닝 보고서."""
+
     results: list[DiseaseRiskResult]
     top_risks: list[DiseaseRiskResult]  # 위험도 상위 항목
     biomarker_profile: BiomarkerProfile
@@ -356,7 +443,9 @@ class DiseaseRiskPredictor:
         # 2. 각 질환별 위험도 평가
         results = []
         for disease_id, disease_def in DISEASE_DEFINITIONS.items():
-            result = self._evaluate_disease_risk(disease_id, disease_def, features, bio_profile)
+            result = self._evaluate_disease_risk(
+                disease_id, disease_def, features, bio_profile
+            )
             results.append(result)
 
         # 3. 위험도 정렬
@@ -429,26 +518,34 @@ class DiseaseRiskPredictor:
                     score = 0.0
 
             scores.append(score)
-            details.append({
-                "feature": feat_name,
-                "korean_name": self._get_korean_name(feat_name),
-                "value": round(value, 4),
-                "threshold": threshold,
-                "direction": direction,
-                "score": round(score, 3),
-            })
+            details.append(
+                {
+                    "feature": feat_name,
+                    "korean_name": self._get_korean_name(feat_name),
+                    "value": round(value, 4),
+                    "threshold": threshold,
+                    "direction": direction,
+                    "score": round(score, 3),
+                }
+            )
 
         # 종합 위험 점수 (가중 평균)
         if scores:
-            total_weight = sum(c["weight"] for c in gait_features.values()
-                             if features.get(c.get("feature", "")) is not None or True)
+            sum(
+                c["weight"]
+                for c in gait_features.values()
+                if features.get(c.get("feature", "")) is not None or True
+            )
             risk_score = float(np.clip(sum(scores) / max(len(scores), 1), 0, 1))
         else:
             risk_score = 0.0
 
         # 신뢰도: 사용 가능한 바이오마커 비율
-        available = sum(1 for f in gait_features if f in features or
-                       any(b.name == f for b in bio_profile.biomarkers))
+        available = sum(
+            1
+            for f in gait_features
+            if f in features or any(b.name == f for b in bio_profile.biomarkers)
+        )
         confidence = available / max(len(gait_features), 1)
 
         # 심각도 판정
@@ -498,7 +595,9 @@ class DiseaseRiskPredictor:
         grade, color_desc = overall_summary_line(health_score)
         lines.append(f"  보행 건강 점수: {health_score:.0f}/100 ({grade})")
         lines.append(f"  {color_desc}")
-        lines.append(f"  바이오마커: {bio_profile.total_count}개 측정, {bio_profile.abnormal_count}개 이상")
+        lines.append(
+            f"  바이오마커: {bio_profile.total_count}개 측정, {bio_profile.abnormal_count}개 이상"
+        )
         lines.append("")
 
         # 바이오마커 요약
@@ -531,7 +630,9 @@ class DiseaseRiskPredictor:
 
             for risk in top_risks[:3]:
                 lines.append("")
-                lines.append(f"  ■ {risk.korean_name} (위험도: {risk.risk_score:.0%}, {risk.severity})")
+                lines.append(
+                    f"  ■ {risk.korean_name} (위험도: {risk.risk_score:.0%}, {risk.severity})"
+                )
                 lines.append(f"    권장 진료과: {risk.referral}")
 
                 if risk.matched_signs:
@@ -555,7 +656,9 @@ class DiseaseRiskPredictor:
             referrals = set()
             for risk in top_risks:
                 referrals.add(risk.referral)
-            lines.append(f"  ※ 본 결과는 AI 기반 스크리닝이며, 확진을 위해 전문의 상담이 필요합니다.")
+            lines.append(
+                "  ※ 본 결과는 AI 기반 스크리닝이며, 확진을 위해 전문의 상담이 필요합니다."
+            )
             lines.append(f"  ※ 권장 진료과: {', '.join(referrals)}")
 
         lines.append("")
