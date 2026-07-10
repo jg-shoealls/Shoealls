@@ -1,0 +1,3 @@
+## 2024-07-10 - FlashAttention for nn.MultiheadAttention
+**Learning:** Setting need_weights=False in PyTorch's nn.MultiheadAttention allows using optimized attention backends (like FlashAttention) which reduces computation and memory usage. Since we unpack the attention weights in src/models/fusion.py and src/models/reasoning_engine.py but never use them downstream, we can safely rename the unused unpacking variable to '_' and set need_weights=False.
+**Action:** Look for instances of nn.MultiheadAttention where the second output (attention weights) is discarded or unpacks to an unused variable. Explicitly pass need_weights=False to enable memory and computation optimizations.

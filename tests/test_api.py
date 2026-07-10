@@ -12,12 +12,21 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from api.main import app
+from api.service import get_service
 from api.examples import (
     generate_sample_sensor_data,
     NORMAL_GAIT_FEATURES,
     PARKINSONS_GAIT_FEATURES,
 )
 
+
+@pytest.fixture(scope="session", autouse=True)
+def override_config():
+    """Override num_classes in the global service config so it outputs 4 classes."""
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
 
 @pytest.fixture(scope="module")
 def client():
