@@ -14,7 +14,10 @@ from src.models.reasoning_engine import (
 
 def load_config():
     with open("configs/default.yaml") as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+        # Override num_classes to 4 since GaitReasoningEngine expects 4 classes (CLASS_NAMES_KR)
+        config["data"]["num_classes"] = 4
+        return config
 
 
 def make_batch(batch_size=2):
