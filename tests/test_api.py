@@ -20,7 +20,7 @@ from api.examples import (
 )
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def override_config():
     """Override num_classes in the global service config so it outputs 4 classes."""
     svc = get_service()
