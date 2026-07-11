@@ -22,7 +22,8 @@ import pytest
 
 def _import_sync():
     """Import sync_weargait_to_gdrive without side effects."""
-    import importlib, types
+    import importlib
+    import types
 
     # Stub heavy third-party modules so we can import without them installed
     # Build googleapiclient.http stub with MediaFileUpload pre-populated so
@@ -65,7 +66,8 @@ def _import_sync():
 
 def _import_download():
     """Import download_weargait without side effects."""
-    import types, importlib.util
+    import types
+    import importlib.util
 
     stubs = {
         "synapseclient": types.ModuleType("synapseclient"),
@@ -681,7 +683,8 @@ class TestDownloadSynapseAuth:
             "synapseutils": MagicMock(syncFromSynapse=MagicMock()),
         }):
             # Re-import to pick up patched modules
-            import importlib.util, types
+            import importlib.util
+            import types
             spec = importlib.util.spec_from_file_location(
                 "download_weargait2",
                 Path(__file__).parent.parent / "scripts" / "download_weargait.py",
