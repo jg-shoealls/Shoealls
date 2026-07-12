@@ -379,6 +379,8 @@ def plot_gait_profile_deviation(
     plot_metrics = []
     plot_labels = []
 
+    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
+
     for m in metrics:
         if m in session_features and m in baseline_means:
             plot_metrics.append(m)
@@ -479,7 +481,8 @@ def plot_trend_dashboard(
         ax.plot(x_fit, y_fit, "--", color=color, linewidth=1.5, alpha=0.5)
 
         # Annotation
-        kr_name = METRIC_KR.get(metric, metric)
+        _METRIC_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
+        kr_name = _METRIC_KR.get(metric, get_feature_korean(metric))
         direction_kr = {"improving": "개선", "worsening": "악화", "stable": "안정", "changing": "변화"}.get(direction, "")
         r2 = t["r_squared"]
 
