@@ -1,66 +1,80 @@
-# Multimodal Walking AI Algorithm Configuration
-
 data:
+  imu_channels: 6
+  num_classes: 11
+  pressure_grid_size:
+  - 16
+  - 8
   sequence_length: 128
-  imu_channels: 6          # 3-axis accel + 3-axis gyro
-  pressure_grid_size: [16, 8]  # pressure sensor grid (H x W)
-  skeleton_joints: 17      # number of body keypoints
-  skeleton_dims: 3         # x, y, z coordinates
-  num_classes: 11          # 11 disease classes
+  skeleton_dims: 3
+  skeleton_joints: 17
+  test_split: 0.15
   train_split: 0.7
   val_split: 0.15
-  test_split: 0.15
-
 model:
+  classifier:
+    dropout: 0.3
+    hidden_dims:
+    - 128
+    - 64
+  fusion:
+    dropout: 0.2
+    embed_dim: 128
+    ff_dim: 256
+    num_heads: 4
+    num_layers: 2
   imu_encoder:
-    conv_channels: [32, 64, 128]
+    conv_channels:
+    - 32
+    - 64
+    - 128
+    dropout: 0.3
     kernel_size: 5
     lstm_hidden: 128
     lstm_layers: 2
-    dropout: 0.3
-
   pressure_encoder:
-    conv_channels: [16, 32, 64]
+    conv_channels:
+    - 16
+    - 32
+    - 64
+    dropout: 0.3
     kernel_size: 3
-    dropout: 0.3
-
   skeleton_encoder:
-    gcn_channels: [64, 128]
+    dropout: 0.3
+    gcn_channels:
+    - 64
+    - 128
     temporal_kernel: 3
-    dropout: 0.3
-
-  fusion:
-    embed_dim: 128
-    num_heads: 4
-    ff_dim: 256
-    num_layers: 2
-    dropout: 0.2
-
-  classifier:
-    hidden_dims: [128, 64]
-    dropout: 0.3
-
-training:
-  batch_size: 32
-  epochs: 100
-  learning_rate: 0.001
-  weight_decay: 0.0001
-  scheduler:
-    type: cosine
-    warmup_epochs: 5
-  early_stopping:
-    patience: 15
-    min_delta: 0.001
-
-validation:
-  metrics: [accuracy, f1_macro, precision, recall, confusion_matrix]
-
 prodrome:
   enabled: true
   num_stages: 4
-  stage_labels: ["정상", "전임상", "프로드로말", "발현"]
-  severity_thresholds: [0.15, 0.35, 0.60]
+  severity_thresholds:
+  - 0.15
+  - 0.35
+  - 0.6
+  stage_labels:
+  - "\uC815\uC0C1"
+  - "\uC804\uC784\uC0C1"
+  - "\uD504\uB85C\uB4DC\uB85C\uB9D0"
+  - "\uBC1C\uD604"
   weights:
-    olfactory: 0.40
-    rem_tremor: 0.30
-    variability: 0.30
+    olfactory: 0.4
+    rem_tremor: 0.3
+    variability: 0.3
+training:
+  batch_size: 32
+  early_stopping:
+    min_delta: 0.001
+    patience: 15
+  epochs: 100
+  learning_rate: 0.001
+  scheduler:
+    type: cosine
+    warmup_epochs: 5
+  weight_decay: 0.0001
+validation:
+  metrics:
+  - accuracy
+  - f1_macro
+  - precision
+  - recall
+  - confusion_matrix
