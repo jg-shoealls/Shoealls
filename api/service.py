@@ -74,7 +74,11 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
     skeleton_proc = preprocess_skeleton(skeleton_np, seq_len, n_joints)  # (3, T, J)
     skeleton_t = torch.from_numpy(skeleton_proc).unsqueeze(0)            # (1, 3, T, J)
 
-    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t}
+    # mag_baro (if missing, create dummy to avoid KeyError)
+    mag_baro_channels = data_cfg.get("mag_baro_channels", 5)
+    mag_baro_t = torch.zeros((1, mag_baro_channels, seq_len), dtype=torch.float32)
+
+    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t, "mag_baro": mag_baro_t}
 
 
 def _features_to_dict(features: GaitFeatures) -> dict:
@@ -156,16 +160,23 @@ class GaitMLService:
             probs = torch.softmax(logits, dim=-1)[0].numpy()
 
         pred_idx = int(probs.argmax())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+
+        # Handle cases where model outputs more classes than GAIT_CLASS_NAMES
+        if pred_idx in GAIT_CLASS_NAMES:
+            pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        else:
+            pred_en, pred_kr = f"class_{pred_idx}", f"클래스 {pred_idx}"
+
+        class_probs = {}
+        for i in range(len(probs)):
+            name = GAIT_CLASS_NAMES[i][0] if i in GAIT_CLASS_NAMES else f"class_{i}"
+            class_probs[name] = float(probs[i])
 
         return GaitClassifyResponse(
             prediction=pred_en,
             prediction_kr=pred_kr,
             confidence=float(probs[pred_idx]),
-            class_probabilities={
-                GAIT_CLASS_NAMES[i][0]: float(probs[i])
-                for i in range(len(probs))
-            },
+            class_probabilities=class_probs,
             is_demo_mode=is_demo,
         )
 
@@ -234,7 +245,10 @@ class GaitMLService:
         pred_idx = int(result["prediction"][0].item())
         probs = result["calibrated_probs"][0].cpu().numpy()
         uncertainty = float(result["uncertainty"][0].item())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        if pred_idx in GAIT_CLASS_NAMES:
+            pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        else:
+            pred_en, pred_kr = f"class_{pred_idx}", f"클래스 {pred_idx}"
 
         # Anomaly findings
         anomaly_findings = []
@@ -260,7 +274,10 @@ class GaitMLService:
             step_probs = F.softmax(step_logits[0], dim=-1).cpu().numpy()
             top_cls = int(step_probs.argmax())
             label = "초기 가설" if step_idx == 0 else f"추론 {step_idx}단계"
-            en, kr = GAIT_CLASS_NAMES[top_cls]
+            if top_cls in GAIT_CLASS_NAMES:
+                en, kr = GAIT_CLASS_NAMES[top_cls]
+            else:
+                en, kr = f"class_{top_cls}", f"클래스 {top_cls}"
             reasoning_trace.append(ReasoningStep(
                 step=step_idx,
                 label=label,
