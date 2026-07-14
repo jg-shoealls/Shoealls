@@ -555,7 +555,7 @@ class DiseaseRiskPredictor:
             referrals = set()
             for risk in top_risks:
                 referrals.add(risk.referral)
-            lines.append(f"  ※ 본 결과는 AI 기반 스크리닝이며, 확진을 위해 전문의 상담이 필요합니다.")
+            lines.append("  ※ 본 결과는 AI 기반 스크리닝이며, 확진을 위해 전문의 상담이 필요합니다.")
             lines.append(f"  ※ 권장 진료과: {', '.join(referrals)}")
 
         lines.append("")

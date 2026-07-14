@@ -111,7 +111,7 @@ def generate_report(
     _page2_detail(metrics, class_names, save_dir)
     _page3_ablation(ablation_results, len(class_names), save_dir)
 
-    print(f"\n보고서 생성 완료:")
+    print("\n보고서 생성 완료:")
     for f in sorted(save_dir.glob("report_*.png")):
         print(f"  {f}")
 
