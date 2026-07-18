@@ -74,7 +74,10 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
     skeleton_proc = preprocess_skeleton(skeleton_np, seq_len, n_joints)  # (3, T, J)
     skeleton_t = torch.from_numpy(skeleton_proc).unsqueeze(0)            # (1, 3, T, J)
 
-    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t}
+    mag_baro_channels = data_cfg.get("mag_baro_channels", 5)
+    mag_baro_t = torch.zeros((1, mag_baro_channels, seq_len), dtype=torch.float32)
+
+    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t, "mag_baro": mag_baro_t}
 
 
 def _features_to_dict(features: GaitFeatures) -> dict:

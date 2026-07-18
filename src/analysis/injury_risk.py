@@ -1,9 +1,10 @@
+from .config import INJURY_NORMAL_RANGES
 """Injury risk engine: assesses 6 types of foot/gait injury risk from pressure data."""
 
 import numpy as np
 from dataclasses import dataclass
 
-from .foot_zones import FootZoneAnalyzer, FootAnalysisResult, REGION_GROUPS
+from .foot_zones import FootZoneAnalyzer, FootAnalysisResult
 from .common import severity_label_4level, linear_risk_score
 
 
@@ -27,7 +28,7 @@ class InjuryRiskReport:
     summary_kr: str         # Korean summary
 
 
-from .config import INJURY_NORMAL_RANGES
+
 
 # Normal reference ranges (from biomechanics literature)
 NORMAL_RANGES = {
@@ -93,7 +94,7 @@ class InjuryRiskEngine:
     def _compute_aggregate_metrics(self, frames: list[FootAnalysisResult], analysis: dict) -> dict:
         """Compute aggregate metrics across all frames."""
         total_pressures = [f.total_pressure for f in frames]
-        avg_total = np.mean(total_pressures) if total_pressures else 1.0
+        _avg_total = np.mean(total_pressures) if total_pressures else 1.0
 
         # Zone pressure ratios
         zone_totals = {}

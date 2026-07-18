@@ -7,7 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix
 
 
 # ── Color palette ──────────────────────────────────────────────────────
@@ -84,8 +84,8 @@ def plot_confusion_matrix(
 
     fig, ax = plt.subplots(figsize=(8, 7))
 
-    im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1 if normalize else None)
-    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    _im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1 if normalize else None)
+    cbar = fig.colorbar(_im, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label("Ratio" if normalize else "Count", fontsize=11)
 
     ax.set_xticks(range(len(class_names)))
@@ -304,7 +304,7 @@ def plot_summary_dashboard(
     ax = fig.add_subplot(gs[0, 2])
     cm = confusion_matrix(y_true, y_pred)
     cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
-    im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
+    _im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
     ax.set_xticks(range(len(class_names)))
     ax.set_yticks(range(len(class_names)))
     ax.set_xticklabels([n[:6] for n in class_names], rotation=45, ha="right")
