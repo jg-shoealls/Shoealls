@@ -10,7 +10,6 @@ API_KEYS 미설정 시 인증 비활성화 (개발/데모 모드).
 """
 
 import os
-import time
 import hashlib
 from typing import Optional
 

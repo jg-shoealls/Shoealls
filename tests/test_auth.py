@@ -772,8 +772,13 @@ def _reload_app(api_keys: str | None = None):
 
     import api.auth as m_auth
     import api.main as m_main
+    from api.service import get_service
     importlib.reload(m_auth)
     importlib.reload(m_main)
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
     return TestClient(m_main.app, raise_server_exceptions=False)
 
 
