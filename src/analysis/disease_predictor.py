@@ -439,7 +439,7 @@ class DiseaseRiskPredictor:
 
         # 종합 위험 점수 (가중 평균)
         if scores:
-            total_weight = sum(c["weight"] for c in gait_features.values()
+            _total_weight = sum(c["weight"] for c in gait_features.values()
                              if features.get(c.get("feature", "")) is not None or True)
             risk_score = float(np.clip(sum(scores) / max(len(scores), 1), 0, 1))
         else:

@@ -245,7 +245,7 @@ class TestDriveServiceServiceAccount:
                 google_oauth2_sa.Credentials.from_service_account_file.return_value = mock_creds
 
                 with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}):
-                    with patch("googleapiclient.discovery.build", return_value=mock_service) as mock_build:
+                    with patch("googleapiclient.discovery.build", return_value=mock_service) as _mock_build:
                         # Build the patched environment so drive_service can import
                         with patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()),
                                           "Credentials") as _:
@@ -264,13 +264,13 @@ class TestDriveServiceServiceAccount:
             "google_auth_oauthlib.flow": MagicMock(),
             "googleapiclient.discovery": googleapiclient_discovery_mock,
         }):
-            result = self.m.drive_service(args)
+            _result = self.m.drive_service(args)
 
         google_oauth2_sa_mock.Credentials.from_service_account_file.assert_called_once_with(
             "sa.json", scopes=self.m.DRIVE_SCOPES
         )
         googleapiclient_discovery_mock.build.assert_called_once()
-        assert result is mock_service
+        assert _result is mock_service
 
 
 # ---------------------------------------------------------------------------
@@ -310,12 +310,12 @@ class TestDriveServiceOAuth:
             "google_auth_oauthlib.flow": MagicMock(),
             "googleapiclient.discovery": discovery_module,
         }):
-            result = self.m.drive_service(args)
+            _result = self.m.drive_service(args)
 
         creds_module.Credentials.from_authorized_user_file.assert_called_once_with(
             str(token_file), self.m.DRIVE_SCOPES
         )
-        assert result is mock_service
+        assert _result is mock_service
 
     def test_refreshes_expired_token(self, tmp_path):
         token_file = tmp_path / "token.json"
@@ -388,7 +388,7 @@ class TestDriveServiceOAuth:
             "google_auth_oauthlib.flow": flow_module,
             "googleapiclient.discovery": discovery_module,
         }):
-            result = self.m.drive_service(args)
+            _result = self.m.drive_service(args)
 
         flow_module.InstalledAppFlow.from_client_secrets_file.assert_called_once_with(
             "oauth.json", self.m.DRIVE_SCOPES

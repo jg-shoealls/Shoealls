@@ -1,3 +1,5 @@
+_EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
+
 """개인 맞춤형 보행 분석 시각화 모듈.
 
 족저압 분석, 부상 위험, 개인 프로필, 트렌드 추적 결과를
@@ -186,9 +188,9 @@ def plot_zone_temporal(
 
     x = np.arange(len(zones))
     w = 0.35
-    bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
+    _bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
                      edgecolor="white", label="평균 최고 압력")
-    bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
+    _bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
                      edgecolor="white", label="최대 최고 압력")
 
     ax.set_yticks(range(len(zones)))
@@ -445,7 +447,6 @@ def plot_trend_dashboard(
                            left=0.06, right=0.94, top=0.90, bottom=0.06,
                            hspace=0.4, wspace=0.3)
 
-    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
 
     for idx, metric in enumerate(available):
         row = idx // ncols
@@ -479,7 +480,7 @@ def plot_trend_dashboard(
         ax.plot(x_fit, y_fit, "--", color=color, linewidth=1.5, alpha=0.5)
 
         # Annotation
-        kr_name = METRIC_KR.get(metric, metric)
+        kr_name = get_feature_korean(metric)
         direction_kr = {"improving": "개선", "worsening": "악화", "stable": "안정", "changing": "변화"}.get(direction, "")
         r2 = t["r_squared"]
 
