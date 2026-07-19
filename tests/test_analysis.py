@@ -1,7 +1,6 @@
 """Tests for the personalized gait analysis system."""
 
 import numpy as np
-import pytest
 
 from src.analysis.foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
 from src.analysis.gait_profile import PersonalGaitProfiler
