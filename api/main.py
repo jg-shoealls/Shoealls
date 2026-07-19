@@ -129,7 +129,7 @@ def classify_gait(req: ClassifyRequest):
         return svc.classify(req.sensor_data, req.checkpoint_path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         logger.exception("classify_gait error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -156,7 +156,7 @@ def predict_disease_risk(req: DiseaseRiskRequest):
         return svc.disease_risk(req.features)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         logger.exception("predict_disease_risk error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -181,7 +181,7 @@ def predict_injury_risk(req: InjuryRiskRequest):
         return svc.injury_risk(req.features)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         logger.exception("predict_injury_risk error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -208,7 +208,7 @@ def reasoning_analysis(req: ReasoningRequest):
         return svc.reasoning(req.sensor_data, req.checkpoint_path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         logger.exception("reasoning_analysis error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -231,6 +231,6 @@ def full_analysis(req: AnalyzeRequest):
         return svc.analyze(req.sensor_data, req.features, req.checkpoint_path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         logger.exception("full_analysis error")
         raise HTTPException(status_code=500, detail="Internal server error")
