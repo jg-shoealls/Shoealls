@@ -21,6 +21,13 @@ from api.examples import (
 @pytest.fixture(scope="module")
 def client():
     """TestClient는 lifespan(warmup)까지 실행합니다."""
+    # Override num_classes to match GAIT_CLASS_NAMES mapping for integration tests
+    from api.service import get_service
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
+
     with TestClient(app) as c:
         yield c
 

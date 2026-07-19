@@ -774,6 +774,14 @@ def _reload_app(api_keys: str | None = None):
     import api.main as m_main
     importlib.reload(m_auth)
     importlib.reload(m_main)
+
+    # Override num_classes to match GAIT_CLASS_NAMES mapping for integration tests
+    from api.service import get_service
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
+
     return TestClient(m_main.app, raise_server_exceptions=False)
 
 
