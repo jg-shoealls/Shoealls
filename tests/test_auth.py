@@ -7,12 +7,10 @@ Covers pure-logic functions and mocked external-service auth flows in:
 
 from __future__ import annotations
 
-import argparse
 import sys
-import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch, call, mock_open
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,7 +20,8 @@ import pytest
 
 def _import_sync():
     """Import sync_weargait_to_gdrive without side effects."""
-    import importlib, types
+    import importlib
+    import types
 
     # Stub heavy third-party modules so we can import without them installed
     # Build googleapiclient.http stub with MediaFileUpload pre-populated so
@@ -65,7 +64,8 @@ def _import_sync():
 
 def _import_download():
     """Import download_weargait without side effects."""
-    import types, importlib.util
+    import types
+    import importlib.util
 
     stubs = {
         "synapseclient": types.ModuleType("synapseclient"),
@@ -239,14 +239,13 @@ class TestDriveServiceServiceAccount:
         }):
             with patch("googleapiclient.discovery.build", return_value=mock_service):
                 # Patch the imports inside the function
-                import importlib
                 import types
                 google_oauth2_sa = types.ModuleType("google.oauth2.service_account")
                 google_oauth2_sa.Credentials = MagicMock()
                 google_oauth2_sa.Credentials.from_service_account_file.return_value = mock_creds
 
                 with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}):
-                    with patch("googleapiclient.discovery.build", return_value=mock_service) as mock_build:
+                    with patch("googleapiclient.discovery.build", return_value=mock_service) as _mock_build:
                         # Build the patched environment so drive_service can import
                         with patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()),
                                           "Credentials") as _:
@@ -265,7 +264,7 @@ class TestDriveServiceServiceAccount:
             "google_auth_oauthlib.flow": MagicMock(),
             "googleapiclient.discovery": googleapiclient_discovery_mock,
         }):
-            result = self.m.drive_service(args)
+            _result = self.m.drive_service(args)
 
         google_oauth2_sa_mock.Credentials.from_service_account_file.assert_called_once_with(
             "sa.json", scopes=self.m.DRIVE_SCOPES
@@ -311,7 +310,7 @@ class TestDriveServiceOAuth:
             "google_auth_oauthlib.flow": MagicMock(),
             "googleapiclient.discovery": discovery_module,
         }):
-            result = self.m.drive_service(args)
+            _result = self.m.drive_service(args)
 
         creds_module.Credentials.from_authorized_user_file.assert_called_once_with(
             str(token_file), self.m.DRIVE_SCOPES
@@ -389,7 +388,7 @@ class TestDriveServiceOAuth:
             "google_auth_oauthlib.flow": flow_module,
             "googleapiclient.discovery": discovery_module,
         }):
-            result = self.m.drive_service(args)
+            _result = self.m.drive_service(args)
 
         flow_module.InstalledAppFlow.from_client_secrets_file.assert_called_once_with(
             "oauth.json", self.m.DRIVE_SCOPES
@@ -681,7 +680,7 @@ class TestDownloadSynapseAuth:
             "synapseutils": MagicMock(syncFromSynapse=MagicMock()),
         }):
             # Re-import to pick up patched modules
-            import importlib.util, types
+            import importlib.util
             spec = importlib.util.spec_from_file_location(
                 "download_weargait2",
                 Path(__file__).parent.parent / "scripts" / "download_weargait.py",
@@ -744,7 +743,6 @@ class TestDownloadSynapseAuth:
 API_KEYS 환경변수를 통한 API 키 인증 동작을 검증합니다.
 """
 import os
-import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import importlib
