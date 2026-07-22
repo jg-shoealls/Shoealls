@@ -264,7 +264,7 @@ class TestDriveServiceServiceAccount:
             "google_auth_oauthlib.flow": MagicMock(),
             "googleapiclient.discovery": googleapiclient_discovery_mock,
         }):
-            _result = self.m.drive_service(args)
+            result = self.m.drive_service(args)
 
         google_oauth2_sa_mock.Credentials.from_service_account_file.assert_called_once_with(
             "sa.json", scopes=self.m.DRIVE_SCOPES
@@ -310,7 +310,7 @@ class TestDriveServiceOAuth:
             "google_auth_oauthlib.flow": MagicMock(),
             "googleapiclient.discovery": discovery_module,
         }):
-            _result = self.m.drive_service(args)
+            result = self.m.drive_service(args)
 
         creds_module.Credentials.from_authorized_user_file.assert_called_once_with(
             str(token_file), self.m.DRIVE_SCOPES
@@ -774,6 +774,10 @@ def _reload_app(api_keys: str | None = None):
     import api.main as m_main
     importlib.reload(m_auth)
     importlib.reload(m_main)
+    svc = m_main.get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
     return TestClient(m_main.app, raise_server_exceptions=False)
 
 

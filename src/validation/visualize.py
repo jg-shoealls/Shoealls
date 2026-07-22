@@ -84,7 +84,7 @@ def plot_confusion_matrix(
 
     fig, ax = plt.subplots(figsize=(8, 7))
 
-    _im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1 if normalize else None)
+    im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1 if normalize else None)
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label("Ratio" if normalize else "Count", fontsize=11)
 
