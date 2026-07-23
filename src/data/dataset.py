@@ -45,9 +45,13 @@ class MultimodalGaitDataset(Dataset):
         )
         label = self.labels[idx]
 
+        # MultimodalGaitNet expects mag_baro tensor. Provide dummy if not in dataset.
+        mag_baro = np.zeros((5, self.sequence_length), dtype=np.float32)
+
         return {
             "imu": torch.from_numpy(imu),
             "pressure": torch.from_numpy(pressure),
             "skeleton": torch.from_numpy(skeleton),
+            "mag_baro": torch.from_numpy(mag_baro),
             "label": torch.tensor(label, dtype=torch.long),
         }
