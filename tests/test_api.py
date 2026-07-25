@@ -21,6 +21,13 @@ from api.examples import (
 @pytest.fixture(scope="module")
 def client():
     """TestClient는 lifespan(warmup)까지 실행합니다."""
+    from api.main import get_service
+    # ⚡ Bolt: Override config and clear cache to avoid KeyError: 8 in tests
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
+
     with TestClient(app) as c:
         yield c
 
