@@ -16,12 +16,17 @@ from api.examples import (
     PARKINSONS_GAIT_FEATURES,
     generate_sample_sensor_data,
 )
-from api.main import app
+from api.main import app, get_service
 
 
 @pytest.fixture(scope="module")
 def client():
     """TestClient는 lifespan(warmup)까지 실행합니다."""
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
+
     with TestClient(app) as c:
         yield c
 
