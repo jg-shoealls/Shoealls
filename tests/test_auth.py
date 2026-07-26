@@ -245,7 +245,7 @@ class TestDriveServiceServiceAccount:
                 google_oauth2_sa.Credentials.from_service_account_file.return_value = mock_creds
 
                 with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}):
-                    with patch("googleapiclient.discovery.build", return_value=mock_service) as mock_build:
+                    with patch("googleapiclient.discovery.build", return_value=mock_service):
                         # Build the patched environment so drive_service can import
                         with patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()),
                                           "Credentials") as _:
@@ -388,7 +388,7 @@ class TestDriveServiceOAuth:
             "google_auth_oauthlib.flow": flow_module,
             "googleapiclient.discovery": discovery_module,
         }):
-            result = self.m.drive_service(args)
+            _result = self.m.drive_service(args)
 
         flow_module.InstalledAppFlow.from_client_secrets_file.assert_called_once_with(
             "oauth.json", self.m.DRIVE_SCOPES
@@ -745,12 +745,12 @@ API_KEYS 환경변수를 통한 API 키 인증 동작을 검증합니다.
 import importlib
 import os
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 from fastapi.testclient import TestClient
 
 from api.examples import generate_sample_sensor_data
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _classify_body():

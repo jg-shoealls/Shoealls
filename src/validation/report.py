@@ -39,7 +39,7 @@ def _setup_fonts():
         if any(font_name in f.name for f in fm.fontManager.ttflist):
             selected_font = font_name
             break
-    
+
     return fm.FontProperties(family=selected_font, weight="bold"), \
            fm.FontProperties(family=selected_font, weight="normal"), \
            selected_font
@@ -56,7 +56,7 @@ C_DANGER = "#C0392B"        # 빨강 (실패/경고)
 C_LIGHT_BG = "#F7F9FC"      # 밝은 배경
 
 CLASS_COLORS = [
-    "#2196F3", "#FF9800", "#E53935", "#8E24AA", 
+    "#2196F3", "#FF9800", "#E53935", "#8E24AA",
     "#009688", "#795548", "#607D8B", "#FFC107",
     "#9C27B0", "#00BCD4", "#4CAF50", "#FF5722"
 ]
@@ -223,9 +223,9 @@ def _page1_summary(history, metrics, class_names, model_params, save_dir):
         class_acc = cm[i, i] / cm[i].sum() if cm[i].sum() > 0 else 0
         avg_conf = metrics["max_probs"][mask].mean() if mask.any() else 0
         table_data.append([_kr(name), f"{metrics['support'][i]}", f"{metrics['precision'][i]:.4f}", f"{metrics['recall'][i]:.4f}", f"{metrics['f1'][i]:.4f}", f"{class_acc:.1%}", f"{avg_conf:.4f}"])
-    
+
     table_data.append(["전체 (Macro Avg)", f"{int(metrics['support'].sum())}", f"{metrics['precision'].mean():.4f}", f"{metrics['recall'].mean():.4f}", f"{metrics['f1'].mean():.4f}", f"{metrics['accuracy']:.1%}", f"{metrics['max_probs'].mean():.4f}"])
-    
+
     table = ax_table.table(cellText=table_data, colLabels=col_labels, loc="center", cellLoc="center")
     table.auto_set_font_size(False)
     table.set_fontsize(10)
