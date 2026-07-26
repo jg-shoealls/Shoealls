@@ -745,12 +745,12 @@ API_KEYS 환경변수를 통한 API 키 인증 동작을 검증합니다.
 import importlib
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import pytest
 from fastapi.testclient import TestClient
 
 from api.examples import generate_sample_sensor_data
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _classify_body():

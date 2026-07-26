@@ -179,7 +179,7 @@ def plot_per_class_metrics(
     """Plot per-class precision, recall, F1 as grouped bar chart."""
     from sklearn.metrics import precision_recall_fscore_support
 
-    prec, rec, f1, _support = precision_recall_fscore_support(
+    prec, rec, f1, support = precision_recall_fscore_support(
         y_true, y_pred, average=None, zero_division=0,
     )
 
@@ -321,7 +321,7 @@ def plot_summary_dashboard(
     # ── Row 2: Per-class metrics + Confidence ──────────────────────────
     from sklearn.metrics import precision_recall_fscore_support
 
-    prec, rec, f1, support = precision_recall_fscore_support(
+    prec, rec, f1, _support = precision_recall_fscore_support(
         y_true, y_pred, average=None, zero_division=0,
     )
 
