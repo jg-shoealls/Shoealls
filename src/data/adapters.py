@@ -22,7 +22,6 @@
 """
 
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -48,8 +47,8 @@ class FolderDataAdapter:
         imu_filename: str = "imu.csv",
         pressure_filename: str = "pressure.csv",
         skeleton_filename: str = "skeleton.csv",
-        label_file: Optional[str] = None,
-        imu_cols: Optional[list] = None,
+        label_file: str | None = None,
+        imu_cols: list | None = None,
         pressure_grid_size: tuple = (16, 8),
         num_joints: int = 17,
         delimiter: str = ",",

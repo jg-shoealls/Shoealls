@@ -3,25 +3,30 @@
 FastAPI TestClient를 사용하여 실제 HTTP 레이어까지 검증합니다.
 """
 
+import os
+import sys
+
 import pytest
-import numpy as np
 from fastapi.testclient import TestClient
 
-import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from api.main import app
 from api.examples import (
-    generate_sample_sensor_data,
     NORMAL_GAIT_FEATURES,
     PARKINSONS_GAIT_FEATURES,
+    generate_sample_sensor_data,
 )
+from api.main import app, get_service
 
 
 @pytest.fixture(scope="module")
 def client():
     """TestClient는 lifespan(warmup)까지 실행합니다."""
+    svc = get_service()
+    svc._config["data"]["num_classes"] = 4
+    svc._classify_models.clear()
+    svc._reasoning_models.clear()
+
     with TestClient(app) as c:
         yield c
 
