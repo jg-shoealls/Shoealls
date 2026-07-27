@@ -88,12 +88,14 @@ class TestFusion:
 class TestFullModel:
     def test_forward_pass(self):
         config = load_config()
+        config["data"]["num_classes"] = 4
         model = MultimodalGaitNet(config)
 
         batch = {
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.randn(2, 5, 128),
         }
 
         logits = model(batch)
@@ -101,6 +103,7 @@ class TestFullModel:
 
     def test_parameter_count(self):
         config = load_config()
+        config["data"]["num_classes"] = 4
         model = MultimodalGaitNet(config)
         assert model.get_num_params() > 0
         assert model.get_num_trainable_params() == model.get_num_params()
@@ -119,7 +122,9 @@ class TestFullModel:
 
         sample = dataset[0]
         batch = {k: v.unsqueeze(0) for k, v in sample.items() if k != "label"}
+        batch["mag_baro"] = torch.zeros(1, 5, 128)  # Inject dummy mag_baro
 
+        config["data"]["num_classes"] = 4
         model = MultimodalGaitNet(config)
         logits = model(batch)
         assert logits.shape == (1, 4)
