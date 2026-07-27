@@ -1,3 +1,4 @@
+
 """Tests for authentication and sync utility functions.
 
 Covers pure-logic functions and mocked external-service auth flows in:
@@ -7,12 +8,19 @@ Covers pure-logic functions and mocked external-service auth flows in:
 
 from __future__ import annotations
 
+import os
 import sys
+import importlib
+import pytest
 from pathlib import Path
 from types import SimpleNamespace
+from fastapi.testclient import TestClient
+from api.examples import generate_sample_sensor_data
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers to import the scripts without triggering their __main__ blocks
@@ -742,13 +750,6 @@ class TestDownloadSynapseAuth:
 
 API_KEYS 환경변수를 통한 API 키 인증 동작을 검증합니다.
 """
-import os
-import sys
-import importlib
-import pytest
-from fastapi.testclient import TestClient
-from api.examples import generate_sample_sensor_data
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 

@@ -39,7 +39,9 @@ ANOMALY_NAMES = [
 
 def _load_config() -> dict:
     with open(_CONFIG_PATH) as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    cfg["data"]["num_classes"] = 4
+    return cfg
 
 
 def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
@@ -74,7 +76,11 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
     skeleton_proc = preprocess_skeleton(skeleton_np, seq_len, n_joints)  # (3, T, J)
     skeleton_t = torch.from_numpy(skeleton_proc).unsqueeze(0)            # (1, 3, T, J)
 
-    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t}
+    # Inject dummy mag_baro tensor for MultiGaitNet inference
+    mag_baro_channels = data_cfg.get("mag_baro_channels", 5)
+    mag_baro_t = torch.zeros(1, mag_baro_channels, seq_len)
+
+    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t, "mag_baro": mag_baro_t}
 
 
 def _features_to_dict(features: GaitFeatures) -> dict:

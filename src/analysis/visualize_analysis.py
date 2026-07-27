@@ -186,9 +186,9 @@ def plot_zone_temporal(
 
     x = np.arange(len(zones))
     w = 0.35
-    bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
+    _bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
                      edgecolor="white", label="평균 최고 압력")
-    bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
+    _bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
                      edgecolor="white", label="최대 최고 압력")
 
     ax.set_yticks(range(len(zones)))
@@ -382,7 +382,7 @@ def plot_gait_profile_deviation(
     for m in metrics:
         if m in session_features and m in baseline_means:
             plot_metrics.append(m)
-            plot_labels.append(_EXTRA_KR.get(m, get_feature_korean(m)))
+            plot_labels.append({}.get(m, get_feature_korean(m)))
             current_vals.append(session_features[m])
             baseline_vals.append(baseline_means[m])
 
@@ -479,7 +479,7 @@ def plot_trend_dashboard(
         ax.plot(x_fit, y_fit, "--", color=color, linewidth=1.5, alpha=0.5)
 
         # Annotation
-        kr_name = METRIC_KR.get(metric, metric)
+        kr_name = {}.get(metric, metric)
         direction_kr = {"improving": "개선", "worsening": "악화", "stable": "안정", "changing": "변화"}.get(direction, "")
         r2 = t["r_squared"]
 
