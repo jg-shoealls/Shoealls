@@ -5,6 +5,7 @@
 
 from .common import severity_label
 
+
 # ── 공통 포매팅 상수 ──────────────────────────────────────────────────
 DIVIDER = "─" * 65
 HEADER_DIVIDER = "=" * 65

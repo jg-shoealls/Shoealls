@@ -4,15 +4,15 @@ import numpy as np
 import pytest
 
 from src.analysis.prodromal_biomarkers import (
-    _STAGE_THRESHOLDS,
-    ProdromalBiomarker,
     ProdrOmalBiomarkerExtractor,
     ProdromalPanel,
-    _bandpower,
+    ProdromalBiomarker,
     _coefficient_of_variation,
-    _double_support_ratio,
-    _rest_tremor_index,
+    _bandpower,
     _stride_time_cv,
+    _rest_tremor_index,
+    _double_support_ratio,
+    _STAGE_THRESHOLDS,
 )
 
 FS = 100.0  # Hz

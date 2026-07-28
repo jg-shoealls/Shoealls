@@ -9,8 +9,10 @@
 API_KEYS 미설정 시 인증 비활성화 (개발/데모 모드).
 """
 
-import hashlib
 import os
+import time
+import hashlib
+from typing import Optional
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -48,7 +50,7 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # 키 추출 (헤더 우선)
-        key: str | None = (
+        key: Optional[str] = (
             request.headers.get("X-API-Key")
             or request.query_params.get("api_key")
         )

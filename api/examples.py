@@ -2,6 +2,7 @@
 
 import numpy as np
 
+
 # ── 정상 보행 특성 ────────────────────────────────────────────────────
 NORMAL_GAIT_FEATURES = {
     "gait_speed": 1.25,

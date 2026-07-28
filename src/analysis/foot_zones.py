@@ -1,8 +1,8 @@
 """Foot zone analyzer: maps pressure grid to anatomical regions and computes metrics."""
 
+import numpy as np
 from dataclasses import dataclass
 
-import numpy as np
 
 # Anatomical zone definitions for a 16x8 pressure grid
 # Row 0 = toe end, Row 15 = heel end

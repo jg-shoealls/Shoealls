@@ -10,6 +10,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, Subset, random_split
 
+
 LABEL_COLUMNS = ("label", "labels", "target", "targets", "y", "class", "activity")
 FEATURE_COLUMNS = ("x", "X", "features", "feature", "values", "series", "signal", "data")
 
@@ -170,6 +171,7 @@ def load_hf_har_dataset(
             "FileNotFoundError",
         }:
             raise
+        pass
 
     try:
         from datasets import load_dataset

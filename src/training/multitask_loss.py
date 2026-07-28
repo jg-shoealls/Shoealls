@@ -1,7 +1,7 @@
 """Multi-task loss functions for joint training."""
 
 import torch
-from torch import nn
+import torch.nn as nn
 
 
 class MultitaskGaitLoss(nn.Module):

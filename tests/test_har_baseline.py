@@ -2,10 +2,7 @@
 
 import torch
 
-from src.data.har_dataset import (
-    prepare_har_window,
-    synthetic_har_dataset,
-)
+from src.data.har_dataset import HARWindowDataset, prepare_har_window, synthetic_har_dataset
 from src.models.har_transformer import PatchTSTClassifier, freeze_encoder
 
 

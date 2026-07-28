@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+
 BIOMARKER_NAMES = [
     "acc_rms",
     "acc_variability",

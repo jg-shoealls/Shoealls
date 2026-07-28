@@ -5,24 +5,22 @@
 """
 
 import platform
-from datetime import date
 from pathlib import Path
+from datetime import date
 
 import matplotlib
-
 matplotlib.use("Agg")
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib.gridspec as gridspec
+import matplotlib.patches as mpatches
 from matplotlib import font_manager as fm
-from matplotlib import gridspec
+import numpy as np
 from sklearn.metrics import (
-    accuracy_score,
     confusion_matrix,
-    f1_score,
     precision_recall_fscore_support,
+    accuracy_score,
+    f1_score,
 )
-
 
 # ── 한글 폰트 설정 (OS별 호환성 유지) ──────────────────────────────────
 def _setup_fonts():
@@ -113,7 +111,7 @@ def generate_report(
     _page2_detail(metrics, class_names, save_dir)
     _page3_ablation(ablation_results, len(class_names), save_dir)
 
-    print("\n보고서 생성 완료:")
+    print(f"\n보고서 생성 완료:")
     for f in sorted(save_dir.glob("report_*.png")):
         print(f"  {f}")
 

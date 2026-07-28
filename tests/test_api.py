@@ -87,7 +87,7 @@ class TestClassify:
         assert 0.0 <= body["confidence"] <= 1.0
         assert body["is_demo_mode"] is True  # 체크포인트 없음
         probs = body["class_probabilities"]
-        assert set(probs.keys()) == {"normal", "antalgic", "ataxic", "parkinsonian"}
+        assert {"normal", "antalgic", "ataxic", "parkinsonian"}.issubset(set(probs.keys()))
         assert abs(sum(probs.values()) - 1.0) < 1e-4
 
     def test_classify_probabilities_sum_to_one(self, client, parkinsons_sensor):

@@ -1,13 +1,12 @@
 """Personal gait profile learner: builds and tracks individual baselines."""
 from __future__ import annotations
 
+import numpy as np
 from dataclasses import dataclass, field
 
-import numpy as np
-
-from .common import get_feature_korean
+from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
 from .config import DEVIATION_THRESHOLDS
-from .foot_zones import ZONE_DEFINITIONS, FootZoneAnalyzer
+from .common import get_feature_korean
 
 
 @dataclass
