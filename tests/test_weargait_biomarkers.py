@@ -75,7 +75,7 @@ def test_summarize_biomarkers():
 
 def test_dataset_returns_biomarker_tensor():
     vector = biomarker_vector(_imu_window(), _pressure_window())
-    dataset = WearGaitDataset([_imu_window()], [_pressure_window()], [1], [vector])
+    dataset = WearGaitDataset([_imu_window()], [_pressure_window()], [1], biomarker_vectors=[vector])
     sample = dataset[0]
     assert sample["biomarkers"].shape == (len(BIOMARKER_NAMES),)
     assert sample["label"].item() == 1
