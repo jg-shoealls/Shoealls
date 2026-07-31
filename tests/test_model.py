@@ -94,6 +94,7 @@ class TestFullModel:
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.randn(2, 5, 128),
         }
 
         logits = model(batch)
