@@ -1,16 +1,15 @@
 """Tests for abnormal gait pattern detection and injury risk prediction."""
 
+import numpy as np
+import pytest
 
 from src.analysis.gait_anomaly import (
-    ANOMALY_DEFINITIONS,
-    GaitAnomalyDetector,
-    GaitAnomalyReport,
+    GaitAnomalyDetector, GaitAnomalyReport, AnomalyPattern,
+    ANOMALY_DEFINITIONS, INJURY_CATEGORIES,
 )
 from src.analysis.injury_predictor import (
-    PREDICTOR_FEATURES,
-    ComprehensiveInjuryReport,
-    InjuryPrediction,
-    InjuryRiskPredictor,
+    InjuryRiskPredictor, InjuryPrediction, ComprehensiveInjuryReport,
+    INJURY_LABELS, PREDICTOR_FEATURES,
 )
 
 
@@ -220,7 +219,7 @@ class TestInjuryRiskPredictor:
 
         result = predictor.predict(make_antalgic_gait())
         assert isinstance(result.body_risk_map, dict)
-        for score in result.body_risk_map.values():
+        for part, score in result.body_risk_map.items():
             assert 0 <= score <= 1
 
     def test_timeline(self):
@@ -252,7 +251,7 @@ class TestInjuryRiskPredictor:
         report = predictor.predict_comprehensive(make_fall_risk_gait())
 
         assert len(report.body_risk_map) > 0
-        for score in report.body_risk_map.values():
+        for part, score in report.body_risk_map.items():
             assert 0 <= score <= 1
 
     def test_comprehensive_normal_low_risk(self):

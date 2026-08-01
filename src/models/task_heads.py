@@ -4,8 +4,7 @@ src/models/task_heads.py
 """
 
 import torch
-from torch import nn
-
+import torch.nn as nn
 
 class DiseaseClassificationHead(nn.Module):
     """
@@ -16,11 +15,9 @@ class DiseaseClassificationHead(nn.Module):
         self, 
         embed_dim: int, 
         num_diseases: int = 3,  # 예: 0: 정상, 1: 알츠하이머, 2: 파킨슨, 3: 치매 등
-        hidden_dims: list | None = None,
+        hidden_dims: list = [256, 128],
         dropout: float = 0.4
     ):
-        if hidden_dims is None:
-            hidden_dims = [256, 128]
         super().__init__()
         
         # 특징 추출을 위한 공통 은닉층 구성

@@ -10,9 +10,9 @@ MDS 전임상 기준 (Berg et al. 2015) 기반 복합 점수 산출.
 
 from __future__ import annotations
 
+import numpy as np
 from dataclasses import dataclass, field
 
-import numpy as np
 
 # ─────────────────────────────────────────────
 # 데이터 구조
@@ -166,7 +166,7 @@ def _double_support_ratio(pressure: np.ndarray) -> float:
     else:
         return 0.22                  # 분석 불가 → 정상값 반환
 
-    T, H, _W = p.shape
+    T, H, W = p.shape
     mid = H // 2
     left_active  = p[:, :mid, :].sum(axis=(1, 2)) > 0.01
     right_active = p[:, mid:, :].sum(axis=(1, 2)) > 0.01

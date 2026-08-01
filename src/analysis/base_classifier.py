@@ -6,14 +6,14 @@ GaitDiseaseClassifier와 InjuryRiskPredictor의 공통 패턴을 추출:
   - 교차 검증 + 특성 중요도
 """
 
+import numpy as np
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import accuracy_score, f1_score
 
 
 @dataclass

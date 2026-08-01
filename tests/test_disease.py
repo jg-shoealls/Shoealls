@@ -1,9 +1,11 @@
 """Tests for disease prediction and classification modules."""
 
+import numpy as np
+import pytest
 
-from src.analysis.biomarkers import GaitBiomarkerExtractor
-from src.analysis.disease_classifier import FEATURE_NAMES, GaitDiseaseClassifier
-from src.analysis.disease_predictor import DISEASE_DEFINITIONS, DiseaseRiskPredictor
+from src.analysis.biomarkers import GaitBiomarkerExtractor, BIOMARKER_DEFINITIONS
+from src.analysis.disease_predictor import DiseaseRiskPredictor, DISEASE_DEFINITIONS
+from src.analysis.disease_classifier import GaitDiseaseClassifier, FEATURE_NAMES, DISEASE_LABELS
 
 
 def make_normal_features():

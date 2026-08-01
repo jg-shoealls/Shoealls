@@ -1,7 +1,7 @@
 """Modality-specific encoders for multimodal gait analysis."""
 
 import torch
-from torch import nn
+import torch.nn as nn
 
 
 def _build_1d_cnn(in_ch: int, channels: list, kernel_size: int, dropout: float) -> nn.Sequential:
@@ -28,7 +28,7 @@ class IMUEncoder(nn.Module):
     def __init__(
         self,
         in_channels: int = 6,
-        conv_channels: list | None = None,
+        conv_channels: list = None,
         kernel_size: int = 5,
         lstm_hidden: int = 128,
         lstm_layers: int = 2,
@@ -67,7 +67,7 @@ class PressureEncoder(nn.Module):
     def __init__(
         self,
         in_channels: int = 1,
-        conv_channels: list | None = None,
+        conv_channels: list = None,
         kernel_size: int = 3,
         embed_dim: int = 128,
         dropout: float = 0.3,
@@ -111,7 +111,7 @@ class MagBaroEncoder(nn.Module):
     def __init__(
         self,
         in_channels: int = 4,
-        conv_channels: list | None = None,
+        conv_channels: list = None,
         kernel_size: int = 5,
         lstm_hidden: int = 128,
         lstm_layers: int = 1,
@@ -149,7 +149,7 @@ class SkeletonEncoder(nn.Module):
         self,
         in_channels: int = 3,
         num_joints: int = 17,
-        gcn_channels: list | None = None,
+        gcn_channels: list = None,
         temporal_kernel: int = 3,
         embed_dim: int = 128,
         dropout: float = 0.3,
@@ -200,7 +200,7 @@ class SkeletonEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (B, 3, T, J)
-        _B, _C, _T, _J = x.shape
+        B, C, T, J = x.shape
 
         for block in self.st_blocks:
             x = block(x, self.adj)

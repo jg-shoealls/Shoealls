@@ -4,16 +4,12 @@ import numpy as np
 import torch
 import yaml
 
-from src.data.dataset import MultimodalGaitDataset
-from src.data.preprocessing import (
-    preprocess_imu,
-    preprocess_pressure,
-    preprocess_skeleton,
-)
+from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
 from src.data.synthetic import generate_synthetic_dataset
+from src.data.dataset import MultimodalGaitDataset
+from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.models.encoders import IMUEncoder, PressureEncoder, SkeletonEncoder
 from src.models.fusion import CrossModalAttentionFusion
-from src.models.multimodal_gait_net import MultimodalGaitNet
 
 
 def load_config():

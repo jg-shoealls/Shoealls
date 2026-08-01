@@ -13,16 +13,13 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Iterator
+from typing import Iterator
 
 import numpy as np
 
 from .ble_protocol import (
-    BLEPacket,
-    PacketType,
-    encode_imu,
-    encode_pressure,
-    encode_skeleton,
+    BLEPacket, PacketType,
+    encode_imu, encode_pressure, encode_skeleton,
     session_id_new,
 )
 

@@ -1,7 +1,7 @@
 """Cross-modal attention fusion for multimodal gait features."""
 
 import torch
-from torch import nn
+import torch.nn as nn
 
 
 class CrossModalAttentionFusion(nn.Module):
@@ -69,8 +69,7 @@ class CrossModalAttentionFusion(nn.Module):
         combined = torch.cat(enriched, dim=1)  # (B, sum(T_i), D)
 
         # Self-attention over combined
-        # ⚡ Bolt Optimization: Set need_weights=False to save memory and enable fast paths
-        attn_out, _ = self.self_attention(combined, combined, combined, need_weights=False)
+        attn_out, _ = self.self_attention(combined, combined, combined)
         combined = self.norm(combined + attn_out)
 
         # Global average pooling
@@ -103,8 +102,7 @@ class CrossAttentionBlock(nn.Module):
 
     def forward(self, query: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         # Cross-attention: query attends to context
-        # ⚡ Bolt Optimization: Set need_weights=False to save memory and enable fast paths
-        attn_out, _ = self.cross_attn(query, context, context, need_weights=False)
+        attn_out, _ = self.cross_attn(query, context, context)
         query = self.norm1(query + attn_out)
 
         # Feed-forward

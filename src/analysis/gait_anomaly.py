@@ -13,12 +13,11 @@
   4. 한국어 임상 해석 + 교정 권고
 """
 
-from dataclasses import dataclass
-
 import numpy as np
+from dataclasses import dataclass, field
 
-from .common import compute_derived_features, get_feature_korean, severity_label
-from .report_formatter import HEADER_DIVIDER, header, marker_line, risk_line, section
+from .common import severity_label, get_feature_korean, compute_derived_features
+from .report_formatter import header, section, marker_line, risk_line, HEADER_DIVIDER
 
 
 @dataclass

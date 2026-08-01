@@ -1,7 +1,8 @@
 """API request/response schemas."""
 
-
+from typing import Optional
 from pydantic import BaseModel, Field
+
 
 # ── Request Models ────────────────────────────────────────────────────
 
@@ -36,16 +37,16 @@ class GaitFeatures(BaseModel):
     zone_midfoot_medial_mean: float = Field(default=0.10, description="중족부 내측 압력")
     zone_midfoot_lateral_mean: float = Field(default=0.08, description="중족부 외측 압력")
     # Optional extras for injury risk
-    ml_variability: float | None = Field(default=None)
-    heel_pressure_ratio: float | None = Field(default=None)
-    forefoot_pressure_ratio: float | None = Field(default=None)
-    pressure_asymmetry: float | None = Field(default=None)
-    trunk_sway: float | None = Field(default=None)
+    ml_variability: Optional[float] = Field(default=None)
+    heel_pressure_ratio: Optional[float] = Field(default=None)
+    forefoot_pressure_ratio: Optional[float] = Field(default=None)
+    pressure_asymmetry: Optional[float] = Field(default=None)
+    trunk_sway: Optional[float] = Field(default=None)
 
 
 class ClassifyRequest(BaseModel):
     sensor_data: SensorData
-    checkpoint_path: str | None = Field(
+    checkpoint_path: Optional[str] = Field(
         default=None,
         description="사전학습 모델 경로 (없으면 무작위 초기화 데모 모드)"
     )
@@ -61,14 +62,14 @@ class InjuryRiskRequest(BaseModel):
 
 class ReasoningRequest(BaseModel):
     sensor_data: SensorData
-    checkpoint_path: str | None = Field(default=None)
+    checkpoint_path: Optional[str] = Field(default=None)
 
 
 class AnalyzeRequest(BaseModel):
     """종합 분석: 센서 데이터 + 보행 특성 모두 필요."""
     sensor_data: SensorData
     features: GaitFeatures
-    checkpoint_path: str | None = Field(default=None)
+    checkpoint_path: Optional[str] = Field(default=None)
 
 
 # ── Response Models ───────────────────────────────────────────────────

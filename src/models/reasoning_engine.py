@@ -10,8 +10,8 @@ Chain-of-Reasoning 아키텍처:
 """
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import nn
 
 
 class AnomalyDetectionModule(nn.Module):
@@ -127,15 +127,14 @@ class CrossModalEvidenceCollector(nn.Module):
             cross_support: (B, 3) 교차 검증 지지도
         """
         B = modality_features[0].size(0)
-        modality_features[0].size(2)
+        D = modality_features[0].size(2)
 
         # 모달리티별 요약
         summaries = torch.stack([f.mean(dim=1) for f in modality_features], dim=1)  # (B, 3, D)
 
         # 교차 검증: 각 모달리티가 다른 모달리티를 참조
-        # ⚡ Bolt Optimization: Set need_weights=False to save memory and enable fast paths. Discard unused weights to _
-        cross_out, _ = self.cross_verify(
-            summaries, summaries, summaries, need_weights=False
+        cross_out, cross_attn_weights = self.cross_verify(
+            summaries, summaries, summaries
         )
         cross_out = self.norm(summaries + cross_out)  # (B, 3, D)
 
@@ -222,7 +221,7 @@ class DifferentialDiagnosisChain(nn.Module):
             pro_scores: (B, num_classes) 찬성 근거 강도
             con_scores: (B, num_classes) 반대 근거 강도
         """
-        evidence_embedding.size(0)
+        B = evidence_embedding.size(0)
 
         # 초기 가설: 프로토타입과의 유사도
         similarity = F.cosine_similarity(

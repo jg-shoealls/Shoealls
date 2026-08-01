@@ -12,24 +12,26 @@ Run:
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
-from .auth import AUTH_ENABLED, APIKeyMiddleware
-from .examples import GAIT_PROFILES, generate_sample_sensor_data
-from .logging_config import RequestLoggingMiddleware, setup_logging
 from .schemas import (
-    AnalyzeRequest,
-    AnalyzeResponse,
     ClassifyRequest,
     DiseaseRiskRequest,
-    DiseaseRiskResponse,
-    GaitClassifyResponse,
     InjuryRiskRequest,
-    InjuryRiskResponse,
     ReasoningRequest,
+    AnalyzeRequest,
+    GaitClassifyResponse,
+    DiseaseRiskResponse,
+    InjuryRiskResponse,
     ReasoningResponse,
+    AnalyzeResponse,
 )
 from .service import get_service
+from .examples import generate_sample_sensor_data, GAIT_PROFILES
+from .auth import APIKeyMiddleware, AUTH_ENABLED
+from .logging_config import setup_logging, RequestLoggingMiddleware
 
 logger = setup_logging()
 
@@ -127,7 +129,7 @@ def classify_gait(req: ClassifyRequest):
         return svc.classify(req.sensor_data, req.checkpoint_path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+    except Exception as e:
         logger.exception("classify_gait error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -154,7 +156,7 @@ def predict_disease_risk(req: DiseaseRiskRequest):
         return svc.disease_risk(req.features)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+    except Exception as e:
         logger.exception("predict_disease_risk error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -179,7 +181,7 @@ def predict_injury_risk(req: InjuryRiskRequest):
         return svc.injury_risk(req.features)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+    except Exception as e:
         logger.exception("predict_injury_risk error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -206,7 +208,7 @@ def reasoning_analysis(req: ReasoningRequest):
         return svc.reasoning(req.sensor_data, req.checkpoint_path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+    except Exception as e:
         logger.exception("reasoning_analysis error")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -229,6 +231,6 @@ def full_analysis(req: AnalyzeRequest):
         return svc.analyze(req.sensor_data, req.features, req.checkpoint_path)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception:
+    except Exception as e:
         logger.exception("full_analysis error")
         raise HTTPException(status_code=500, detail="Internal server error")

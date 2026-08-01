@@ -1,7 +1,7 @@
 """Multi-task loss functions for joint training."""
 
 import torch
-from torch import nn
+import torch.nn as nn
 
 
 class MultitaskGaitLoss(nn.Module):
@@ -19,8 +19,8 @@ class MultitaskGaitLoss(nn.Module):
 
     def __init__(
         self,
-        active_tasks: list | None = None,
-        task_weights: dict | None = None,
+        active_tasks: list = None,
+        task_weights: dict = None,
         use_uncertainty_weighting: bool = False,
     ):
         super().__init__()
