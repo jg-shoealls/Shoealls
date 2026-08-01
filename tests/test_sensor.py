@@ -1,18 +1,24 @@
 """센서 레이어 단위 테스트 — BLE 프로토콜 + 특성 추출 + 펌웨어 시뮬레이터."""
 
-import struct
-import pytest
 import numpy as np
+import pytest
 
 from src.sensor.ble_protocol import (
-    BLEPacket, PacketType, StreamAssembler,
-    encode_imu, encode_pressure, encode_skeleton,
-    decode_imu, decode_pressure, decode_skeleton,
-    HEADER_SIZE, MAX_PAYLOAD, MAGIC,
+    HEADER_SIZE,
+    MAGIC,
+    MAX_PAYLOAD,
+    BLEPacket,
+    PacketType,
+    StreamAssembler,
+    decode_imu,
+    decode_pressure,
+    decode_skeleton,
+    encode_imu,
+    encode_pressure,
+    encode_skeleton,
 )
 from src.sensor.feature_extractor import GaitFeatureExtractor, GaitFeatures
 from src.sensor.firmware_sim import FirmwareSimulator
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BLE Protocol

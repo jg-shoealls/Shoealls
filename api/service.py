@@ -2,22 +2,33 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import torch
 import yaml
-from pathlib import Path
 
+from src.analysis.disease_classifier import GaitDiseaseClassifier
+from src.analysis.disease_predictor import DiseaseRiskPredictor
+from src.analysis.injury_predictor import InjuryRiskPredictor
+from src.data.preprocessing import (
+    preprocess_imu,
+    preprocess_pressure,
+    preprocess_skeleton,
+)
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.models.reasoning_engine import GaitReasoningEngine
-from src.analysis.disease_predictor import DiseaseRiskPredictor
-from src.analysis.disease_classifier import GaitDiseaseClassifier
-from src.analysis.injury_predictor import InjuryRiskPredictor
-from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
 
 from .schemas import (
-    SensorData, GaitFeatures,
-    GaitClassifyResponse, DiseaseRiskResponse, DiseaseRisk,
-    InjuryRiskResponse, ReasoningResponse, ReasoningStep, AnalyzeResponse,
+    AnalyzeResponse,
+    DiseaseRisk,
+    DiseaseRiskResponse,
+    GaitClassifyResponse,
+    GaitFeatures,
+    InjuryRiskResponse,
+    ReasoningResponse,
+    ReasoningStep,
+    SensorData,
 )
 
 _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"
@@ -39,7 +50,9 @@ ANOMALY_NAMES = [
 
 def _load_config() -> dict:
     with open(_CONFIG_PATH) as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    cfg["data"]["num_classes"] = 4
+    return cfg
 
 
 def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
@@ -74,7 +87,11 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
     skeleton_proc = preprocess_skeleton(skeleton_np, seq_len, n_joints)  # (3, T, J)
     skeleton_t = torch.from_numpy(skeleton_proc).unsqueeze(0)            # (1, 3, T, J)
 
-    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t}
+    # Dummy mag_baro tensor to satisfy model requirement
+    mag_baro_channels = data_cfg.get("mag_baro_channels", 5)
+    mag_baro_t = torch.zeros((1, mag_baro_channels, seq_len), dtype=torch.float32)
+
+    return {"imu": imu_t, "pressure": pressure_t, "skeleton": skeleton_t, "mag_baro": mag_baro_t}
 
 
 def _features_to_dict(features: GaitFeatures) -> dict:
@@ -156,7 +173,7 @@ class GaitMLService:
             probs = torch.softmax(logits, dim=-1)[0].numpy()
 
         pred_idx = int(probs.argmax())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        pred_en, pred_kr = GAIT_CLASS_NAMES.get(pred_idx, (f"unknown_{pred_idx}", f"알수없음_{pred_idx}"))
 
         return GaitClassifyResponse(
             prediction=pred_en,
@@ -234,7 +251,7 @@ class GaitMLService:
         pred_idx = int(result["prediction"][0].item())
         probs = result["calibrated_probs"][0].cpu().numpy()
         uncertainty = float(result["uncertainty"][0].item())
-        pred_en, pred_kr = GAIT_CLASS_NAMES[pred_idx]
+        pred_en, pred_kr = GAIT_CLASS_NAMES.get(pred_idx, (f"unknown_{pred_idx}", f"알수없음_{pred_idx}"))
 
         # Anomaly findings
         anomaly_findings = []
@@ -260,7 +277,7 @@ class GaitMLService:
             step_probs = F.softmax(step_logits[0], dim=-1).cpu().numpy()
             top_cls = int(step_probs.argmax())
             label = "초기 가설" if step_idx == 0 else f"추론 {step_idx}단계"
-            en, kr = GAIT_CLASS_NAMES[top_cls]
+            en, kr = GAIT_CLASS_NAMES.get(top_cls, (f"unknown_{top_cls}", f"알수없음_{top_cls}"))
             reasoning_trace.append(ReasoningStep(
                 step=step_idx,
                 label=label,
