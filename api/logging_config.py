@@ -4,16 +4,15 @@
 요청마다 고유 request_id가 할당되어 전체 추적 가능.
 """
 
-import logging
 import json
+import logging
+import os
 import time
 import uuid
-import os
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 LOG_FORMAT = os.getenv("LOG_FORMAT", "text")  # "json" | "text"
