@@ -11,9 +11,9 @@
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
 
-from .encoders import IMUEncoder, PressureEncoder, MagBaroEncoder
+from .encoders import IMUEncoder, MagBaroEncoder, PressureEncoder
 from .fusion import CrossModalAttentionFusion
 
 

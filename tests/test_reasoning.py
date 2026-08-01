@@ -5,16 +5,18 @@ import yaml
 
 from src.models.reasoning_engine import (
     AnomalyDetectionModule,
+    ConfidenceCalibrator,
     CrossModalEvidenceCollector,
     DifferentialDiagnosisChain,
-    ConfidenceCalibrator,
     GaitReasoningEngine,
 )
 
 
 def load_config():
     with open("configs/default.yaml") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    cfg["data"]["num_classes"] = 4
+    return cfg
 
 
 def make_batch(batch_size=2):

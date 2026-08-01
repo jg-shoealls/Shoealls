@@ -8,14 +8,21 @@
   - 신체 부위별 위험 히트맵
 """
 
+from dataclasses import dataclass
+
 import numpy as np
-from dataclasses import dataclass, field
 
 from .base_classifier import BaseGaitClassifier, TrainingMetrics
-from .common import severity_label, compute_derived_features
-from .report_formatter import header, section, marker_line, risk_line, ranked_line, HEADER_DIVIDER
-from .gait_anomaly import GaitAnomalyDetector, GaitAnomalyReport, INJURY_CATEGORIES
-
+from .common import compute_derived_features, severity_label
+from .gait_anomaly import INJURY_CATEGORIES, GaitAnomalyDetector, GaitAnomalyReport
+from .report_formatter import (
+    HEADER_DIVIDER,
+    header,
+    marker_line,
+    ranked_line,
+    risk_line,
+    section,
+)
 
 # ── 부상 유형 정의 ────────────────────────────────────────────────────
 INJURY_LABELS = {
@@ -237,7 +244,7 @@ class InjuryRiskPredictor(BaseGaitClassifier):
 
         for injury_kr, prob in probabilities.items():
             injury_id = None
-            for idx, (eid, ekr) in INJURY_LABELS.items():
+            for (eid, ekr) in INJURY_LABELS.values():
                 if ekr == injury_kr:
                     injury_id = eid
                     break
