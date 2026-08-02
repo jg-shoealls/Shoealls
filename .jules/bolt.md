@@ -1,0 +1,3 @@
+## 2026-08-02 - [Optimize PyTorch nn.MultiheadAttention with need_weights=False]
+**Learning:** When using PyTorch's `nn.MultiheadAttention`, if the attention weights are not needed (i.e. discarded as `_`), computing them is a waste of memory and compute resources, and disables optimized backend implementations like FlashAttention.
+**Action:** When unpacking the output of `nn.MultiheadAttention`, if the attention weights are explicitly unpacked into a named variable that is unused downstream, or into `_`, rename the target to `_` (if not already done) and pass `need_weights=False` to the attention call.
