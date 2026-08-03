@@ -16,10 +16,10 @@ from matplotlib import font_manager as fm
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
-from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS, REGION_GROUPS
+from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
 from .gait_profile import PersonalGaitProfiler, DeviationReport
 from .injury_risk import InjuryRiskEngine, InjuryRiskReport
-from .feedback import CorrektiveFeedbackGenerator, PersonalizedFeedback
+from .feedback import CorrektiveFeedbackGenerator
 from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
 from .common import get_feature_korean
 
@@ -30,6 +30,7 @@ _FONT_PROP_LIGHT = fm.FontProperties(
     fname="/usr/share/fonts/truetype/nanum/NanumSquareR.ttf"
 )
 plt.rcParams["font.family"] = "NanumSquare"
+EXTRA_KR = {'step_time': '보폭', 'stride_length': '스트라이드', 'cadence': '케이던스'}
 plt.rcParams["axes.unicode_minus"] = False
 
 # ── 색상 팔레트 ──────────────────────────────────────────────────────
@@ -186,9 +187,9 @@ def plot_zone_temporal(
 
     x = np.arange(len(zones))
     w = 0.35
-    bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
+    ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
                      edgecolor="white", label="평균 최고 압력")
-    bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
+    ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
                      edgecolor="white", label="최대 최고 압력")
 
     ax.set_yticks(range(len(zones)))
@@ -382,7 +383,7 @@ def plot_gait_profile_deviation(
     for m in metrics:
         if m in session_features and m in baseline_means:
             plot_metrics.append(m)
-            plot_labels.append(_EXTRA_KR.get(m, get_feature_korean(m)))
+            plot_labels.append(EXTRA_KR.get(m, get_feature_korean(m)))
             current_vals.append(session_features[m])
             baseline_vals.append(baseline_means[m])
 
@@ -479,7 +480,7 @@ def plot_trend_dashboard(
         ax.plot(x_fit, y_fit, "--", color=color, linewidth=1.5, alpha=0.5)
 
         # Annotation
-        kr_name = METRIC_KR.get(metric, metric)
+        kr_name = EXTRA_KR.get(metric, metric)
         direction_kr = {"improving": "개선", "worsening": "악화", "stable": "안정", "changing": "변화"}.get(direction, "")
         r2 = t["r_squared"]
 
