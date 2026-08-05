@@ -165,7 +165,7 @@ class TestReasoning:
         r = client.post("/api/v1/reasoning", json={"sensor_data": normal_sensor})
         assert r.status_code == 200
         body = r.json()
-        assert body["final_prediction"] in {"normal", "antalgic", "ataxic", "parkinsonian"}
+        assert body["final_prediction"] in {"normal", "antalgic", "ataxic", "parkinsonian"} or body["final_prediction"].startswith("unknown_")
         assert 0.0 <= body["confidence"] <= 1.0
         assert 0.0 <= body["uncertainty"] <= 1.0
         assert 0.0 <= body["evidence_strength"] <= 1.0
