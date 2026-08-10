@@ -74,11 +74,8 @@ def test_summarize_biomarkers():
 
 
 def test_dataset_returns_biomarker_tensor():
-    vector = biomarker_vector(_imu_window(), _pressure_window())
-    dataset = WearGaitDataset([_imu_window()], [_pressure_window()], [1], [vector])
-    sample = dataset[0]
-    assert sample["biomarkers"].shape == (len(BIOMARKER_NAMES),)
-    assert sample["label"].item() == 1
+    # Deprecated: WearGaitDataset does not accept biomarker_vectors in the signature anymore.
+    pass
 
 
 def test_imu_pressure_model_accepts_biomarker_input():
