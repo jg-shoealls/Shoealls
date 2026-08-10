@@ -10,8 +10,8 @@ Chain-of-Reasoning 아키텍처:
 """
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class AnomalyDetectionModule(nn.Module):
@@ -133,8 +133,10 @@ class CrossModalEvidenceCollector(nn.Module):
         summaries = torch.stack([f.mean(dim=1) for f in modality_features], dim=1)  # (B, 3, D)
 
         # 교차 검증: 각 모달리티가 다른 모달리티를 참조
-        cross_out, cross_attn_weights = self.cross_verify(
-            summaries, summaries, summaries
+        # Optimization: Set need_weights=False to prevent unnecessary computation
+        # and memory allocation since attention weights are discarded downstream.
+        cross_out, _ = self.cross_verify(
+            summaries, summaries, summaries, need_weights=False
         )
         cross_out = self.norm(summaries + cross_out)  # (B, 3, D)
 
