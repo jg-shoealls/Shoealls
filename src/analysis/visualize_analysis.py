@@ -326,6 +326,7 @@ def plot_gait_profile_deviation(
     baseline_means: dict,
     save_path: Path,
 ):
+    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
     """개인 기준 대비 편차 시각화."""
     fig, axes = plt.subplots(1, 2, figsize=(16, 7), facecolor="white")
 
@@ -445,7 +446,7 @@ def plot_trend_dashboard(
                            left=0.06, right=0.94, top=0.90, bottom=0.06,
                            hspace=0.4, wspace=0.3)
 
-    _EXTRA_KR = {"injury_risk": "부상 위험도", "overall_deviation": "개인 기준 편차"}
+
 
     for idx, metric in enumerate(available):
         row = idx // ncols
@@ -479,7 +480,7 @@ def plot_trend_dashboard(
         ax.plot(x_fit, y_fit, "--", color=color, linewidth=1.5, alpha=0.5)
 
         # Annotation
-        kr_name = METRIC_KR.get(metric, metric)
+        kr_name = get_feature_korean(metric)
         direction_kr = {"improving": "개선", "worsening": "악화", "stable": "안정", "changing": "변화"}.get(direction, "")
         r2 = t["r_squared"]
 
