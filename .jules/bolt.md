@@ -1,0 +1,3 @@
+## $(date +%Y-%m-%d) - PyTorch Attention Optimization
+**Learning:** PyTorch's `nn.MultiheadAttention` computes and returns attention weights by default, causing unnecessary $O(N^2)$ memory allocation and computation even when the result is discarded or unpacked into an unused variable (`_`). More critically, returning weights prevents PyTorch 2.0+ from leveraging highly optimized fused attention backends like FlashAttention or Memory-Efficient Attention.
+**Action:** When using `nn.MultiheadAttention` where the attention weights are not explicitly required for downstream logic (e.g., in cross-modal fusion or verification layers), always pass `need_weights=False` during the forward pass.
