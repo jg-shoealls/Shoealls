@@ -1,3 +1,7 @@
 ## 2024-05-18 - PyTorch MultiheadAttention Memory Optimization
 **Learning:** PyTorch's `nn.MultiheadAttention` computes and returns attention weights by default, allocating an $O(N^2)$ tensor. If these weights are unpacked into a `_` variable or unused downstream, this results in significant unnecessary memory and compute overhead. Furthermore, in newer PyTorch versions, it disables routing to optimized fast-path backends like FlashAttention.
 **Action:** Always verify if attention weights from `nn.MultiheadAttention` are actually utilized. If they are explicitly ignored (e.g., `attn_out, _ = self.attn(...)`) or unused downstream, pass `need_weights=False` to the forward call to skip their computation and allocation, allowing potential fast-path execution.
+
+## 2024-05-18 - Avoid RUF checks scope creep and .get dictionary handling
+**Learning:** Automatically running global lint fixes with `ruff check --fix` can generate unrelated, out-of-scope, and potentially breaking changes, especially in CI environments where line numbers and variable scoping matters. Using dictionary `.get()` directly is preferred for mappings like `GAIT_CLASS_NAMES` to handle missing configs during test suites without hard failures like `KeyError` or `IndexError`.
+**Action:** When adding memory/processing optimizations, only lint/fix files specifically modified in the plan to prevent scope creep. For hardcoded index mappings expected to expand, apply `.get()` with grace fallbacks.
