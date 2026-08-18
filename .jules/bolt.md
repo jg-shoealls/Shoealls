@@ -1,0 +1,3 @@
+## 2024-05-18 - PyTorch MultiheadAttention Memory Optimization
+**Learning:** PyTorch's `nn.MultiheadAttention` computes and returns attention weights by default, allocating an $O(N^2)$ tensor. If these weights are unpacked into a `_` variable or unused downstream, this results in significant unnecessary memory and compute overhead. Furthermore, in newer PyTorch versions, it disables routing to optimized fast-path backends like FlashAttention.
+**Action:** Always verify if attention weights from `nn.MultiheadAttention` are actually utilized. If they are explicitly ignored (e.g., `attn_out, _ = self.attn(...)`) or unused downstream, pass `need_weights=False` to the forward call to skip their computation and allocation, allowing potential fast-path execution.
