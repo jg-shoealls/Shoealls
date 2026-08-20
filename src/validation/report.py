@@ -223,9 +223,12 @@ def _page1_summary(history, metrics, class_names, model_params, save_dir):
     table_data.append(["전체 (Macro Avg)", f"{int(metrics['support'].sum())}", f"{metrics['precision'].mean():.4f}", f"{metrics['recall'].mean():.4f}", f"{metrics['f1'].mean():.4f}", f"{metrics['accuracy']:.1%}", f"{metrics['max_probs'].mean():.4f}"])
     
     table = ax_table.table(cellText=table_data, colLabels=col_labels, loc="center", cellLoc="center")
-    table.auto_set_font_size(False); table.set_fontsize(10); table.scale(1.0, 2.0)
+    table.auto_set_font_size(False)
+ table.set_fontsize(10)
+ table.scale(1.0, 2.0)
     for (row, col), cell in table.get_celld().items():
-        if row == 0: cell.set_facecolor(C_PRIMARY); cell.set_text_props(color="white", fontproperties=_FONT_PROP)
+        if row == 0: cell.set_facecolor(C_PRIMARY)
+ cell.set_text_props(color="white", fontproperties=_FONT_PROP)
         else: cell.set_text_props(fontproperties=_FONT_PROP_LIGHT)
 
     fig.savefig(save_dir / "report_p1_summary.png", dpi=200, bbox_inches="tight", facecolor="white")
@@ -250,7 +253,8 @@ def _page2_detail(metrics, class_names, save_dir):
     ax.bar(x - w, metrics["precision"], w, label="Precision", color=C_PRIMARY, alpha=0.8)
     ax.bar(x, metrics["recall"], w, label="Recall", color=C_ACCENT, alpha=0.8)
     ax.bar(x + w, metrics["f1"], w, label="F1", color=C_SUCCESS, alpha=0.8)
-    ax.set_xticks(x); ax.set_xticklabels(short_kr, fontproperties=_FONT_PROP_LIGHT, fontsize=8, rotation=30)
+    ax.set_xticks(x)
+ ax.set_xticklabels(short_kr, fontproperties=_FONT_PROP_LIGHT, fontsize=8, rotation=30)
     _set_ax_style(ax, "클래스별 분류 성능")
     ax.legend(prop=_FONT_PROP_LIGHT)
 
@@ -259,9 +263,11 @@ def _page2_detail(metrics, class_names, save_dir):
     class_confs = [metrics["max_probs"][metrics["y_true"] == i] for i in range(len(class_names))]
     bp = ax.boxplot(class_confs, labels=short_kr, patch_artist=True)
     for patch, color in zip(bp["boxes"], CLASS_COLORS * 2):
-        patch.set_facecolor(color); patch.set_alpha(0.5)
+        patch.set_facecolor(color)
+ patch.set_alpha(0.5)
     _set_ax_style(ax, "클래스별 예측 신뢰도")
-    for label in ax.get_xticklabels(): label.set_fontproperties(_FONT_PROP_LIGHT); label.set_rotation(30)
+    for label in ax.get_xticklabels(): label.set_fontproperties(_FONT_PROP_LIGHT)
+ label.set_rotation(30)
 
     fig.savefig(save_dir / "report_p2_detail.png", dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -281,7 +287,8 @@ def _page3_ablation(ablation_results, num_classes, save_dir):
 
     ax = fig.add_subplot(gs[0, :])
     ax.barh(range(len(names_kr)), accs, color=C_PRIMARY, alpha=0.7)
-    ax.set_yticks(range(len(names_kr))); ax.set_yticklabels(names_kr, fontproperties=_FONT_PROP_LIGHT)
+    ax.set_yticks(range(len(names_kr)))
+ ax.set_yticklabels(names_kr, fontproperties=_FONT_PROP_LIGHT)
     _set_ax_style(ax, "센서 조합별 분류 정확도")
     ax.invert_yaxis()
 
