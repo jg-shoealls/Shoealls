@@ -516,7 +516,11 @@ class GaitReasoningEngine(nn.Module):
 
         # ── 최종 판정 ──
         lines.append("")
-        lines.append(f"  최종 판정: {self.CLASS_NAMES_KR[pred]}")
+        try:
+            pred_kr = self.CLASS_NAMES_KR[pred]
+        except IndexError:
+            pred_kr = f"알수없음_{pred}"
+        lines.append(f"  최종 판정: {pred_kr}")
         lines.append(f"  확신도:    {probs[pred]:.1%}")
         lines.append(f"  불확실성:  {uncertainty:.1%}")
         lines.append("")
@@ -578,7 +582,7 @@ class GaitReasoningEngine(nn.Module):
             label = "초기 가설" if step_idx == 0 else f"추론 {step_idx}단계"
             lines.append(
                 f"  {label}: "
-                f"{self.CLASS_NAMES_KR[top_cls]} ({step_probs[top_cls]:.0%})"
+                f"{self.CLASS_NAMES_KR[top_cls] if top_cls < len(self.CLASS_NAMES_KR) else f'알수없음_{top_cls}'} ({step_probs[top_cls]:.0%})"
             )
 
         lines.append("")
@@ -587,7 +591,7 @@ class GaitReasoningEngine(nn.Module):
         for cls_idx in ranked:
             marker = ">>" if cls_idx == pred else "  "
             lines.append(
-                f"  {marker} {self.CLASS_NAMES_KR[cls_idx]:10s} "
+                f"  {marker} {self.CLASS_NAMES_KR[cls_idx] if cls_idx < len(self.CLASS_NAMES_KR) else f'알수없음_{cls_idx}'[:10]:10s} "
                 f"확률 {probs[cls_idx]:5.1%} | "
                 f"찬성 {pro[cls_idx]:.0%} | "
                 f"반대 {con[cls_idx]:.0%}"
@@ -615,7 +619,7 @@ class GaitReasoningEngine(nn.Module):
             curr_top = F.softmax(trace[s][i], dim=-1).argmax().item()
             if prev_top != curr_top:
                 changes.append(
-                    f"  단계{s}: {self.CLASS_NAMES_KR[prev_top]} → {self.CLASS_NAMES_KR[curr_top]}"
+                    f"  단계{s}: {self.CLASS_NAMES_KR[prev_top] if prev_top < len(self.CLASS_NAMES_KR) else f'알수없음_{prev_top}'} → {self.CLASS_NAMES_KR[curr_top] if curr_top < len(self.CLASS_NAMES_KR) else f'알수없음_{curr_top}'}"
                 )
 
         if changes:
