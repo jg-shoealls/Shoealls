@@ -14,7 +14,10 @@ from src.models.reasoning_engine import (
 
 def load_config():
     with open("configs/default.yaml") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+        if "data" in cfg:
+            cfg["data"]["num_classes"] = 4
+        return cfg
 
 
 def make_batch(batch_size=2):
