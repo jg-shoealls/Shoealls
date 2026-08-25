@@ -1,21 +1,25 @@
 """질환 특이적 보행 바이오마커 시스템 테스트"""
-import numpy as np
 import pytest
+import numpy as np
+
 from src.analysis.disease_biomarkers import (
-    BiomarkerMeasurement,
     DiseaseBiomarkerAnalyzer,
+    SensorChannel,
+    BiomarkerDefinition,
+    DiseasePanel,
+    BiomarkerMeasurement,
     DiseaseBiomarkerProfile,
     MultimodalBiomarkerReport,
-    SensorChannel,
 )
 from src.models.biomarker_net import (
     BiomarkerDiseaseNet,
     BiomarkerExtractionHead,
-    BiomarkerLoss,
-    BiomarkerNetConfig,
     DiseasePanelAttention,
     MultiScaleTemporalAnalyzer,
+    BiomarkerLoss,
+    BiomarkerNetConfig,
 )
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
