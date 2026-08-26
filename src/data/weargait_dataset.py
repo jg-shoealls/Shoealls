@@ -9,7 +9,6 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-
 IMU_COLS = [
     "R_Ankle_Acc_X", "R_Ankle_Acc_Y", "R_Ankle_Acc_Z",
     "R_Ankle_Gyr_X", "R_Ankle_Gyr_Y", "R_Ankle_Gyr_Z",
@@ -26,20 +25,27 @@ PRESSURE_COLS = (
 class WearGaitDataset(Dataset):
     """Windowed WearGait-PD IMU and plantar pressure samples."""
 
-    def __init__(self, imu_windows, pressure_windows, labels):
+    def __init__(self, imu_windows, pressure_windows, labels, biomarker_windows=None):
         self.imu_windows = imu_windows
         self.pressure_windows = pressure_windows
         self.labels = labels
+        self.biomarker_windows = biomarker_windows
 
     def __len__(self) -> int:
         return len(self.labels)
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
-        return {
+        item = {
             "imu": torch.as_tensor(self.imu_windows[idx], dtype=torch.float32),
             "pressure": torch.as_tensor(self.pressure_windows[idx], dtype=torch.float32),
             "label": torch.tensor(self.labels[idx], dtype=torch.long),
         }
+        if self.biomarker_windows is not None:
+            # Convert dictionary of biomarkers to a tensor
+            bw = self.biomarker_windows[idx]
+            values = list(bw.values()) if hasattr(bw, 'values') else bw
+            item["biomarkers"] = torch.as_tensor(values, dtype=torch.float32)
+        return item
 
 
 def load_weargait_by_subject(data_dir: str | Path, window: int = 128, stride: int = 64) -> dict:

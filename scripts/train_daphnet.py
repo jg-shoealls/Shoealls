@@ -1,14 +1,15 @@
 """Train on real Daphnet data with leave-one-subject-out cross-validation."""
 
-import time
 import pathlib
-import yaml
+import time
+
 import numpy as np
 import torch
-import torch.nn as nn
+import yaml
+from torch import nn
 from torch.utils.data import DataLoader, random_split
 
-from src.data.daphnet_dataset import DaphnetDataset, CLASS_NAMES
+from src.data.daphnet_dataset import CLASS_NAMES, DaphnetDataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.utils.metrics import compute_metrics
 

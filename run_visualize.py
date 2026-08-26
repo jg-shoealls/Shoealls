@@ -11,6 +11,14 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
+from src.analysis import (
+    LongitudinalTrendTracker,
+    PersonalGaitProfiler,
+)
+from src.analysis.visualize_analysis import (
+    plot_full_analysis_report,
+    plot_trend_dashboard,
+)
 from src.data.dataset import MultimodalGaitDataset
 from src.data.synthetic import generate_synthetic_dataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
@@ -18,28 +26,12 @@ from src.training.train import train
 from src.utils.metrics import compute_metrics
 from src.validation.report import generate_report
 from src.validation.visualize import (
-    plot_confusion_matrix,
     plot_confidence_distribution,
+    plot_confusion_matrix,
     plot_modality_ablation,
     plot_per_class_metrics,
     plot_summary_dashboard,
     plot_training_curves,
-)
-from src.analysis.visualize_analysis import (
-    plot_pressure_heatmap,
-    plot_cop_trajectory,
-    plot_zone_temporal,
-    plot_injury_risk_dashboard,
-    plot_gait_profile_deviation,
-    plot_trend_dashboard,
-    plot_full_analysis_report,
-)
-from src.analysis import (
-    FootZoneAnalyzer,
-    PersonalGaitProfiler,
-    InjuryRiskEngine,
-    CorrektiveFeedbackGenerator,
-    LongitudinalTrendTracker,
 )
 
 

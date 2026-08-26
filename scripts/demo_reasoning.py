@@ -3,8 +3,12 @@
 import torch
 import yaml
 
+from src.data.preprocessing import (
+    preprocess_imu,
+    preprocess_pressure,
+    preprocess_skeleton,
+)
 from src.data.synthetic import generate_synthetic_dataset
-from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
 from src.models.reasoning_engine import GaitReasoningEngine
 
 

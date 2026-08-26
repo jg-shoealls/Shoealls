@@ -3,8 +3,9 @@
 12개 이상 보행 패턴 감지 + ML 기반 9개 부상 유형 예측.
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.analysis.injury_predictor import InjuryRiskPredictor

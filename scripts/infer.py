@@ -1,11 +1,11 @@
 """Run inference on a single synthetic sample using a saved checkpoint."""
 
 import sys
-import torch
-import numpy as np
 
-from src.data.synthetic import generate_synthetic_dataset, CLASS_NAMES
+import torch
+
 from src.data.dataset import MultimodalGaitDataset
+from src.data.synthetic import CLASS_NAMES, generate_synthetic_dataset
 from src.models.multimodal_gait_net import MultimodalGaitNet
 
 

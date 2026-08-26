@@ -98,10 +98,11 @@ class TestFullModel:
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.zeros((2, 5, 128), dtype=torch.float32),
         }
 
         logits = model(batch)
-        assert logits.shape == (2, 4)
+        assert logits.shape == (2, config["data"].get("num_classes", 11))
 
     def test_parameter_count(self):
         config = load_config()
@@ -126,4 +127,4 @@ class TestFullModel:
 
         model = MultimodalGaitNet(config)
         logits = model(batch)
-        assert logits.shape == (1, 4)
+        assert logits.shape == (1, config["data"].get("num_classes", 11))

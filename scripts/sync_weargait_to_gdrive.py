@@ -16,9 +16,8 @@ import fnmatch
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
-
 
 SYNAPSE_ID = "syn52540892"
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
@@ -54,10 +53,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def drive_service(args: argparse.Namespace):
-    from google.oauth2 import service_account
-    from google_auth_oauthlib.flow import InstalledAppFlow
     from google.auth.transport.requests import Request
+    from google.oauth2 import service_account
     from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 
     if args.service_account_json:

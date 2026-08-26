@@ -1,9 +1,11 @@
+import json
+
+import requests
 import torch
 import yaml
-import json
-import requests
-import os
+
 from src.models.reasoning_engine import GaitReasoningEngine
+
 
 class GaitChatbot:
     def __init__(self, config_path="configs/default.yaml"):
@@ -82,7 +84,7 @@ class GaitChatbot:
                             break
             print("\n" + "=" * 60)
         except Exception as e:
-            print(f"오류: {str(e)}")
+            print(f"오류: {e!s}")
         return report_text
 
     def chat(self, user_input, analysis_context):
@@ -119,7 +121,7 @@ class GaitChatbot:
             self.history.append({"role": "assistant", "content": answer})
             return ""
         except Exception as e:
-            return f"오류가 발생했습니다: {str(e)}"
+            return f"오류가 발생했습니다: {e!s}"
 
 def run_chat_demo():
     print("="*60)

@@ -14,8 +14,8 @@ if str(ROOT) not in sys.path:
 
 import numpy as np
 import torch
-import torch.nn as nn
 import yaml
+from torch import nn
 from torch.utils.data import DataLoader
 
 from src.data.har_dataset import (

@@ -5,12 +5,13 @@ HC files (label 0) and NLS files (label 1) are used together.
 Only SelfPace task files are loaded.
 """
 
-import time
 import pathlib
-import yaml
+import time
+
 import numpy as np
 import torch
-import torch.nn as nn
+import yaml
+from torch import nn
 from torch.utils.data import DataLoader
 
 from src.data.weargait_dataset import WearGaitDataset, load_weargait_by_subject

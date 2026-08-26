@@ -4,9 +4,8 @@ Checks for required IMU and Pressure columns, and reports summary.
 """
 
 import pathlib
+
 import pandas as pd
-import numpy as np
-from collections import Counter
 
 # Ankle IMU columns
 _IMU_COLS = [

@@ -16,7 +16,6 @@
 """
 
 import argparse
-import json
 from collections import Counter
 from pathlib import Path
 
@@ -146,7 +145,7 @@ def main():
     if imu_shapes:
         lengths = [s[0] for s in imu_shapes]
         print(f"{'IMU':.<40} OK ({len(imu_shapes)} files)")
-        print(f"  Shape per file: (T, 6)")
+        print("  Shape per file: (T, 6)")
         print(f"  Frame counts: mean={np.mean(lengths):.0f}, "
               f"min={min(lengths)}, max={max(lengths)}")
 

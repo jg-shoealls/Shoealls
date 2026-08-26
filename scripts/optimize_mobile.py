@@ -2,10 +2,13 @@
 
 import os
 import time
-import torch
-import torch.nn as nn
 from pathlib import Path
+
+import torch
+from torch import nn
+
 from src.models.multimodal_gait_net import MultimodalGaitNet
+
 
 def quantize_model(checkpoint_path, output_dir):
     output_dir = Path(output_dir)

@@ -1,6 +1,5 @@
 """PyTorch dataset for multimodal gait data."""
 
-import numpy as np
 import torch
 from torch.utils.data import Dataset
 
@@ -49,5 +48,6 @@ class MultimodalGaitDataset(Dataset):
             "imu": torch.from_numpy(imu),
             "pressure": torch.from_numpy(pressure),
             "skeleton": torch.from_numpy(skeleton),
+            "mag_baro": torch.zeros((5, self.sequence_length), dtype=torch.float32),
             "label": torch.tensor(label, dtype=torch.long),
         }
