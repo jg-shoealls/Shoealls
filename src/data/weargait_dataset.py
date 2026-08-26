@@ -9,6 +9,8 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+from src.analysis.weargait_biomarkers import biomarker_vector
+
 IMU_COLS = [
     "R_Ankle_Acc_X", "R_Ankle_Acc_Y", "R_Ankle_Acc_Z",
     "R_Ankle_Gyr_X", "R_Ankle_Gyr_Y", "R_Ankle_Gyr_Z",
@@ -23,39 +25,39 @@ PRESSURE_COLS = (
 
 
 class WearGaitDataset(Dataset):
-    """Windowed WearGait-PD IMU and plantar pressure samples."""
+    """Windowed WearGait-PD IMU, plantar pressure, and explicit biomarkers."""
 
     def __init__(self, imu_windows, pressure_windows, labels, biomarker_windows=None):
         self.imu_windows = imu_windows
         self.pressure_windows = pressure_windows
         self.labels = labels
+        if biomarker_windows is None:
+            biomarker_windows = [
+                biomarker_vector(imu, pressure)
+                for imu, pressure in zip(imu_windows, pressure_windows)
+            ]
         self.biomarker_windows = biomarker_windows
 
     def __len__(self) -> int:
         return len(self.labels)
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
-        item = {
+        return {
             "imu": torch.as_tensor(self.imu_windows[idx], dtype=torch.float32),
             "pressure": torch.as_tensor(self.pressure_windows[idx], dtype=torch.float32),
+            "biomarkers": torch.as_tensor(self.biomarker_windows[idx], dtype=torch.float32),
             "label": torch.tensor(self.labels[idx], dtype=torch.long),
         }
-        if self.biomarker_windows is not None:
-            # Convert dictionary of biomarkers to a tensor
-            bw = self.biomarker_windows[idx]
-            values = list(bw.values()) if hasattr(bw, 'values') else bw
-            item["biomarkers"] = torch.as_tensor(values, dtype=torch.float32)
-        return item
 
 
 def load_weargait_by_subject(data_dir: str | Path, window: int = 128, stride: int = 64) -> dict:
     """Load WearGait-PD self-paced CSVs grouped by subject id.
 
     Returns:
-        Dict mapping subject id to ``(imu_windows, pressure_windows, labels)``.
+        Dict mapping subject id to ``(imu_windows, pressure_windows, labels, biomarker_windows)``.
     """
     data_path = Path(data_dir)
-    subjects: dict[str, tuple[list[np.ndarray], list[np.ndarray], list[int]]] = {}
+    subjects: dict[str, tuple[list[np.ndarray], list[np.ndarray], list[int], list[np.ndarray]]] = {}
 
     for path in sorted(data_path.rglob("*.csv")):
         name = path.name.lower()
@@ -67,22 +69,23 @@ def load_weargait_by_subject(data_dir: str | Path, window: int = 128, stride: in
             continue
 
         try:
-            imu, pressure = _load_csv_windows(path, window=window, stride=stride)
+            imu, pressure, biomarkers = _load_csv_windows(path, window=window, stride=stride)
         except ValueError as exc:
             print(f"[skip] {path}: {exc}")
             continue
 
         subject_id = _subject_id(path)
         if subject_id not in subjects:
-            subjects[subject_id] = ([], [], [])
+            subjects[subject_id] = ([], [], [], [])
         subjects[subject_id][0].extend(imu)
         subjects[subject_id][1].extend(pressure)
         subjects[subject_id][2].extend([label] * len(imu))
+        subjects[subject_id][3].extend(biomarkers)
 
     return subjects
 
 
-def _load_csv_windows(path: Path, window: int, stride: int) -> tuple[list[np.ndarray], list[np.ndarray]]:
+def _load_csv_windows(path: Path, window: int, stride: int) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     header = pd.read_csv(path, nrows=0).columns
     missing = [col for col in [*IMU_COLS, *PRESSURE_COLS] if col not in header]
     if missing:
@@ -99,16 +102,18 @@ def _load_csv_windows(path: Path, window: int, stride: int) -> tuple[list[np.nda
 
     imu_windows: list[np.ndarray] = []
     pressure_windows: list[np.ndarray] = []
+    biomarker_windows: list[np.ndarray] = []
     for start in range(0, len(values) - window + 1, stride):
         end = start + window
         imu_win = imu[start:end].T
         pressure_win = pressure[start:end].reshape(window, 1, 4, 8)
         imu_windows.append(imu_win.astype(np.float32, copy=False))
         pressure_windows.append(pressure_win.astype(np.float32, copy=False))
+        biomarker_windows.append(biomarker_vector(imu_win, pressure_win))
 
     if not imu_windows:
         raise ValueError(f"not enough rows for window={window}")
-    return imu_windows, pressure_windows
+    return imu_windows, pressure_windows, biomarker_windows
 
 
 def _standardize(array: np.ndarray) -> np.ndarray:
@@ -119,6 +124,8 @@ def _standardize(array: np.ndarray) -> np.ndarray:
 
 def _label_from_name(name: str) -> int | None:
     lower = name.lower()
+    if "(control)" in lower:
+        return 0
     if lower.startswith(("whc", "hc", "control")):
         return 0
     if lower.startswith(("wpd", "pd", "nls")):
@@ -128,7 +135,13 @@ def _label_from_name(name: str) -> int | None:
 
 def _subject_id(path: Path) -> str:
     stem = path.stem.lower()
-    for suffix in ("_selfpace", "-selfpace"):
+    for suffix in (
+        "_selfpace_matturn",
+        "_selfpace_doorpat",
+        "_selfpace_mat",
+        "_selfpace",
+        "-selfpace",
+    ):
         if stem.endswith(suffix):
             return stem[: -len(suffix)]
     return stem
