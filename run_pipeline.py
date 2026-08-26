@@ -14,8 +14,8 @@ from src.training.train import train
 from src.utils.metrics import compute_metrics
 from src.validation.report import generate_report
 from src.validation.visualize import (
-    plot_confusion_matrix,
     plot_confidence_distribution,
+    plot_confusion_matrix,
     plot_modality_ablation,
     plot_per_class_metrics,
     plot_summary_dashboard,

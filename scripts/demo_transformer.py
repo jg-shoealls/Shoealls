@@ -1,9 +1,10 @@
 """Demo showing Transformer architecture for gait analysis."""
 
-import torch
-import torch.nn as nn
 import time
-import numpy as np
+
+import torch
+from torch import nn
+
 
 class GaitTransformer(nn.Module):
     """A pure Transformer-based model for multimodal gait analysis."""
@@ -50,7 +51,7 @@ def run_transformer_demo():
     
     # Calculate parameters
     params = sum(p.numel() for p in model.parameters())
-    print(f"Model Type: Pure Transformer")
+    print("Model Type: Pure Transformer")
     print(f"Parameters: {params:,}")
     print(f"Device:     {device}")
     print("-" * 60)
@@ -68,7 +69,7 @@ def run_transformer_demo():
         probs = torch.softmax(logits, dim=1)
     elapsed = (time.time() - t0) * 1000
     
-    print(f"\n3. Analysis Result:")
+    print("\n3. Analysis Result:")
     top_prob, top_class = torch.max(probs, dim=1)
     print(f"   Predicted Disease Class: {top_class.item()}")
     print(f"   Confidence:             {top_prob.item():.1%}")

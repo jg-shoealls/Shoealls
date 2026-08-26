@@ -16,7 +16,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-
 DATA_DIR = Path("data/weargait_pd")
 OUT_DIR = Path("outputs/weargait_biomarker_analysis")
 
@@ -331,7 +330,7 @@ def write_cohort_summary(biomarkers: pd.DataFrame, out_dir: Path) -> None:
         row: dict[str, object] = {
             "group": group,
             "task": task,
-            "files": int(len(frame)),
+            "files": len(frame),
             "subjects": int(frame["subject"].nunique()),
         }
         for metric in BASE_NORMAL_RANGES:

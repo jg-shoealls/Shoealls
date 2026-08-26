@@ -4,15 +4,16 @@ Each of the 10 subjects is held out as test once; the remaining 9 train the mode
 This avoids the data leakage in random_split and gives an honest generalisation estimate.
 """
 
-import time
 import pathlib
-import yaml
+import time
+
 import numpy as np
 import torch
-import torch.nn as nn
+import yaml
+from torch import nn
 from torch.utils.data import DataLoader
 
-from src.data.daphnet_dataset import DaphnetDataset, CLASS_NAMES, load_by_subject
+from src.data.daphnet_dataset import DaphnetDataset, load_by_subject
 from src.models.multimodal_gait_net import IMUGaitNet
 from src.utils.metrics import compute_metrics
 

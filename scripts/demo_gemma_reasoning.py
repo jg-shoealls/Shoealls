@@ -1,8 +1,10 @@
+
+import requests
 import torch
 import yaml
-import json
-import requests
+
 from src.models.reasoning_engine import GaitReasoningEngine
+
 
 def make_batch(batch_size=1):
     return {

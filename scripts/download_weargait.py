@@ -7,6 +7,7 @@ Usage:
 
 import argparse
 import pathlib
+
 import synapseclient
 import synapseutils
 

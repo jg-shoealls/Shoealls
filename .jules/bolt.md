@@ -1,0 +1,3 @@
+## 2024-08-26 - [Avoid unnecessary MultiheadAttention computation]
+**Learning:** In PyTorch, using `nn.MultiheadAttention` will compute and return attention weights alongside the attention output by default. If these weights are just ignored (e.g., explicitly unpacked using `_`), it results in wasted memory allocation and processing overhead, preventing potential optimizations such as utilizing scaled dot product attention internally via backends like FlashAttention.
+**Action:** When extracting outputs from PyTorch's `MultiheadAttention`, if you plan on immediately discarding the attention weights variable, you should explicitly set `need_weights=False` during the forward pass function call.

@@ -1,7 +1,7 @@
 """Streamlit dashboard for quick gait model demos."""
 
-from pathlib import Path
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,6 @@ import torch
 
 from src.data.synthetic import CLASS_NAMES
 from src.models.multimodal_gait_net import MultimodalGaitNet
-
 
 CHECKPOINT_PATH = Path("outputs/light_stroke/best_model.pt")
 DEMO_CLASSES = {

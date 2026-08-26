@@ -2,7 +2,9 @@
 """
 
 import pathlib
+
 import pandas as pd
+
 
 def main():
     data_dir = pathlib.Path("data/weargait_pd")

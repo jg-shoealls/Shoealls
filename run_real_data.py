@@ -24,14 +24,13 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, random_split
 import yaml
+from torch import nn
+from torch.utils.data import DataLoader, random_split
 
 from src.data.adapters import FolderDataAdapter, NumpyDataAdapter
 from src.models.multimodal_gait_net import MultimodalGaitNet
-from src.training.train import train_one_epoch, evaluate
-from src.utils.metrics import compute_metrics
+from src.training.train import evaluate, train_one_epoch
 from src.validation.report import generate_report
 
 

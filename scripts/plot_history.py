@@ -2,8 +2,10 @@
 
 import sys
 from pathlib import Path
-import torch
+
 import matplotlib
+import torch
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 

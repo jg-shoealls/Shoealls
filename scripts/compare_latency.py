@@ -1,11 +1,13 @@
 """Compare latency between FP32 lightweight model and INT8 quantized model."""
 
 import time
-import torch
-import torch.nn as nn
-import numpy as np
 from pathlib import Path
+
+import torch
+from torch import nn
+
 from src.models.multimodal_gait_net import MultimodalGaitNet
+
 
 def measure_latency():
     ckpt_path = Path("outputs/light_stroke/best_model.pt")

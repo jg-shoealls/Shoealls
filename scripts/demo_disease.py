@@ -4,14 +4,13 @@
 카테고리: 신경계, 뇌혈관계, 근골격계, 대사/기타
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import numpy as np
-from src.analysis.biomarkers import GaitBiomarkerExtractor
+from src.analysis.disease_classifier import GaitDiseaseClassifier
 from src.analysis.disease_predictor import DiseaseRiskPredictor
-from src.analysis.disease_classifier import GaitDiseaseClassifier, FEATURE_NAMES
 
 
 def main():

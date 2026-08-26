@@ -5,15 +5,13 @@ and computes biomarkers to validate the algorithm on real-world data.
 """
 
 import os
-import pathlib
+
 import numpy as np
 import pandas as pd
-import torch
-import yaml
 
-from src.analysis.gait_profile import PersonalGaitProfiler
 from src.analysis.biomarkers import BiomarkerExtractor
 from src.analysis.common import get_feature_korean
+from src.analysis.gait_profile import PersonalGaitProfiler
 
 # Column definitions
 _IMU_COLS = [
