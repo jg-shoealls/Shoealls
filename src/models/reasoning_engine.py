@@ -10,8 +10,8 @@ Chain-of-Reasoning 아키텍처:
 """
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class AnomalyDetectionModule(nn.Module):
@@ -127,7 +127,6 @@ class CrossModalEvidenceCollector(nn.Module):
             cross_support: (B, 3) 교차 검증 지지도
         """
         B = modality_features[0].size(0)
-        D = modality_features[0].size(2)
 
         # 모달리티별 요약
         summaries = torch.stack([f.mean(dim=1) for f in modality_features], dim=1)  # (B, 3, D)
@@ -222,7 +221,6 @@ class DifferentialDiagnosisChain(nn.Module):
             pro_scores: (B, num_classes) 찬성 근거 강도
             con_scores: (B, num_classes) 반대 근거 강도
         """
-        B = evidence_embedding.size(0)
 
         # 초기 가설: 프로토타입과의 유사도
         similarity = F.cosine_similarity(
@@ -382,14 +380,14 @@ class GaitReasoningEngine(nn.Module):
         report = engine.explain(result)  # 한글 추론 리포트 생성
     """
 
-    ANOMALY_NAMES_KR = [
+    ANOMALY_NAMES_KR: tuple[str, ...] = (
         "좌우 비대칭", "리듬 불규칙", "진폭 이상", "주파수 이상",
         "공간 패턴 이상", "시간 지연", "떨림", "보행 동결",
-    ]
+    )
 
-    CLASS_NAMES_KR = ["정상 보행", "절뚝거림", "운동실조", "파킨슨"]
+    CLASS_NAMES_KR: tuple[str, ...] = ("정상 보행", "절뚝거림", "운동실조", "파킨슨")
 
-    MODALITY_NAMES_KR = ["IMU (관성센서)", "족저압 센서", "스켈레톤"]
+    MODALITY_NAMES_KR: tuple[str, ...] = ("IMU (관성센서)", "족저압 센서", "스켈레톤")
 
     def __init__(self, config: dict):
         super().__init__()
@@ -645,9 +643,9 @@ class GaitReasoningEngine(nn.Module):
         own_state = self.state_dict()
         loaded = 0
         for key, value in state.items():
-            for prefix in encoder_mapping:
+            for prefix, mapped_prefix in encoder_mapping.items():
                 if key.startswith(prefix):
-                    target_key = encoder_mapping[prefix] + key[len(prefix):]
+                    target_key = mapped_prefix + key[len(prefix):]
                     if target_key in own_state:
                         own_state[target_key].copy_(value)
                         loaded += 1
