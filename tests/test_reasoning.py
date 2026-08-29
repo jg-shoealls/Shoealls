@@ -147,7 +147,9 @@ class TestGaitReasoningEngine:
         assert "diagnosis" in result
 
         assert result["prediction"].shape == (2,)
-        assert result["calibrated_probs"].shape == (2, 4)
+        # Use config's num_classes
+        num_classes = config.get("data", {}).get("num_classes", 11)
+        assert result["calibrated_probs"].shape == (2, num_classes)
 
     def test_explain_output(self):
         config = load_config()
