@@ -7,12 +7,10 @@ Covers pure-logic functions and mocked external-service auth flows in:
 
 from __future__ import annotations
 
-import argparse
 import sys
-import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch, call, mock_open
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,7 +20,8 @@ import pytest
 
 def _import_sync():
     """Import sync_weargait_to_gdrive without side effects."""
-    import importlib, types
+    import importlib
+    import types
 
     # Stub heavy third-party modules so we can import without them installed
     # Build googleapiclient.http stub with MediaFileUpload pre-populated so
@@ -65,7 +64,8 @@ def _import_sync():
 
 def _import_download():
     """Import download_weargait without side effects."""
-    import types, importlib.util
+    import importlib.util
+    import types
 
     stubs = {
         "synapseclient": types.ModuleType("synapseclient"),
@@ -175,22 +175,15 @@ class TestParseArgs:
         assert args.service_account_json is None
 
     def test_missing_synapse_token_raises(self):
-        with patch.dict("os.environ", {}, clear=True):
-            with patch.object(sys, "argv", ["prog", "--service-account-json", "sa.json"]):
-                with pytest.raises(SystemExit):
+        with patch.dict("os.environ", {}, clear=True), patch.object(sys, "argv", ["prog", "--service-account-json", "sa.json"]), pytest.raises(SystemExit):
                     self.m.parse_args()
 
     def test_both_service_and_oauth_raises(self):
-        with patch.object(sys, "argv",
-                          ["prog", "--synapse-token", "tok",
-                           "--service-account-json", "sa.json",
-                           "--oauth-client-json", "oauth.json"]):
-            with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", ["prog", "--synapse-token", "tok", "--service-account-json", "sa.json", "--oauth-client-json", "oauth.json"]), pytest.raises(SystemExit):
                 self.m.parse_args()
 
     def test_neither_service_nor_oauth_raises(self):
-        with patch.object(sys, "argv", ["prog", "--synapse-token", "tok"]):
-            with pytest.raises(SystemExit):
+        with patch.object(sys, "argv", ["prog", "--synapse-token", "tok"]), pytest.raises(SystemExit):
                 self.m.parse_args()
 
     def test_synapse_token_from_env(self):
@@ -233,24 +226,15 @@ class TestDriveServiceServiceAccount:
         sa_module = MagicMock()
         sa_module.Credentials.from_service_account_file.return_value = mock_creds
 
-        with patch.dict(sys.modules, {
-            "google.oauth2.service_account": sa_module,
-            "googleapiclient.discovery": MagicMock(build=lambda *a, **k: mock_service),
-        }):
-            with patch("googleapiclient.discovery.build", return_value=mock_service):
+        with patch.dict(sys.modules, {"google.oauth2.service_account": sa_module, "googleapiclient.discovery": MagicMock(build=lambda *a, **k: mock_service)}), patch("googleapiclient.discovery.build", return_value=mock_service):
                 # Patch the imports inside the function
-                import importlib
                 import types
                 google_oauth2_sa = types.ModuleType("google.oauth2.service_account")
                 google_oauth2_sa.Credentials = MagicMock()
                 google_oauth2_sa.Credentials.from_service_account_file.return_value = mock_creds
 
-                with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}):
-                    with patch("googleapiclient.discovery.build", return_value=mock_service) as mock_build:
-                        # Build the patched environment so drive_service can import
-                        with patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()),
-                                          "Credentials") as _:
-                            pass  # just verifying setup
+                with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}), patch("googleapiclient.discovery.build", return_value=mock_service), patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()), "Credentials") as _:
+                    pass  # just verifying setup
 
         # Simpler: patch __import__ path used inside drive_service
         google_oauth2_sa_mock = MagicMock()
@@ -389,7 +373,7 @@ class TestDriveServiceOAuth:
             "google_auth_oauthlib.flow": flow_module,
             "googleapiclient.discovery": discovery_module,
         }):
-            result = self.m.drive_service(args)
+            self.m.drive_service(args)
 
         flow_module.InstalledAppFlow.from_client_secrets_file.assert_called_once_with(
             "oauth.json", self.m.DRIVE_SCOPES
@@ -636,10 +620,7 @@ class TestUploadFile:
         service.files().create().execute.return_value = {"id": "new_id"}
 
         media_mock = MagicMock()
-        with patch.object(self.m, "find_drive_child", return_value=None):
-            with patch.dict(sys.modules, {
-                "googleapiclient.http": MagicMock(MediaFileUpload=MagicMock(return_value=media_mock))
-            }):
+        with patch.object(self.m, "find_drive_child", return_value=None), patch.dict(sys.modules, {"googleapiclient.http": MagicMock(MediaFileUpload=MagicMock(return_value=media_mock))}):
                 result = self.m.upload_file(service, local, "parent", "f.csv", overwrite=False, dry_run=False)
         assert result.startswith("uploaded:")
 
@@ -650,10 +631,7 @@ class TestUploadFile:
         service.files().update().execute.return_value = {"id": "updated_id"}
         existing = {"id": "eid"}
         media_mock = MagicMock()
-        with patch.object(self.m, "find_drive_child", return_value=existing):
-            with patch.dict(sys.modules, {
-                "googleapiclient.http": MagicMock(MediaFileUpload=MagicMock(return_value=media_mock))
-            }):
+        with patch.object(self.m, "find_drive_child", return_value=existing), patch.dict(sys.modules, {"googleapiclient.http": MagicMock(MediaFileUpload=MagicMock(return_value=media_mock))}):
                 result = self.m.upload_file(service, local, "parent", "f.csv", overwrite=True, dry_run=False)
         assert result.startswith("updated:")
 
@@ -681,14 +659,13 @@ class TestDownloadSynapseAuth:
             "synapseutils": MagicMock(syncFromSynapse=MagicMock()),
         }):
             # Re-import to pick up patched modules
-            import importlib.util, types
+            import importlib.util
             spec = importlib.util.spec_from_file_location(
                 "download_weargait2",
                 Path(__file__).parent.parent / "scripts" / "download_weargait.py",
             )
             mod = importlib.util.module_from_spec(spec)
-            with patch.object(sys, "argv", ["prog", "--token", "mytoken"]):
-                with patch("pathlib.Path.mkdir"):
+            with patch.object(sys, "argv", ["prog", "--token", "mytoken"]), patch("pathlib.Path.mkdir"):
                     spec.loader.exec_module(mod)
                     mod.main()
 
@@ -709,8 +686,7 @@ class TestDownloadSynapseAuth:
                 Path(__file__).parent.parent / "scripts" / "download_weargait.py",
             )
             mod = importlib.util.module_from_spec(spec)
-            with patch.object(sys, "argv", ["prog", "--username", "u@x.com", "--password", "pw"]):
-                with patch("pathlib.Path.mkdir"):
+            with patch.object(sys, "argv", ["prog", "--username", "u@x.com", "--password", "pw"]), patch("pathlib.Path.mkdir"):
                     spec.loader.exec_module(mod)
                     mod.main()
 
@@ -744,12 +720,14 @@ class TestDownloadSynapseAuth:
 API_KEYS 환경변수를 통한 API 키 인증 동작을 검증합니다.
 """
 import os
-import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import importlib
+
 import pytest
 from fastapi.testclient import TestClient
+
 from api.examples import generate_sample_sensor_data
 
 
