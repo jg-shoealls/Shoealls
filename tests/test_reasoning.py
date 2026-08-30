@@ -14,7 +14,10 @@ from src.models.reasoning_engine import (
 
 def load_config():
     with open("configs/default.yaml") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+        # Patch config to match predefined classes in GAIT_CLASS_NAMES / CLASS_NAMES_KR
+        cfg["data"]["num_classes"] = 4
+        return cfg
 
 
 def make_batch(batch_size=2):
