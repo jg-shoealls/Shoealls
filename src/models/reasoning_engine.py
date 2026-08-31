@@ -590,7 +590,7 @@ class GaitReasoningEngine(nn.Module):
         for cls_idx in ranked:
             marker = ">>" if cls_idx == pred else "  "
             lines.append(
-                f"  {marker} {(self.CLASS_NAMES_KR[cls_idx] if cls_idx < len(self.CLASS_NAMES_KR) else f"알수없음_{cls_idx}"):10s} "
+                f"  {marker} {(self.CLASS_NAMES_KR[cls_idx] if cls_idx < len(self.CLASS_NAMES_KR) else f'알수없음_{cls_idx}'):10s} "
                 f"확률 {probs[cls_idx]:5.1%} | "
                 f"찬성 {pro[cls_idx]:.0%} | "
                 f"반대 {con[cls_idx]:.0%}"

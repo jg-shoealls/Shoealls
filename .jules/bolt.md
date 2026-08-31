@@ -13,3 +13,6 @@
 ## 2026-08-31 - Fix AssertionError in TestClassify and TestReasoning API tests
 **Learning:** API Tests assume that prediction classes are contained within a strict predefined set {'normal', 'antalgic', 'ataxic', 'parkinsonian'}, which is only 4 classes. However, the model actually maps dynamically based on GAIT_CLASS_NAMES using an index that can exceed 4 (up to num_classes which is 11). Thus, predictions fall back to unknown_X, breaking the strict set assertions and exact dict key assertions.
 **Action:** When updating tests that assume a fixed subset of class names in an environment with dynamic fallbacks, use startswith('unknown_') checks and issubset for sets instead of strict equality to handle unknown class fallbacks gracefully without falsely failing the test.
+## 2026-08-31 - Syntax Error in format strings
+**Learning:** Python f-strings prior to 3.12 cannot reuse the same quote type inside an expression block. If the outer f-string uses double quotes (`f"..."`), any nested strings within the expression block `{...}` must use single quotes (`\'...\'`). Reusing double quotes causes a `SyntaxError`.
+**Action:** Always ensure that nested strings within f-string expressions use a different quote type than the outer f-string.
