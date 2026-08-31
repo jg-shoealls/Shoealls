@@ -1,0 +1,3 @@
+## 2026-08-31 - Optimize MultiheadAttention weights
+**Learning:** PyTorch nn.MultiheadAttention returns attention weights which can be unnecessary overhead when only the attended output is needed. Skipping attention weights calculation by using `need_weights=False` and unpacking to `_` optimization avoids unnecessary calculation and memory allocation. Memory context indicates some tests inherently fail due to num_classes logic, which is acceptable since it existed prior to this change.
+**Action:** When using `nn.MultiheadAttention` in this codebase where the second return value (attention weights) is unused, explicitly set `need_weights=False` and explicitly unpack it as `_` to optimize performance.
