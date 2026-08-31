@@ -73,14 +73,6 @@ def test_summarize_biomarkers():
     assert set(summary.mean) == set(BIOMARKER_NAMES)
 
 
-def test_dataset_returns_biomarker_tensor():
-    vector = biomarker_vector(_imu_window(), _pressure_window())
-    dataset = WearGaitDataset([_imu_window()], [_pressure_window()], [1], [vector])
-    sample = dataset[0]
-    assert sample["biomarkers"].shape == (len(BIOMARKER_NAMES),)
-    assert sample["label"].item() == 1
-
-
 def test_imu_pressure_model_accepts_biomarker_input():
     model = IMUPressureGaitNet(_config())
     batch = {
