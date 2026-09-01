@@ -1,0 +1,3 @@
+## 2024-05-15 - [nn.MultiheadAttention need_weights optimization]
+**Learning:** PyTorch's `nn.MultiheadAttention` computes and returns attention weights by default (`need_weights=True`). This triggers unnecessary VRAM allocation and computation when the weights are discarded (e.g., using `_`).
+**Action:** When inspecting PyTorch models, check if attention weights are actually used. If they are discarded, set `need_weights=False` in the `forward` call to allow PyTorch to route to highly optimized backends like FlashAttention, improving speed and memory efficiency. Also rename any unused variable assignments to `_` to satisfy strict linters and explicitly document the optimization reason.
