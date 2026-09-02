@@ -9,3 +9,6 @@
 **Action:**
 - Ensure list access is guarded with `idx < len(my_list)` rather than assuming a list has `.get()`.
 - Explicitly populate missing expected tensors like `mag_baro` in the data ingestion step if they are missing from external requests but required by the unified multimodal model.
+## 2024-05-24 - [Fix Docker Healthcheck Failures due to Slow Model Loading]
+**Learning:** Due to heavy ML model loading in memory, the API server can take longer to start than standard web applications. Short Docker healthchecks (like `start_period=15s`, `timeout=10s`) will fail, leading to premature container termination before the app is fully ready.
+**Action:** When updating or debugging Docker setups in this repository, ensure healthcheck definitions (in `Dockerfile` or `docker-compose.yml`) use extended initialization parameters (`start_period=60s`, `timeout=30s`, `retries=5`) to prevent CI and deployment pipeline failures.
