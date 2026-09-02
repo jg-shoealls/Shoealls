@@ -9,7 +9,6 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-
 IMU_COLS = [
     "R_Ankle_Acc_X", "R_Ankle_Acc_Y", "R_Ankle_Acc_Z",
     "R_Ankle_Gyr_X", "R_Ankle_Gyr_Y", "R_Ankle_Gyr_Z",
@@ -26,20 +25,24 @@ PRESSURE_COLS = (
 class WearGaitDataset(Dataset):
     """Windowed WearGait-PD IMU and plantar pressure samples."""
 
-    def __init__(self, imu_windows, pressure_windows, labels):
+    def __init__(self, imu_windows, pressure_windows, labels, biomarkers=None):
         self.imu_windows = imu_windows
         self.pressure_windows = pressure_windows
         self.labels = labels
+        self.biomarkers = biomarkers
 
     def __len__(self) -> int:
         return len(self.labels)
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
-        return {
+        out = {
             "imu": torch.as_tensor(self.imu_windows[idx], dtype=torch.float32),
             "pressure": torch.as_tensor(self.pressure_windows[idx], dtype=torch.float32),
             "label": torch.tensor(self.labels[idx], dtype=torch.long),
         }
+        if self.biomarkers is not None:
+            out["biomarkers"] = torch.tensor(self.biomarkers[idx], dtype=torch.float32)
+        return out
 
 
 def load_weargait_by_subject(data_dir: str | Path, window: int = 128, stride: int = 64) -> dict:
