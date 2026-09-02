@@ -10,9 +10,9 @@ MDS 전임상 기준 (Berg et al. 2015) 기반 복합 점수 산출.
 
 from __future__ import annotations
 
-import numpy as np
 from dataclasses import dataclass, field
 
+import numpy as np
 
 # ─────────────────────────────────────────────
 # 데이터 구조
