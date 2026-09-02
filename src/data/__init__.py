@@ -4,11 +4,11 @@ from .preprocessing import preprocess_imu, preprocess_pressure, preprocess_skele
 from .synthetic import generate_synthetic_dataset
 
 __all__ = [
-    "MultimodalGaitDataset",
     "HARWindowDataset",
-    "synthetic_har_dataset",
+    "MultimodalGaitDataset",
+    "generate_synthetic_dataset",
     "preprocess_imu",
     "preprocess_pressure",
     "preprocess_skeleton",
-    "generate_synthetic_dataset",
+    "synthetic_har_dataset",
 ]
