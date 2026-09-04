@@ -14,9 +14,7 @@ from src.models.reasoning_engine import (
 
 def load_config():
     with open("configs/default.yaml") as f:
-        config = yaml.safe_load(f)
-        config["data"]["num_classes"] = 4  # align with CLASS_NAMES_KR length
-        return config
+        return yaml.safe_load(f)
 
 
 def make_batch(batch_size=2):
