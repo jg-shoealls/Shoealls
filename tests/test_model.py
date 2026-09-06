@@ -4,12 +4,16 @@ import numpy as np
 import torch
 import yaml
 
-from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
-from src.data.synthetic import generate_synthetic_dataset
 from src.data.dataset import MultimodalGaitDataset
-from src.models.multimodal_gait_net import MultimodalGaitNet
+from src.data.preprocessing import (
+    preprocess_imu,
+    preprocess_pressure,
+    preprocess_skeleton,
+)
+from src.data.synthetic import generate_synthetic_dataset
 from src.models.encoders import IMUEncoder, PressureEncoder, SkeletonEncoder
 from src.models.fusion import CrossModalAttentionFusion
+from src.models.multimodal_gait_net import MultimodalGaitNet
 
 
 def load_config():
@@ -88,12 +92,14 @@ class TestFusion:
 class TestFullModel:
     def test_forward_pass(self):
         config = load_config()
+        config["data"]["num_classes"] = 4
         model = MultimodalGaitNet(config)
 
         batch = {
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.randn(2, config["data"].get("mag_baro_channels", 5), 128),
         }
 
         logits = model(batch)
@@ -101,6 +107,7 @@ class TestFullModel:
 
     def test_parameter_count(self):
         config = load_config()
+        config["data"]["num_classes"] = 4
         model = MultimodalGaitNet(config)
         assert model.get_num_params() > 0
         assert model.get_num_trainable_params() == model.get_num_params()
@@ -108,6 +115,7 @@ class TestFullModel:
     def test_dataset_to_model(self):
         """Integration test: synthetic data -> dataset -> model."""
         config = load_config()
+        config["data"]["num_classes"] = 4
         data = generate_synthetic_dataset(num_samples_per_class=2, num_classes=4)
 
         dataset = MultimodalGaitDataset(
@@ -119,6 +127,8 @@ class TestFullModel:
 
         sample = dataset[0]
         batch = {k: v.unsqueeze(0) for k, v in sample.items() if k != "label"}
+        if "mag_baro" not in batch:
+            batch["mag_baro"] = torch.randn(1, config["data"].get("mag_baro_channels", 5), 128)
 
         model = MultimodalGaitNet(config)
         logits = model(batch)
