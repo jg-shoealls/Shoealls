@@ -1,0 +1,3 @@
+## 2024-09-08 - PyTorch MultiheadAttention Optimization
+**Learning:** PyTorch's `nn.MultiheadAttention` computes attention weights by default, which takes extra memory and compute. We can set `need_weights=False` during the forward pass if we don't need the returned attention weights. If the variable capturing the weights is unused or we use `_`, we can safely rename it to `_` and pass `need_weights=False` to unlock potential fast-path optimizations like FlashAttention.
+**Action:** Identify all usages of `nn.MultiheadAttention` forward passes. If the second return value (attention weights) is unused, add `need_weights=False` to the call to improve performance and avoid unnecessary computation.
