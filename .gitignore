@@ -10,3 +10,4 @@ outputs/
 .gdrive_token.json
 /data/
 .pytest_cache/
+venv/
