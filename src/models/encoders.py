@@ -1,7 +1,7 @@
 """Modality-specific encoders for multimodal gait analysis."""
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 def _build_1d_cnn(in_ch: int, channels: list, kernel_size: int, dropout: float) -> nn.Sequential:

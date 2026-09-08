@@ -1,10 +1,10 @@
 """Daphnet Freezing of Gait dataset loader for real-data training."""
 
 import pathlib
+
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-
 
 CLASS_NAMES = ["normal_walking", "freezing_of_gait"]
 
