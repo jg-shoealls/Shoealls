@@ -25,8 +25,9 @@
 
 from __future__ import annotations
 
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
 
 SAMPLE_RATE  = 128      # Hz
 _FEATURE_NAMES = [

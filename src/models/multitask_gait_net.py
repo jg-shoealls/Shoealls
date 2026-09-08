@@ -42,7 +42,7 @@ Architecture:
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from .encoders import IMUEncoder, PressureEncoder, SkeletonEncoder
 from .fusion import CrossModalAttentionFusion

@@ -1,7 +1,7 @@
 """IMU + Pressure multimodal network for PD vs HC classification."""
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from .encoders import IMUEncoder, PressureEncoder
 
