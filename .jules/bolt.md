@@ -1,0 +1,3 @@
+## 2025-02-23 - PyTorch MultiheadAttention optimization
+**Learning:** When using PyTorch's nn.MultiheadAttention, if the returned attention weights are discarded or explicitly unpacked to an unused variable, setting need_weights=False prevents unnecessary computation and memory allocation, enabling optimized attention backends (like FlashAttention).
+**Action:** When working with nn.MultiheadAttention, always check if the attention weights are actually used downstream. If completely unused, rename the unpacking target to _ (if applicable), set need_weights=False, and add a comment explaining the optimization rationale.
