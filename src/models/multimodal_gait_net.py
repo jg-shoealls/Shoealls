@@ -11,9 +11,9 @@
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
 
-from .encoders import IMUEncoder, PressureEncoder, MagBaroEncoder
+from .encoders import IMUEncoder, MagBaroEncoder, PressureEncoder
 from .fusion import CrossModalAttentionFusion
 
 
@@ -124,6 +124,9 @@ class MultimodalGaitNet(nn.Module):
         """분류기 직전의 융합된 특징 벡터를 추출합니다."""
         imu_feat  = self.imu_encoder(batch["imu"])
         pres_feat = self.pressure_encoder(batch["pressure"])
+        if "mag_baro" not in batch:
+            B, T = batch["imu"].shape[0], batch["imu"].shape[1]
+            batch["mag_baro"] = torch.zeros(B, 5, T, device=batch["imu"].device)
         mb_feat   = self.mag_baro_encoder(batch["mag_baro"])
 
         return self.fusion([imu_feat, pres_feat, mb_feat])
