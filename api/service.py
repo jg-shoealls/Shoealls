@@ -2,22 +2,33 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import torch
 import yaml
-from pathlib import Path
 
+from src.analysis.disease_classifier import GaitDiseaseClassifier
+from src.analysis.disease_predictor import DiseaseRiskPredictor
+from src.analysis.injury_predictor import InjuryRiskPredictor
+from src.data.preprocessing import (
+    preprocess_imu,
+    preprocess_pressure,
+    preprocess_skeleton,
+)
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.models.reasoning_engine import GaitReasoningEngine
-from src.analysis.disease_predictor import DiseaseRiskPredictor
-from src.analysis.disease_classifier import GaitDiseaseClassifier
-from src.analysis.injury_predictor import InjuryRiskPredictor
-from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
 
 from .schemas import (
-    SensorData, GaitFeatures,
-    GaitClassifyResponse, DiseaseRiskResponse, DiseaseRisk,
-    InjuryRiskResponse, ReasoningResponse, ReasoningStep, AnalyzeResponse,
+    AnalyzeResponse,
+    DiseaseRisk,
+    DiseaseRiskResponse,
+    GaitClassifyResponse,
+    GaitFeatures,
+    InjuryRiskResponse,
+    ReasoningResponse,
+    ReasoningStep,
+    SensorData,
 )
 
 _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"

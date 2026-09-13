@@ -4,7 +4,8 @@ src/models/task_heads.py
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
+
 
 class DiseaseClassificationHead(nn.Module):
     """

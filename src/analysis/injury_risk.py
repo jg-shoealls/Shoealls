@@ -1,10 +1,11 @@
 """Injury risk engine: assesses 6 types of foot/gait injury risk from pressure data."""
 
-import numpy as np
 from dataclasses import dataclass
 
-from .foot_zones import FootZoneAnalyzer, FootAnalysisResult, REGION_GROUPS
-from .common import severity_label_4level, linear_risk_score
+import numpy as np
+
+from .common import linear_risk_score, severity_label_4level
+from .foot_zones import FootAnalysisResult, FootZoneAnalyzer
 
 
 @dataclass

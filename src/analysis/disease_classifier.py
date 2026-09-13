@@ -12,9 +12,9 @@
   - 대사/신경: 당뇨 신경병증
 """
 
-import numpy as np
 from dataclasses import dataclass
 
+import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import classification_report
 
