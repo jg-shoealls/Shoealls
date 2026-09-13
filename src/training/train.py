@@ -6,9 +6,9 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, random_split
 import yaml
+from torch import nn
+from torch.utils.data import DataLoader, random_split
 
 from src.data.dataset import MultimodalGaitDataset
 from src.data.synthetic import generate_synthetic_dataset
@@ -325,9 +325,9 @@ def _verify_api_compat(config: dict, ckpt_path: Path):
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
     print("\n[검증] API 호환성 확인 중...")
     try:
+        from api.examples import generate_sample_sensor_data
         from api.schemas import SensorData
         from api.service import GaitMLService
-        from api.examples import generate_sample_sensor_data
 
         svc = GaitMLService()
         sensor = SensorData(**generate_sample_sensor_data())

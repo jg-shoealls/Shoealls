@@ -89,7 +89,7 @@ class BLEPacket:
         return header + self.payload
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "BLEPacket":
+    def from_bytes(cls, data: bytes) -> BLEPacket:
         if len(data) < HEADER_SIZE:
             raise ValueError(f"패킷 너무 짧음: {len(data)} bytes")
         magic, ptype, sid, chunk, total, plen, crc = struct.unpack_from(_HDR_FMT, data)
