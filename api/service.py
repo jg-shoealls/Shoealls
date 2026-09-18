@@ -2,22 +2,33 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import torch
 import yaml
-from pathlib import Path
 
+from src.analysis.disease_classifier import GaitDiseaseClassifier
+from src.analysis.disease_predictor import DiseaseRiskPredictor
+from src.analysis.injury_predictor import InjuryRiskPredictor
+from src.data.preprocessing import (
+    preprocess_imu,
+    preprocess_pressure,
+    preprocess_skeleton,
+)
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.models.reasoning_engine import GaitReasoningEngine
-from src.analysis.disease_predictor import DiseaseRiskPredictor
-from src.analysis.disease_classifier import GaitDiseaseClassifier
-from src.analysis.injury_predictor import InjuryRiskPredictor
-from src.data.preprocessing import preprocess_imu, preprocess_pressure, preprocess_skeleton
 
 from .schemas import (
-    SensorData, GaitFeatures,
-    GaitClassifyResponse, DiseaseRiskResponse, DiseaseRisk,
-    InjuryRiskResponse, ReasoningResponse, ReasoningStep, AnalyzeResponse,
+    AnalyzeResponse,
+    DiseaseRisk,
+    DiseaseRiskResponse,
+    GaitClassifyResponse,
+    GaitFeatures,
+    InjuryRiskResponse,
+    ReasoningResponse,
+    ReasoningStep,
+    SensorData,
 )
 
 _CONFIG_PATH = Path(__file__).parent.parent / "configs" / "default.yaml"
@@ -75,7 +86,7 @@ def _sensor_to_tensors(data: SensorData, config: dict) -> dict:
     skeleton_t = torch.from_numpy(skeleton_proc).unsqueeze(0)            # (1, 3, T, J)
 
     # mag_baro is required by the multimodal model. Inject a dummy tensor if not provided.
-    mb_channels = data_cfg.get("mag_baro_channels", 5)
+    mb_channels = config["data"].get("mag_baro_channels", 5)
     mag_baro_t = torch.zeros(1, mb_channels, seq_len)
 
     return {
