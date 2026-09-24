@@ -179,7 +179,7 @@ def plot_per_class_metrics(
     """Plot per-class precision, recall, F1 as grouped bar chart."""
     from sklearn.metrics import precision_recall_fscore_support
 
-    prec, rec, f1, support = precision_recall_fscore_support(
+    prec, rec, f1, _support = precision_recall_fscore_support(
         y_true, y_pred, average=None, zero_division=0,
     )
 
@@ -200,7 +200,7 @@ def plot_per_class_metrics(
                     f"{h:.2f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
 
     # Support counts
-    for i, s in enumerate(support):
+    for i, s in enumerate(_support):
         ax.text(i, -0.08, f"n={s}", ha="center", fontsize=9, color="gray")
 
     ax.set_xticks(x)
@@ -304,7 +304,7 @@ def plot_summary_dashboard(
     ax = fig.add_subplot(gs[0, 2])
     cm = confusion_matrix(y_true, y_pred)
     cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
-    im = ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
+    ax.imshow(cm_norm, cmap="Blues", vmin=0, vmax=1)
     ax.set_xticks(range(len(class_names)))
     ax.set_yticks(range(len(class_names)))
     ax.set_xticklabels([n[:6] for n in class_names], rotation=45, ha="right")
@@ -321,7 +321,7 @@ def plot_summary_dashboard(
     # ── Row 2: Per-class metrics + Confidence ──────────────────────────
     from sklearn.metrics import precision_recall_fscore_support
 
-    prec, rec, f1, support = precision_recall_fscore_support(
+    prec, rec, f1, _support = precision_recall_fscore_support(
         y_true, y_pred, average=None, zero_division=0,
     )
 
