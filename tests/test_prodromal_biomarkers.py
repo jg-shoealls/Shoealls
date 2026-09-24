@@ -4,15 +4,15 @@ import numpy as np
 import pytest
 
 from src.analysis.prodromal_biomarkers import (
+    _STAGE_THRESHOLDS,
+    ProdromalBiomarker,
     ProdrOmalBiomarkerExtractor,
     ProdromalPanel,
-    ProdromalBiomarker,
-    _coefficient_of_variation,
     _bandpower,
-    _stride_time_cv,
-    _rest_tremor_index,
+    _coefficient_of_variation,
     _double_support_ratio,
-    _STAGE_THRESHOLDS,
+    _rest_tremor_index,
+    _stride_time_cv,
 )
 
 FS = 100.0  # Hz
@@ -250,7 +250,7 @@ class TestProdrOmalBiomarkerExtractor:
         assert not olf.is_abnormal
 
     def test_stage_threshold_boundaries(self, extractor):
-        t1, t2, t3 = _STAGE_THRESHOLDS
+        _t1, _t2, _t3 = _STAGE_THRESHOLDS
         # composite를 각 경계값 부근에 고정하기 위해 후각으로만 조절
         # composite = 0.4 * (1-olf) → olf = 1 - composite/0.4 (변동성·REM=0 이상)
         # 정확히 제어하기 어려우므로 실제 panel 통합 흐름만 확인
