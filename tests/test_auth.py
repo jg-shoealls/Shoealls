@@ -175,8 +175,7 @@ class TestParseArgs:
         assert args.service_account_json is None
 
     def test_missing_synapse_token_raises(self):
-        with patch.dict("os.environ", {}, clear=True), patch.object(sys, "argv", ["prog", "--service-account-json", "sa.json"]):
-                with pytest.raises(SystemExit):
+        with patch.dict("os.environ", {}, clear=True), patch.object(sys, "argv", ["prog", "--service-account-json", "sa.json"]), pytest.raises(SystemExit):
                     self.m.parse_args()
 
     def test_both_service_and_oauth_raises(self):
@@ -240,11 +239,8 @@ class TestDriveServiceServiceAccount:
                 google_oauth2_sa.Credentials = MagicMock()
                 google_oauth2_sa.Credentials.from_service_account_file.return_value = mock_creds
 
-                with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}), patch("googleapiclient.discovery.build", return_value=mock_service):
-                        # Build the patched environment so drive_service can import
-                        with patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()),
-                                          "Credentials") as _:
-                            pass  # just verifying setup
+                with patch.dict(sys.modules, {"google.oauth2.service_account": google_oauth2_sa}), patch("googleapiclient.discovery.build", return_value=mock_service), patch.object(sys.modules.get("google.oauth2.service_account", MagicMock()), "Credentials") as _:
+                        pass  # just verifying setup
 
         # Simpler: patch __import__ path used inside drive_service
         google_oauth2_sa_mock = MagicMock()
