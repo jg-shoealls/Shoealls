@@ -10,8 +10,8 @@ Chain-of-Reasoning 아키텍처:
 """
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import nn
 
 
 class AnomalyDetectionModule(nn.Module):
