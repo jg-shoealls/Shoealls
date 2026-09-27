@@ -5,9 +5,9 @@ import yaml
 
 from src.models.reasoning_engine import (
     AnomalyDetectionModule,
+    ConfidenceCalibrator,
     CrossModalEvidenceCollector,
     DifferentialDiagnosisChain,
-    ConfidenceCalibrator,
     GaitReasoningEngine,
 )
 
