@@ -4,24 +4,25 @@
 보고서 수준의 한글 차트로 시각화합니다.
 """
 
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 
 import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import matplotlib.patches as mpatches
-from matplotlib import font_manager as fm
-from matplotlib.colors import LinearSegmentedColormap
-import numpy as np
 
-from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS, REGION_GROUPS
-from .gait_profile import PersonalGaitProfiler, DeviationReport
-from .injury_risk import InjuryRiskEngine, InjuryRiskReport
-from .feedback import CorrektiveFeedbackGenerator, PersonalizedFeedback
-from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
+matplotlib.use("Agg")
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import font_manager as fm
+from matplotlib import gridspec
+from matplotlib.colors import LinearSegmentedColormap
+
 from .common import get_feature_korean
+from .feedback import CorrektiveFeedbackGenerator
+from .foot_zones import ZONE_DEFINITIONS, FootZoneAnalyzer
+from .gait_profile import DeviationReport, PersonalGaitProfiler
+from .injury_risk import InjuryRiskEngine, InjuryRiskReport
+from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
 
 # ── 한글 폰트 설정 ────────────────────────────────────────────────────
 _FONT_PATH = "/usr/share/fonts/truetype/nanum/NanumSquareB.ttf"

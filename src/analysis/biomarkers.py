@@ -4,8 +4,7 @@
 의학 문헌 기반의 정상 범위와 비교하여 이상 여부를 판정합니다.
 """
 
-import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .common import compute_derived_features
 
