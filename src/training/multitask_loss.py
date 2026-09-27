@@ -19,8 +19,8 @@ class MultitaskGaitLoss(nn.Module):
 
     def __init__(
         self,
-        active_tasks: list = None,
-        task_weights: dict = None,
+        active_tasks: list | None = None,
+        task_weights: dict | None = None,
         use_uncertainty_weighting: bool = False,
     ):
         super().__init__()

@@ -220,7 +220,7 @@ class TestInjuryRiskPredictor:
 
         result = predictor.predict(make_antalgic_gait())
         assert isinstance(result.body_risk_map, dict)
-        for part, score in result.body_risk_map.items():
+        for score in result.body_risk_map.values():
             assert 0 <= score <= 1
 
     def test_timeline(self):
@@ -252,7 +252,7 @@ class TestInjuryRiskPredictor:
         report = predictor.predict_comprehensive(make_fall_risk_gait())
 
         assert len(report.body_risk_map) > 0
-        for part, score in report.body_risk_map.items():
+        for score in report.body_risk_map.values():
             assert 0 <= score <= 1
 
     def test_comprehensive_normal_low_risk(self):

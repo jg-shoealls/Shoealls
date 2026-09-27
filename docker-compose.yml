@@ -22,7 +22,6 @@ services:
       timeout: 30s
       retries: 5
       start_period: 60s
-      start_period: 15s
 
   # 개발 모드 (hot-reload, 소스 마운트)
   api-dev:
