@@ -1,0 +1,3 @@
+## 2024-10-01 - Disable MultiheadAttention weight calculation when unused
+**Learning:** PyTorch's `nn.MultiheadAttention` computes attention weights by default, which consumes unnecessary computation and memory allocation if the weights are discarded or unused. This codebase uses MultiheadAttention extensively in its multimodal fusion and reasoning engines, often unpacking and discarding the weights (e.g. `attn_out, _ = self.cross_attn(...)`).
+**Action:** When using `nn.MultiheadAttention`, if attention weights are unused, always pass `need_weights=False` in the forward pass to enable FlashAttention and save memory/compute. Rename unused unpacked variables to `_` to satisfy linters and clarify intent.
