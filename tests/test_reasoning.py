@@ -14,14 +14,19 @@ from src.models.reasoning_engine import (
 
 def load_config():
     with open("configs/default.yaml") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    cfg["data"]["num_classes"] = 4
+    return cfg
+    cfg["data"]["num_classes"] = 4
+    return cfg
 
 
-def make_batch(batch_size=2):
+def make_batch(batch_size=2, seq_len=128):
     return {
-        "imu": torch.randn(batch_size, 6, 128),
-        "pressure": torch.randn(batch_size, 128, 1, 16, 8),
-        "skeleton": torch.randn(batch_size, 3, 128, 17),
+        "imu": torch.randn(batch_size, 6, seq_len),
+        "pressure": torch.randn(batch_size, seq_len, 1, 16, 8),
+        "skeleton": torch.randn(batch_size, 3, seq_len, 17),
+        "mag_baro": torch.zeros(batch_size, 5, seq_len),
     }
 
 

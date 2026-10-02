@@ -14,7 +14,9 @@ from src.models.fusion import CrossModalAttentionFusion
 
 def load_config():
     with open("configs/default.yaml") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    cfg["data"]["num_classes"] = 4
+    return cfg
 
 
 class TestPreprocessing:
@@ -94,6 +96,7 @@ class TestFullModel:
             "imu": torch.randn(2, 6, 128),
             "pressure": torch.randn(2, 128, 1, 16, 8),
             "skeleton": torch.randn(2, 3, 128, 17),
+            "mag_baro": torch.zeros(2, 5, 128),
         }
 
         logits = model(batch)
@@ -119,6 +122,7 @@ class TestFullModel:
 
         sample = dataset[0]
         batch = {k: v.unsqueeze(0) for k, v in sample.items() if k != "label"}
+        batch["mag_baro"] = torch.zeros(1, 5, 128)
 
         model = MultimodalGaitNet(config)
         logits = model(batch)
