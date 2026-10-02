@@ -5,22 +5,24 @@
 """
 
 import platform
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
-from matplotlib import font_manager as fm
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import font_manager as fm
+from matplotlib import gridspec
 from sklearn.metrics import (
-    confusion_matrix,
-    precision_recall_fscore_support,
     accuracy_score,
+    confusion_matrix,
     f1_score,
+    precision_recall_fscore_support,
 )
+
 
 # ── 한글 폰트 설정 (OS별 호환성 유지) ──────────────────────────────────
 def _setup_fonts():
@@ -111,7 +113,7 @@ def generate_report(
     _page2_detail(metrics, class_names, save_dir)
     _page3_ablation(ablation_results, len(class_names), save_dir)
 
-    print(f"\n보고서 생성 완료:")
+    print("\n보고서 생성 완료:")
     for f in sorted(save_dir.glob("report_*.png")):
         print(f"  {f}")
 
@@ -289,7 +291,7 @@ def _page3_ablation(ablation_results, num_classes, save_dir):
     ax = fig.add_subplot(gs[1, 1])
     ax.axis("off")
     ax.text(0.5, 0.5, f"모델 구조: Multimodal Fusion\n최종 분류: {num_classes} 클래스", 
-            ha="center", va="center", fontproperties=_FONT_PROP, fontsize=15, bbox=dict(facecolor=C_LIGHT_BG, alpha=0.5))
+            ha="center", va="center", fontproperties=_FONT_PROP, fontsize=15, bbox={"facecolor": C_LIGHT_BG, "alpha": 0.5})
 
     fig.savefig(save_dir / "report_p3_ablation.png", dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
