@@ -3,20 +3,20 @@
 FastAPI TestClient를 사용하여 실제 HTTP 레이어까지 검증합니다.
 """
 
+import os
+import sys
+
 import pytest
-import numpy as np
 from fastapi.testclient import TestClient
 
-import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from api.main import app
 from api.examples import (
-    generate_sample_sensor_data,
     NORMAL_GAIT_FEATURES,
     PARKINSONS_GAIT_FEATURES,
+    generate_sample_sensor_data,
 )
+from api.main import app
 
 
 @pytest.fixture(scope="module")
@@ -87,7 +87,7 @@ class TestClassify:
         assert 0.0 <= body["confidence"] <= 1.0
         assert body["is_demo_mode"] is True  # 체크포인트 없음
         probs = body["class_probabilities"]
-        assert any(k in {"normal", "antalgic", "ataxic", "parkinsonian"} or k.startswith("unknown_") for k in probs.keys())
+        assert any(k in {"normal", "antalgic", "ataxic", "parkinsonian"} or k.startswith("unknown_") for k in probs)
         assert abs(sum(probs.values()) - 1.0) < 1e-4
 
     def test_classify_probabilities_sum_to_one(self, client, parkinsons_sensor):
