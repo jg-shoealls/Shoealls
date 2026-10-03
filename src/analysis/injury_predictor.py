@@ -244,7 +244,7 @@ class InjuryRiskPredictor(BaseGaitClassifier):
 
         for injury_kr, prob in probabilities.items():
             injury_id = None
-            for idx, (eid, ekr) in INJURY_LABELS.items():
+            for (eid, ekr) in INJURY_LABELS.values():
                 if ekr == injury_kr:
                     injury_id = eid
                     break

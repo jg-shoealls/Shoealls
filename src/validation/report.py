@@ -291,7 +291,7 @@ def _page3_ablation(ablation_results, num_classes, save_dir):
     ax = fig.add_subplot(gs[1, 1])
     ax.axis("off")
     ax.text(0.5, 0.5, f"모델 구조: Multimodal Fusion\n최종 분류: {num_classes} 클래스", 
-            ha="center", va="center", fontproperties=_FONT_PROP, fontsize=15, bbox=dict(facecolor=C_LIGHT_BG, alpha=0.5))
+            ha="center", va="center", fontproperties=_FONT_PROP, fontsize=15, bbox={"facecolor": C_LIGHT_BG, "alpha": 0.5})
 
     fig.savefig(save_dir / "report_p3_ablation.png", dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)

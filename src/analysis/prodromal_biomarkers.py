@@ -166,7 +166,7 @@ def _double_support_ratio(pressure: np.ndarray) -> float:
     else:
         return 0.22                  # 분석 불가 → 정상값 반환
 
-    T, H, W = p.shape
+    T, H, _W = p.shape
     mid = H // 2
     left_active  = p[:, :mid, :].sum(axis=(1, 2)) > 0.01
     right_active = p[:, mid:, :].sum(axis=(1, 2)) > 0.01

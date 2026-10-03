@@ -102,7 +102,7 @@ def plot_pressure_heatmap(
         ax.text(cx, cy, f"{zdef['description']}\n{zone_val:.2f}",
                 ha="center", va="center", fontsize=8,
                 fontproperties=_FONT_PROP_LIGHT, color=C_PRIMARY,
-                bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.85))
+                bbox={"boxstyle": "round,pad=0.2", "facecolor": "white", "alpha": 0.85})
 
     _set_ax_style(ax, "해부학적 영역별 평균 압력", "좌우 (Lateral)", "전후 (Ant-Post)")
 
@@ -187,9 +187,9 @@ def plot_zone_temporal(
 
     x = np.arange(len(zones))
     w = 0.35
-    bars1 = ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
+    ax.barh(x - w / 2, peak_avgs, w, color=colors, alpha=0.6,
                      edgecolor="white", label="평균 최고 압력")
-    bars2 = ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
+    ax.barh(x + w / 2, peak_maxs, w, color=colors, alpha=0.9,
                      edgecolor="white", label="최대 최고 압력")
 
     ax.set_yticks(range(len(zones)))
@@ -488,7 +488,7 @@ def plot_trend_dashboard(
         ax.text(0.02, 0.98, f"{direction_kr} (R\u00b2={r2:.2f})",
                 transform=ax.transAxes, fontsize=10, fontproperties=_FONT_PROP,
                 va="top", color=color,
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor=color))
+                bbox={"boxstyle": "round,pad=0.3", "facecolor": "white", "alpha": 0.8, "edgecolor": color})
 
         ax.set_xticks(sessions)
 
