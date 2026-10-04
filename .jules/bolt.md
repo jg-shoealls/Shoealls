@@ -1,0 +1,3 @@
+## 2024-10-04 - [FlashAttention Enablement in PyTorch MultiheadAttention]
+**Learning:** PyTorch's `nn.MultiheadAttention` allocates memory and computes attention weights by default even when they are discarded (returned as `_`). Setting `need_weights=False` prevents this and enables highly optimized FlashAttention execution.
+**Action:** Always verify if attention weights are strictly required. If they are discarded (e.g. `attn_out, _ = ...`), explicitly set `need_weights=False` in the forward pass to save compute and memory, while renaming the discarded variable to `_` with a brief comment. Do not apply this blindly if weights are unpacked and used downstream.
