@@ -1,0 +1,3 @@
+## 2024-10-06 - PyTorch MultiheadAttention Performance Optimization
+**Learning:** PyTorch's `nn.MultiheadAttention` calculates attention weights by default, which prevents the use of optimized fast paths like FlashAttention. This allocates extra memory and time computing a full NxN matrix that is often immediately discarded.
+**Action:** When calling `nn.MultiheadAttention` and the attention weights are not explicitly needed for downstream tasks (e.g. `src/models/fusion.py` where it's just `attn_out, _ = self.self_attention(...)`), set `need_weights=False`. Note: Check if the calling context unpacks and uses the weights (as in `reasoning_engine.py` with `cross_attn_weights`) and only apply `need_weights=False` if they are truly discarded.
