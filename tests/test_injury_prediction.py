@@ -1,15 +1,16 @@
 """Tests for abnormal gait pattern detection and injury risk prediction."""
 
-import numpy as np
-import pytest
 
 from src.analysis.gait_anomaly import (
-    GaitAnomalyDetector, GaitAnomalyReport, AnomalyPattern,
-    ANOMALY_DEFINITIONS, INJURY_CATEGORIES,
+    ANOMALY_DEFINITIONS,
+    GaitAnomalyDetector,
+    GaitAnomalyReport,
 )
 from src.analysis.injury_predictor import (
-    InjuryRiskPredictor, InjuryPrediction, ComprehensiveInjuryReport,
-    INJURY_LABELS, PREDICTOR_FEATURES,
+    PREDICTOR_FEATURES,
+    ComprehensiveInjuryReport,
+    InjuryPrediction,
+    InjuryRiskPredictor,
 )
 
 
