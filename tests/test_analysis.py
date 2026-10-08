@@ -1,12 +1,11 @@
 """Tests for the personalized gait analysis system."""
 
 import numpy as np
-import pytest
 
-from src.analysis.foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
+from src.analysis.feedback import CorrektiveFeedbackGenerator
+from src.analysis.foot_zones import ZONE_DEFINITIONS, FootZoneAnalyzer
 from src.analysis.gait_profile import PersonalGaitProfiler
 from src.analysis.injury_risk import InjuryRiskEngine
-from src.analysis.feedback import CorrektiveFeedbackGenerator
 from src.analysis.trend_tracker import LongitudinalTrendTracker
 
 
