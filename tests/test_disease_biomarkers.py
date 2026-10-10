@@ -5,8 +5,6 @@ import numpy as np
 from src.analysis.disease_biomarkers import (
     DiseaseBiomarkerAnalyzer,
     SensorChannel,
-    BiomarkerDefinition,
-    DiseasePanel,
     BiomarkerMeasurement,
     DiseaseBiomarkerProfile,
     MultimodalBiomarkerReport,
