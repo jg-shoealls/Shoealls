@@ -1,6 +1,5 @@
 import torch
 import yaml
-import json
 import requests
 from src.models.reasoning_engine import GaitReasoningEngine
 

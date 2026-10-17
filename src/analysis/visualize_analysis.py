@@ -16,10 +16,10 @@ from matplotlib import font_manager as fm
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
-from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS, REGION_GROUPS
+from .foot_zones import FootZoneAnalyzer, ZONE_DEFINITIONS
 from .gait_profile import PersonalGaitProfiler, DeviationReport
 from .injury_risk import InjuryRiskEngine, InjuryRiskReport
-from .feedback import CorrektiveFeedbackGenerator, PersonalizedFeedback
+from .feedback import CorrektiveFeedbackGenerator
 from .trend_tracker import LongitudinalTrendTracker, TrendAnalysis
 from .common import get_feature_korean
 

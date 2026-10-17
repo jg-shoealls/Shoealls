@@ -31,7 +31,6 @@ import yaml
 from src.data.adapters import FolderDataAdapter, NumpyDataAdapter
 from src.models.multimodal_gait_net import MultimodalGaitNet
 from src.training.train import train_one_epoch, evaluate
-from src.utils.metrics import compute_metrics
 from src.validation.report import generate_report
 
 

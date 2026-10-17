@@ -7,7 +7,6 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.analysis import (
-    FootZoneAnalyzer,
     PersonalGaitProfiler,
     InjuryRiskEngine,
     CorrektiveFeedbackGenerator,
@@ -106,7 +105,7 @@ def main():
             for alert in deviation.alerts:
                 print(f"    [{alert['severity']}] {alert['message']}")
         elif profiler.baseline.num_sessions >= 2:
-            print(f"\n  [기준 대비 변화] 평소 패턴과 유사합니다.")
+            print("\n  [기준 대비 변화] 평소 패턴과 유사합니다.")
 
         # 3. Injury risk assessment
         injury_report = injury_engine.assess_risk(pressure)

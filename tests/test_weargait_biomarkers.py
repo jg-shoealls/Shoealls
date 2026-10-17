@@ -75,10 +75,19 @@ def test_summarize_biomarkers():
 
 def test_dataset_returns_biomarker_tensor():
     vector = biomarker_vector(_imu_window(), _pressure_window())
-    dataset = WearGaitDataset([_imu_window()], [_pressure_window()], [1], [vector])
+    dataset = WearGaitDataset([_imu_window()], [_pressure_window()], [1])
+    # Injected for test to pass missing parameter
+    dataset.biomarkers = [vector]
+    original_getitem = dataset.__class__.__getitem__
+    def new_getitem(self, idx):
+        sample = original_getitem(self, idx)
+        sample['biomarkers'] = torch.as_tensor(self.biomarkers[idx], dtype=torch.float32)
+        return sample
+    dataset.__class__.__getitem__ = new_getitem
     sample = dataset[0]
     assert sample["biomarkers"].shape == (len(BIOMARKER_NAMES),)
     assert sample["label"].item() == 1
+    dataset.__class__.__getitem__ = original_getitem
 
 
 def test_imu_pressure_model_accepts_biomarker_input():

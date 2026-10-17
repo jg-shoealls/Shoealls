@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from src.data.daphnet_dataset import DaphnetDataset, CLASS_NAMES, load_by_subject
+from src.data.daphnet_dataset import DaphnetDataset, load_by_subject
 from src.models.multimodal_gait_net import IMUGaitNet
 from src.utils.metrics import compute_metrics
 

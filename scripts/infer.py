@@ -2,7 +2,6 @@
 
 import sys
 import torch
-import numpy as np
 
 from src.data.synthetic import generate_synthetic_dataset, CLASS_NAMES
 from src.data.dataset import MultimodalGaitDataset

@@ -1,8 +1,7 @@
 """Longitudinal trend tracker: session-over-session gait analysis."""
 
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from .config import TREND_THRESHOLD as _DEFAULT_TREND_THRESHOLD
 

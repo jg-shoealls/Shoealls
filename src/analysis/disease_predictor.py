@@ -13,11 +13,10 @@
 """
 
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from .biomarkers import GaitBiomarkerExtractor, BiomarkerProfile, BIOMARKER_DEFINITIONS
-from .common import get_feature_korean, severity_label
+from .common import get_feature_korean
 from .report_formatter import header, section, risk_bar, HEADER_DIVIDER, overall_summary_line
 
 
@@ -555,7 +554,7 @@ class DiseaseRiskPredictor:
             referrals = set()
             for risk in top_risks:
                 referrals.add(risk.referral)
-            lines.append(f"  ※ 본 결과는 AI 기반 스크리닝이며, 확진을 위해 전문의 상담이 필요합니다.")
+            lines.append("  ※ 본 결과는 AI 기반 스크리닝이며, 확진을 위해 전문의 상담이 필요합니다.")
             lines.append(f"  ※ 권장 진료과: {', '.join(referrals)}")
 
         lines.append("")

@@ -2,7 +2,6 @@ import torch
 import yaml
 import json
 import requests
-import os
 from src.models.reasoning_engine import GaitReasoningEngine
 
 class GaitChatbot:

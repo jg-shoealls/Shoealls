@@ -3,7 +3,6 @@
 import time
 import torch
 import torch.nn as nn
-import numpy as np
 from pathlib import Path
 from src.models.multimodal_gait_net import MultimodalGaitNet
 

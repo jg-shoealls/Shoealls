@@ -8,10 +8,8 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import numpy as np
-from src.analysis.biomarkers import GaitBiomarkerExtractor
 from src.analysis.disease_predictor import DiseaseRiskPredictor
-from src.analysis.disease_classifier import GaitDiseaseClassifier, FEATURE_NAMES
+from src.analysis.disease_classifier import GaitDiseaseClassifier
 
 
 def main():

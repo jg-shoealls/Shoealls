@@ -85,8 +85,8 @@ def main():
     print(f"샘플 데이터 생성 완료: {output_dir}/")
     print(f"  피험자 수: {subject_id - 1} ({num_subjects_per_class} x {num_classes} classes)")
     print(f"  클래스: {class_names}")
-    print(f"\n실행 방법:")
-    print(f"  python run_real_data.py --data-dir data/sample/ --format folder --label-file labels.csv")
+    print("\n실행 방법:")
+    print("  python run_real_data.py --data-dir data/sample/ --format folder --label-file labels.csv")
 
 
 if __name__ == "__main__":
